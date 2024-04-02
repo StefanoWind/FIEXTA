@@ -9,13 +9,13 @@ The standardization process identifyies nominal scan geometry and maps the beam 
 All inputs are provided in the configuration file.
 
 General inputs are:
--PARAMETER: it is the header used ot select the right configuration. It contains the regular expression needed to recognize the type of scan based on instrument location and time
--project: project name.
--name: humanly-readable identifier of the scan.
--data_level_in: string identifier of the input data level.
--data_level_out: string identifier of the output data level.
--azimuth_offset [deg]: offset of azimuth from true North (fixed lidar) or equivalent North for a turbine facing W wind. Azimuth is counted clowckwise.
--ground_level [m]: level of the ground with respect to the lidar head.
+- PARAMETER: it is the header used ot select the right configuration. It contains the regular expression needed to recognize the type of scan based on instrument location and time
+- project: project name.
+- name: humanly-readable identifier of the scan.
+- data_level_in: string identifier of the input data level.
+- data_level_out: string identifier of the output data level.
+- azimuth_offset [deg]: offset of azimuth from true North (fixed lidar) or equivalent North for a turbine facing W wind. Azimuth is counted clowckwise.
+- ground_level [m]: level of the ground with respect to the lidar head.
 
 These parameters are used for the standardization:
 -min_azi_step [deg]: minimum azimuth step, with sign.
