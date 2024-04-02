@@ -1,9 +1,9 @@
 # LIDARGO
 LIDAR General Operator: Standardization, quality control, and statistics of scanning lidar data
 
-To test, run test.py on selected sample files. Sample files from AWAKEN and RAAW (NREL employees only) can be found at [sample data](https://nrel.app.box.com/folder/256760533953)
+To test, run test.py on selected sample files. Sample files from AWAKEN and RAAW (NREL employees only) can be found at [sample data](https://nrel.app.box.com/folder/256760533953).
 
-# LIDARGO_standardize
+## LIDARGO_standardize
 The standardization process identifyies nominal scan geometry and maps the beam angles on the regularized frame. The QC part flags suspect data points. 
 
 All inputs are provided in the configuration file.
@@ -47,7 +47,7 @@ These are the inputs the dynamic filter:
 - max_percentile: upper percentile for the calculation of the dispersion of normalized radial wind speed within each probaility bin.
 - rws_norm_increase_limit: maximum ratio of increase of dispersion of normalized radial wind speed over the full range to identify the probability threshold of the dynamic filter.
 
-# LIDARGO_statistics (for nacelle-mounted lidars only)
+## LIDARGO_statistics (for nacelle-mounted lidars only)
 Calculates time average and standard deviation of de-projected radial velocity data using the LiSBOA tool. It assumes wind coming from W, so it is suitable for nacelle-mounted lidars with negligible yaw offset.
 
 All inputs are provided in the configuration file.
