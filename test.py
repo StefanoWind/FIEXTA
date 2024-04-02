@@ -5,8 +5,8 @@ Test LIDARGO
 import os
 cd=os.path.dirname(__file__)
 import glob
-import lidar_processor_standardize as lb0
-import lidar_processor_statistics as lc0
+import LIDARGO_standardize as lb0
+import LIDARGO_statistics as lc0
 
 files=glob.glob('data/**/*a0*nc')
 for f in files:
