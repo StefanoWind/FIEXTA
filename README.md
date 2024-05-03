@@ -1,9 +1,9 @@
 # LIDARGO
 LIDAR General Operator: Standardization, quality control, and statistics of scanning lidar data.
 
-The processing is described in the 240402_LIDARGO.pptx file. More details on the configuration settings are provided below.
+The processing is described in the 240502_LIDARGO.pptx file. More details on the configuration settings are provided below.
 
-To test, run test.py on selected sample files. Sample files from AWAKEN and RAAW (NREL employees only) can be found at [sample data](https://nrel.app.box.com/folder/256760533953).
+To test, run test.py on selected sample files. Publicly available samples files from AWAKEN are included. Propietary sample files from AWAKEN are availble here https://nrel.app.box.com/folder/256761571190 for authorized users only. RAAW sample files are available here https://nrel.app.box.com/folder/256761128796 for authorized users only.
 
 ## LIDARGO_standardize
 The standardization process identifies nominal scan geometry and maps the beam angles on the regularized frame. The QC part flags suspect data points. 
