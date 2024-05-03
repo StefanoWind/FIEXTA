@@ -8,12 +8,12 @@ import glob
 import LIDARGO_standardize as lb0
 import LIDARGO_statistics as lc0
 
-files=glob.glob('data/**/*a0*nc')
+files=glob.glob('data/public/awaken/**/*a0*nc')#add wildcard name of formatted files to process
 for f in files:
-    lproc = lb0.LIDARGO(f,'config/configs_standardize.xlsx', verbose=True)
-    lproc.process_scan(f,replace=True,save_file=True)
+    lproc = lb0.LIDARGO(f,'config/config_awaken_b0.xlsx', verbose=True)
+    lproc.process_scan(f,replace=False,save_file=True)
 
-files=glob.glob('data/**/*b0*nc')
+files=glob.glob('data/public/**/*b0*nc')#add wildcard name of standardized files to process
 for f in files:
-    lproc = lc0.LIDARGO(f,'config/configs_statistics.xlsx', verbose=True)
+    lproc = lc0.LIDARGO(f,'config/configs_awaken_c0.xlsx', verbose=True)
     lproc.process_scan(f,replace=True,save_file=True)

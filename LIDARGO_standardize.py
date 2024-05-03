@@ -1160,8 +1160,8 @@ if __name__ == '__main__':
     '''
     cd=os.path.dirname(__file__)
         
-    source='data/awaken/ppi+rhi-wake-csm/rt2.lidar.z02.a0.20230628.223014.user5.nc'
-    config_file='data/configs_standardize.xlsx'
+    source='data/360ppi-csm/rt5.lidar.z02.a0.20230711.173203.user1.nc'
+    config_file='config/configs_standardize.xlsx'
 
     # Create an instance of LIDARGO
     lproc = LIDARGO(source,config_file, verbose=True)
