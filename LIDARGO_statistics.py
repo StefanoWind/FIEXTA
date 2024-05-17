@@ -351,7 +351,7 @@ def LiSBOA_v7_2(x_exp,mins,maxs,Dn0,sigma,max_iter=None,calculate_stats=False,f=
     
     #Initialization
     t0=time.time()
-    Dn0=np.array(Dn0) 
+    Dn0=np.array(Dn0)+0.0 
     n_eff=np.sum(Dn0>0)
     Dn0[Dn0==0]=10**99
     N=len(x_exp[0])
