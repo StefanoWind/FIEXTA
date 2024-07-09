@@ -39,10 +39,13 @@ class LIDARGO:
         
         #load configuration
         configs=pd.read_excel(config_file).set_index('PARAMETER')
+        date_source=np.int64(re.search(r'\d{8}.\d{6}',source).group(0)[:8])
         matches=[]
         for regex in configs.columns:
             match = re.findall(regex, source)
-            if len(match)>0:
+            sdate=configs[regex]['start_date']
+            edate=configs[regex]['end_date']
+            if len(match)>0 and date_source>=sdate and date_source<=edate:
                 matches.append(regex)
         
         if len(matches)==0:
