@@ -16,7 +16,7 @@ warnings.filterwarnings('ignore',message='.*encountered in log10.*')
 warnings.filterwarnings('ignore',message='.*converting a masked element to nan.*')
 
 class LIDARGO:
-    def __init__(self, source, config_file, verbose=True):
+    def __init__(self, source, config_file, verbose=True,logger=None):
         '''
         Initialize the LIDAR data processor with configuration parameters.
 
@@ -34,6 +34,7 @@ class LIDARGO:
         
         self.source=source
         self.verbose = verbose
+        self.logger=logger
         
         #load configuration
         configs=pd.read_excel(config_file).set_index('PARAMETER')
@@ -44,10 +45,10 @@ class LIDARGO:
                 matches.append(regex)
         
         if len(matches)==0:
-            print('No regular expression matching the file name')
+            self.print_and_log('No regular expression matching the file name')
             return
         elif len(matches)>1:
-            print('Mulitple regular expressions matching the file name')
+            self.print_and_log('Mulitple regular expressions matching the file name')
             return
                 
         config=configs[matches[0]].to_dict()
@@ -59,7 +60,12 @@ class LIDARGO:
         
         #load data
         self.inputData = xr.open_dataset(self.source)
-
+    
+    def print_and_log(self,message):
+        print(message)
+        if self.logger is not None:
+            self.logger.info(message)
+            
     def process_scan(
         self, make_figures=True, save_file=False, save_path=None, replace=True, process_time=True
     ):
@@ -83,7 +89,7 @@ class LIDARGO:
         
         # Check if file has been processed yet and whether is to be replaced
         if 'config' not in dir(self):
-            print(f'No configuration available. Skipping file {self.source}')
+            self.print_and_log(f'No configuration available. Skipping file {self.source}')
             return
             
         #Compose filename
@@ -97,10 +103,10 @@ class LIDARGO:
             os.makedirs(os.path.dirname(save_filename))
             
         if save_file and not replace and os.path.isfile(save_filename):
-            print(f'Processed file {save_filename} exists. Skipping it.')
+            self.print_and_log(f'Processed file {save_filename} exists. Skipping it.')
             return
         else:
-            print(f'Processing file {save_filename}.')
+            self.print_and_log(f'Processing file {save_filename}.')
     
         self.statistics()
         
