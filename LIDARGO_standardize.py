@@ -581,7 +581,7 @@ class LIDARGO:
             
             self.outputData=self.outputData.where(~np.isnan(self.outputData.beamID+self.outputData.scanID),drop=True)
             self.outputData = self.outputData.set_index(time=['beamID', 'scanID'])
-            self.outputData = self.outputData.unstack()
+            self.outputData = self.outputData.drop_duplicates('time').unstack()
           
             #Finalize dataset
             self.outputData= self.outputData.rename_vars({'time_temp':'time'})
