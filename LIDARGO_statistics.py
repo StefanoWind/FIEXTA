@@ -139,7 +139,7 @@ class LIDARGO:
         coords=[x_lid.ravel()/D,y_lid.ravel()/D,z_lid.ravel()/D]
         
         #Velocity de-projection (assumes 0 yaw misalignment)
-        u_qc=(self.inputData['wind_speed'].where(self.inputData['qc_wind_speed']==0)/(self.inputData['x']/(self.inputData['x']**2+self.inputData['y']**2)**0.5)).values
+        u_qc=(self.inputData['wind_speed'].where(self.inputData['qc_wind_speed']==0)/(self.inputData['x']/(self.inputData['x']**2+self.inputData['y']**2+self.inputData['z']**2)**0.5)).values
 
         #Run LiSBOA
         X2,Dd,excl,avg,HOM=LiSBOA_v7_2(coords,mins,maxs,Dn0,sigma,max_iter=max_iter,calculate_stats=True,f=u_qc.ravel(),order=2,R_max=3,grid_factor=0.25,tol_dist=0.1,max_Dd=1,verbose=self.verbose)
