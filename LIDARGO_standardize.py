@@ -100,7 +100,7 @@ class LIDARGO:
             self.print_and_log(f'WARNING: All azimuths are invalid on {os.path.basename(self.source)}. Skipping it.')
             return False
         
-        # Check for valid elevaion angles
+        # Check for valid elevation angles
         if self.inputData['elevation'].isnull().sum() == self.inputData['elevation'].size:
             # All azimuths are NaNs. Skipping
             self.print_and_log(f'WARNING: All elevations are invalid on {os.path.basename(self.source)}. Skipping it.')
@@ -108,8 +108,7 @@ class LIDARGO:
 
         return True
 
-    def process_scan(
-        self, make_figures=True, save_file=True, save_path=None, replace=True):
+    def process_scan(self, make_figures=True, save_file=True, save_path=None, replace=True):
         '''
         Run all the processing.
     
@@ -129,7 +128,7 @@ class LIDARGO:
         
         # Check if file has been processed yet and whether is to be replaced
         if 'config' not in dir(self):
-            self.print_and_log(f'No configuration available. Skipping file {self.source}')
+            self.print_and_log(f'No configuration available. Skipping file {os.path.basename(self.source)}')
             return
         
         #Compose filename
@@ -280,7 +279,7 @@ class LIDARGO:
     
     def filter_scan_data(self):
         '''
-        QC lidar data.
+        QC lidar data
 
         '''
         
@@ -320,6 +319,8 @@ class LIDARGO:
         #Drop range dimension from beam properties
         ds['azimuth']=  ds['azimuth'].sel(range=ds['range'][0]).drop('range')
         ds['elevation']=ds['elevation'].sel(range=ds['range'][0]).drop('range')
+        ds['pitch']=  ds['pitch'].sel(range=ds['range'][0]).drop('range')
+        ds['roll']=ds['roll'].sel(range=ds['range'][0]).drop('range')
         
         #Inherit attributes
         ds.attrs=self.outputData.attrs
@@ -334,7 +335,7 @@ class LIDARGO:
     def scan_to_dataframe(self):
         
         '''
-        Make a pandas dataframe to simplify filtering.
+        Make a pandas dataframe to simplify filtering
         
         '''
         
@@ -364,9 +365,23 @@ class LIDARGO:
     
     def pre_filter(self,df):
         '''
-        Pre-filter of lidar data based on location and static rws and snr limits,
-        Input: dataraframe of lidar data
-        Output: dataframe of QC flags
+        Pre-filter of lidar data based on location and static rws and snr limits
+        
+        Inputs: 
+        ------
+        df: dataframe
+            dataframe of lidar data
+            
+        Outputs:
+        ------    
+        filterdf: dataframe
+            dataframe of QC flags
+        df['rws_norm']: array of floats
+            normalized radial wind speed
+        df['snr_norm']: array of floats
+            normalized SNR
+        df['probability']: arrays of floats
+            probability of rws-SNR histogram        
         '''
         filterdf=pd.DataFrame()
         
@@ -407,13 +422,19 @@ class LIDARGO:
     
     def detect_resonance(self,df):
         '''
-        Detect presence of resonance of bad data around 0 (some lidars).
-        Inputs: dataframe of current QC flags.
-        Outputs: threshold applied to absolute value of RWS. Detection is based on Gaussial fitting of histogram.
+        Detect presence of resonance of bad data around 0 (some lidars have outliers clusterees aroun 0 m/s instead of uniformly spread acorss the bandwidth)
+        
+        Inputs:
+        -----
+        df: dataframe
+            Dataframe of current data (bad data only)
+            
+        Outputs
+        -----
+        rws_min: float
+            Lower threshold to be applied to absolute value of RWS. Detection is based on Gaussian fitting of histogram.
 
         '''
-        def gaussian(x,sigma):
-            return np.exp(-x**2/(2*sigma**2))
         
         #build histogram if RWS normalized by maximum value 
         df['rws_bins']=pd.cut(df['wind_speed']/df['wind_speed'].max(), bins=np.linspace(-1,1,self.N_resonance_bins))
@@ -440,9 +461,18 @@ class LIDARGO:
     
     def dynamic_filter(self,df):
         '''
-        Dynamic filter of lidar data based on normalized rws and snr based on Beck and Kuhn, Remote Sensing, 2017.
-        Input: dataraframe of lidar data
-        Output: dataframe of QC flags
+        Dynamic filter of lidar data based on normalized rws and snr based on Beck and Kuhn, Remote Sensing, 2017
+        
+        Inputs:
+        -----
+        df: dataframe
+            dataframe of lidar data
+        
+        Outputs:
+        -----
+        filterdf: dataframe
+            dataframe of QC flags
+        
         '''
         filterdf=pd.DataFrame()
         
@@ -492,7 +522,7 @@ class LIDARGO:
             self.print_and_log(f'snr_standard_error_limit filter: {np.round(filt.sum()/len(filt)*100,2)}% retained')
         filterdf['snr_standard_error_limit'] = filt
 
-        #Probability conditions (applies dynamic filter)
+        #Probability conditions (applies actual dynamic filter)
         df['filtered_temp']=filterdf.sum(axis=1)==len(filterdf.columns)#points retained in previous steps
         filt,df,rws_range,probability_threshold = local_probability(df, self.config)
         if self.verbose:
@@ -522,7 +552,7 @@ class LIDARGO:
 
     def calculate_repetition_number(self):
         '''
-        Calculate the repetition number of the scan.
+        Calculate the repetition number of the scan
         '''
         azi = self.outputData.azimuth.values
         ele = self.outputData.elevation.values
@@ -547,7 +577,7 @@ class LIDARGO:
         
     def calculate_beam_number(self):
         '''
-        Calculate the beam number based on how long after each scan start an angular position occurs on average. 
+        Calculate the beam number based on how long after each scan start an angular position occurs on average
         '''
         self.outputData['deltaTime']=(self.outputData.time-self.outputData.scan_start_time)/np.timedelta64(1, 's')
         deltaTime_regularized=np.zeros(len(self.outputData.time))+np.nan
@@ -579,6 +609,7 @@ class LIDARGO:
             #Copy time information
             self.outputData['time_temp']=xr.DataArray(self.outputData.time.values,coords={'time':self.outputData.time.values})
             
+            #Reindex
             self.outputData=self.outputData.where(~np.isnan(self.outputData.beamID+self.outputData.scanID),drop=True)
             self.outputData = self.outputData.set_index(time=['beamID', 'scanID'])
             self.outputData = self.outputData.drop_duplicates('time').unstack()
@@ -592,7 +623,7 @@ class LIDARGO:
     
     def identify_scan_mode(self):
         '''
-        Identify the type of scan, which is useful for plotting.
+        Identify the type of scan, which is useful for plotting
         '''
         azi = self.outputData['azimuth'].values
         ele = self.outputData['elevation'].values
@@ -642,24 +673,24 @@ class LIDARGO:
         self.outputData['wind_speed'].attrs['description']='Line-of-sight velocity.'
         self.outputData['wind_speed'].attrs['ancilary_variables']='qc_wind_speed'
         
-        self.outputData['x'].attrs['long_name']='x direction'
-        self.outputData['x'].attrs['description']='Rotor-axis direction (downstream).'
+        self.outputData['x'].attrs['long_name']='x-direction'
+        self.outputData['x'].attrs['description']='x-direction.'
         self.outputData['x'].attrs['units']='m'
         
-        self.outputData['y'].attrs['long_name']='y direction'
-        self.outputData['y'].attrs['description']='Horizontal direction perpendicular to rotor axis (left looking downstream).'
+        self.outputData['y'].attrs['long_name']='y-direction'
+        self.outputData['y'].attrs['description']='y-direction.'
         self.outputData['y'].attrs['units']='m'
         
-        self.outputData['z'].attrs['long_name']='z direction'
-        self.outputData['z'].attrs['description']='Vertical direction (upward).'
+        self.outputData['z'].attrs['long_name']='z-direction'
+        self.outputData['z'].attrs['description']='z-direction.'
         self.outputData['z'].attrs['units']='m'
         
         self.outputData['rws_norm'].attrs['long_name']='Normalized radial wind speed'
-        self.outputData['rws_norm'].attrs['description']='Fluctuation of radial wind speed on top of the binned median. It is used in the dynamic filter.'
+        self.outputData['rws_norm'].attrs['description']='Fluctuation of radial wind speed on top of the binned spatio-temporal median. It is used in the dynamic filter.'
         self.outputData['rws_norm'].attrs['units']='m/s'
         
         self.outputData['snr_norm'].attrs['long_name']='Normalized SNR'
-        self.outputData['snr_norm'].attrs['description']='Fluctuation of signal-to-noise ratio on top of the binned median. It is used in the dynamic filter.'
+        self.outputData['snr_norm'].attrs['description']='Fluctuation of signal-to-noise ratio on top of the binned spatio-temporal median. It is used in the dynamic filter.'
         self.outputData['snr_norm'].attrs['units']='dB'
         
         self.outputData['probability'].attrs['long_name']='Probability'
@@ -692,7 +723,6 @@ class LIDARGO:
         self.outputData.attrs['history']='Generated by '+getpass.getuser()+' on '+socket.gethostname()+\
                 ' on '+datetime.strftime(datetime.now(),'%Y-%m-%d %H:%M:%S')+' using '+os.path.basename(sys.argv[0])
         del self.outputData.attrs['code_version']
-        
         
     def qc_report(self):
         '''
@@ -778,7 +808,6 @@ class LIDARGO:
             plt.title('Beam angles at '+self.inputData.attrs['location_id']+' on '+datestr(np.nanmean(dt64_to_num(self.inputData['time'])),'%Y%m%d')+\
                     '\n File: '+os.path.basename(self.source))
             
-            
             plt.subplot(2,1,2)
             plt.bar(self.azimuth_detected,self.counts,color='k')
             plt.xlabel(r'Detected significant azimuth [$^\circ$]')
@@ -854,7 +883,7 @@ class LIDARGO:
             
             
             plt.subplot(2,1,2)
-            plt.bar(self.detected_bin_centers,self.counts,color='k')
+            plt.bar(self.elevation_detected,self.counts,color='k')
             plt.xlabel(r'Detected significant elevation [$^\circ$]')
             plt.ylabel('Occurrence')
             plt.grid()
@@ -875,7 +904,7 @@ class LIDARGO:
             
                 xlim=[np.min(self.outputData.x),np.max(self.outputData.x)]
                 zlim=[np.min(self.outputData.z),np.max(self.outputData.z)]
-                ax.set_box_aspect(np.diff(ylim)/np.diff(xlim))
+                ax.set_box_aspect(np.diff(zlim)/np.diff(xlim))
                 plt.xlim(xlim)
                 plt.ylim(zlim)
                 plt.title(datestr(np.nanmin(time),'%H-%M-%S')+' - '+datestr(np.nanmax(time),'%H-%M-%S'))
@@ -898,7 +927,7 @@ class LIDARGO:
                 else:
                     ax.set_yticklabels([])
               
-                ax.set_box_aspect(np.diff(ylim)/np.diff(xlim))
+                ax.set_box_aspect(np.diff(zlim)/np.diff(xlim))
                 plt.xlim(xlim)
                 plt.ylim(zlim)
                 plt.grid()
@@ -1049,7 +1078,26 @@ def ceil(value, step):
 def local_probability(df, config):
     
     '''
-    Calculates 2D historgam of normalized RWS and SNR.
+    Calculates 2D historgam of normalized RWS and SNR
+    
+    Inputs:
+    -----
+    df: dataframe
+        dataframe of data and current QC flag
+    
+    config: dict
+        configuration
+        
+    Outputs:
+    -----
+    filt: dataframe
+        QC flag
+    df: dataframe
+        data
+    rws_range: series
+        normalized radial wind speed range vs. probability
+    probability_threshold: float
+        probability lower threshold
     '''
     
     #Set up bin sizes
@@ -1101,6 +1149,9 @@ def local_probability(df, config):
     return filt,df,rws_range,probability_threshold
 
 def lidar_xyz(r, ele, azi):
+    '''
+    Convert spherical to Cartesian coordinates
+    '''
     R = r 
     A = np.pi/2-np.radians(azi)  
     E = np.radians(ele) 
@@ -1113,7 +1164,9 @@ def lidar_xyz(r, ele, azi):
 
 
 def defineLocalBins(df, config):
-    # helper function for making tidy bins based on ranges and bin sizes
+    '''
+    Helper function for making tidy bins based on ranges and bin sizes
+    '''
     def bins(coord, delta):
         return np.arange(
             np.floor(coord.min())-delta/2,
@@ -1133,36 +1186,16 @@ def defineLocalBins(df, config):
     return df
 
 def mid(x):
+    '''
+    Mid point in vector
+    '''
     return (x[:-1]+x[1:])/2
 
-def ang_diff(angle1,angle2=None,unit='deg',mode='scalar'):
-  
-    if unit=='rad':
-        angle1=angle1*180/np.pi
-        angle2=angle2*180/np.pi
-    angle1=angle1 % 360
-    
-    if mode=='scalar':
-        angle2=angle2 % 360
-   
-    if mode=='scalar':
-        dx=angle1-angle2
-    elif mode=='vector':
-        dx=np.diff(angle1)
-
-    try:
-        dx[dx>180]= dx[dx>180]-360
-        dx[dx<-180]= dx[dx<-180]+360
-    except:
-        if dx>180:
-            dx-=360
-        if dx<-180:
-            dx+=360
-        
-    if unit=='rad':
-        dx=dx/180*np.pi
-        
-    return dx
+def gaussian(x,sigma):
+    '''
+    Gaussian function
+    '''
+    return np.exp(-x**2/(2*sigma**2))
 
 if __name__ == '__main__':
     '''
