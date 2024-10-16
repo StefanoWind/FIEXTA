@@ -1,0 +1,8 @@
+__pycache__
+*.cdf
+*.nc
+*.png
+*.csv
+*.log
+*.yaml
+trash/*
