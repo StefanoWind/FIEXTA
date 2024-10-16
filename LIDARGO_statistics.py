@@ -36,6 +36,8 @@ class LIDARGO:
         self.verbose = verbose
         self.logger=logger
         
+        self.print_and_log(f'Initializing statistical analysis of {os.path.basename(self.source)}.')
+        
         #load configuration
         configs=pd.read_excel(config_file).set_index('PARAMETER')
         matches=[]
@@ -85,10 +87,10 @@ class LIDARGO:
     
         """
         
-        # Check if file has been processed yet and whether is to be replaced
+        # Check if file has been stardadized
         if 'config' not in dir(self):
             self.print_and_log(f'No configuration available. Skipping file {self.source}')
-            return
+            return False
             
         #Compose filename
         save_filename = self.data_level_out.join(self.source.split(self.data_level_in))
@@ -102,7 +104,7 @@ class LIDARGO:
             
         if save_file and not replace and os.path.isfile(save_filename):
             self.print_and_log(f'Processed file {save_filename} exists. Skipping it.')
-            return
+            return False
         else:
             self.print_and_log(f'Processing file {save_filename}.')
     
@@ -136,13 +138,14 @@ class LIDARGO:
         z_lid=self.inputData['z'].values
         coords=[x_lid.ravel()/D,y_lid.ravel()/D,z_lid.ravel()/D]
         
-        #Velocity de-projection (assumes 0 yaw misalignment)
+        #Velocity de-projection (assumes flow aligned with x direction)
         u_qc=(self.inputData['wind_speed'].where(self.inputData['qc_wind_speed']==0)/(self.inputData['x']/(self.inputData['x']**2+self.inputData['y']**2+self.inputData['z']**2)**0.5)).values
+        self.print_and_log('WARNING: Assuming mean flow laigned with x-direction.')
 
         #Run LiSBOA
         X2,Dd,excl,avg,HOM=LiSBOA_v7_2(coords,mins,maxs,Dn0,sigma,max_iter=max_iter,calculate_stats=True,f=u_qc.ravel(),order=2,R_max=3,grid_factor=0.25,tol_dist=0.1,max_Dd=1,verbose=self.verbose)
             
-        #Extract information
+        #Extract statistics
         x=np.round(X2[0][:,0,0]*D,1)
         y=np.round(X2[1][0,:,0]*D,1)
         z=np.round(X2[2][0,0,:]*D,1)
@@ -155,11 +158,11 @@ class LIDARGO:
         self.outputData['u_avg']=xr.DataArray(data=u_avg,coords={'x':x,'y':y,'z':z},
                                attrs={'long_name':'Mean streamwise velocity',
                                       'units':'m/s',
-                                      'description':'LiSBOA-average of the de-projected line-of-sight velocity assuming 0 yaw misalignment.'})
+                                      'description':'LiSBOA-average of the de-projected line-of-sight velocity assuming mean flow aligned with x-direction.'})
         self.outputData['u_stdev']=xr.DataArray(data=u_std,coords={'x':x,'y':y,'z':z},
                                attrs={'long_name':'Standard deviation of streamwise velocity',
                                       'units':'m/s',
-                                      'description':'LiSBOA-standard deviation of the de-projected line-of-sight velocity assuming 0 yaw misalignment.'})
+                                      'description':'LiSBOA-standard deviation of the de-projected line-of-sight velocity assuming mean flow aligned with x-direction.'})
         self.outputData.attrs['start_time']=datestr(dt64_to_num(np.nanmin(time)),'%Y%m%d %H-%M-%S')
         self.outputData.attrs['end_time']=  datestr(dt64_to_num(np.nanmax(time)),'%Y%m%d %H-%M-%S')
         
@@ -178,9 +181,13 @@ class LIDARGO:
         #Plot statistics for nacelle lidar
         if D!=1:
             #Extract hub-height plane
-            u_avg_int=self.outputData['u_avg'].sel(z=0).values
-            u_std_int=self.outputData['u_stdev'].sel(z=0).values
-            TI_int=u_std_int.T/np.abs(u_avg_int.T)*100
+            if np.nanmin(np.abs(z))==0:
+                u_avg_int=self.outputData['u_avg'].sel(z=0).values
+                u_std_int=self.outputData['u_stdev'].sel(z=0).values
+                TI_int=u_std_int.T/np.abs(u_avg_int.T)*100
+            else:
+                self.print_and_log('Error:Cannot plot hub-height plane because z=0 in not a valid grid point. Skipping.')
+                return False
             
             #Plot mean velocity at hub height
             fig=plt.figure(figsize=(18,6.6))
@@ -229,11 +236,8 @@ class LIDARGO:
                 u_avg=self.outputData['u_avg'].values
                 TI=self.outputData['u_stdev'].values/u_avg*100
                 
-    
                 fig=plt.figure(figsize=(18,10))
-                    
                 ctr=1
-    
                 for x_plot in x_plot_wake:
                     u_avg_int=self.outputData['u_avg'].interp(x=x_plot*D,method='linear').values
                     u_std_int=self.outputData['u_stdev'].interp(x=x_plot*D,method='linear').values
@@ -307,20 +311,26 @@ class LIDARGO:
                 plt.close()
                 
         else:
+            #RHI (no turbine)
             if self.inputData.attrs['scan_mode']=='RHI':
-                u_avg=self.outputData['u_avg'].sel(y=0).values
-                TI=self.outputData['u_stdev'].sel(y=0).values/u_avg*100
+                
+                if np.nanmin(np.abs(y))==0:
+                    u_avg=self.outputData['u_avg'].sel(y=0).values
+                    TI=self.outputData['u_stdev'].sel(y=0).values/u_avg*100
+                else:
+                    self.print_and_log('Error:Cannot plot RHI plane because y=0 in not a valid grid point. Skipping.')
+                    return False
                 
                 fig=plt.figure(figsize=(18,6.6))
                 ax = plt.subplot(1,2,1)
                 ax.set_facecolor((0,0,0,0.2))
                 levels=np.unique(np.round(np.linspace(np.nanpercentile(u_avg,5)-0.5, np.nanpercentile(u_avg,95)+0.5, 20),1))
-                cf=plt.contourf(x,z,u_avg[:,0,:].T,levels, cmap='coolwarm',extend='both')
+                cf=plt.contourf(x,z,u_avg.T,levels, cmap='coolwarm',extend='both')
                 plt.xlim([self.xmin*D,self.xmax*D])
                 plt.ylim([self.zmin*D,self.zmax*D])
                 plt.grid(alpha=0.5)
                 xlim=ax.get_xlim()
-                zlim=ax.get_zlim()
+                zlim=ax.get_ylim()
                 ax.set_box_aspect(np.diff(zlim)/np.diff(xlim))
                 plt.xlabel(r'$x$ [m]')
                 plt.ylabel(r'$z$ [m]')
@@ -333,12 +343,12 @@ class LIDARGO:
                 #plot TI at hub height
                 ax = plt.subplot(1,2,2)
                 ax.set_facecolor((0,0,0,0.2))
-                cf=plt.contourf(z,y,TI_int,np.unique(np.round(np.linspace(np.nanpercentile(TI_int,5)-0.5, np.nanpercentile(TI_int,95)+0.5, 20),1)), cmap='hot',extend='both')
+                cf=plt.contourf(x,z,TI.T,np.unique(np.round(np.linspace(np.nanpercentile(TI,5)-0.5, np.nanpercentile(TI,95)+0.5, 20),1)), cmap='hot',extend='both')
                 plt.xlim([self.xmin*D,self.xmax*D])
                 plt.ylim([self.zmin*D,self.zmax*D])
                 plt.grid(alpha=0.5)
                 xlim=ax.get_xlim()
-                ylim=ax.get_zlim()
+                zlim=ax.get_ylim()
                 ax.set_box_aspect(np.diff(zlim)/np.diff(xlim))
                 plt.xlabel(r'$x$ [m]')
                 plt.ylabel(r'$z$ [m]')
@@ -347,8 +357,55 @@ class LIDARGO:
                 cax=fig.add_axes([ax.get_position().x0+ax.get_position().width+0.01,ax.get_position().y0,0.015,ax.get_position().height])
                 plt.colorbar(cf, cax=cax,label=r'Turbulence intensity [%]')
                 
-                fig.savefig(self.save_filename.replace('.nc','_ws_ti.png'))
-                plt.close()
+            #0-elevation PPI (no turbine)
+            elif self.inputData.attrs['scan_mode']=='PPI':
+                
+                if np.nanmin(np.abs(z))==0:
+                    u_avg=self.outputData['u_avg'].sel(z=0).values
+                    TI=self.outputData['u_stdev'].sel(z=0).values/u_avg*100
+                else:
+                    self.print_and_log('Error:Cannot plot PPI plane because z=0 in not a valid grid point. Skipping.')
+                    return False
+                
+                fig=plt.figure(figsize=(18,6.6))
+                ax = plt.subplot(1,2,1)
+                ax.set_facecolor((0,0,0,0.2))
+                levels=np.unique(np.round(np.linspace(np.nanpercentile(u_avg,5)-0.5, np.nanpercentile(u_avg,95)+0.5, 20),1))
+                cf=plt.contourf(x,y,u_avg.T,levels, cmap='coolwarm',extend='both')
+                plt.xlim([self.xmin*D,self.xmax*D])
+                plt.ylim([self.ymin*D,self.ymax*D])
+                plt.grid(alpha=0.5)
+                xlim=ax.get_xlim()
+                ylim=ax.get_ylim()
+                ax.set_box_aspect(np.diff(ylim)/np.diff(xlim))
+                plt.xlabel(r'$x$ [m]')
+                plt.ylabel(r'$y$ [m]')
+                plt.title('Mean streamwise velocity at on '+self.outputData.attrs['start_time'][:8]+'\n File: '+os.path.basename(self.source)\
+                          +'\n'+self.outputData.attrs['start_time'][9:]+' - '+self.outputData.attrs['end_time'][9:])
+                fig.subplots_adjust(left=0.1, right=0.9, wspace=0.4)
+                cax=fig.add_axes([ax.get_position().x0+ax.get_position().width+0.01,ax.get_position().y0,0.015,ax.get_position().height])
+                plt.colorbar(cf, cax=cax,label=r'Mean streamwise velocity [m s$^{-1}$]')
+                
+                #plot TI at hub height
+                ax = plt.subplot(1,2,2)
+                ax.set_facecolor((0,0,0,0.2))
+                cf=plt.contourf(x,y,TI.T,np.unique(np.round(np.linspace(np.nanpercentile(TI,5)-0.5, np.nanpercentile(TI,95)+0.5, 20),1)), cmap='hot',extend='both')
+                plt.xlim([self.xmin*D,self.xmax*D])
+                plt.ylim([self.ymin*D,self.ymax*D])
+                plt.grid(alpha=0.5)
+                xlim=ax.get_xlim()
+                ylim=ax.get_ylim()
+                ax.set_box_aspect(np.diff(ylim)/np.diff(xlim))
+                plt.xlabel(r'$x$ [m]')
+                plt.ylabel(r'$y$ [m]')
+                plt.title('Turbulence intensity at on '+self.outputData.attrs['start_time'][:8]+'\n File: '+os.path.basename(self.source)\
+                          +'\n'+self.outputData.attrs['start_time'][9:]+' - '+self.outputData.attrs['end_time'][9:])
+                cax=fig.add_axes([ax.get_position().x0+ax.get_position().width+0.01,ax.get_position().y0,0.015,ax.get_position().height])
+                plt.colorbar(cf, cax=cax,label=r'Turbulence intensity [%]')
+                
+            
+            fig.savefig(self.save_filename.replace('.nc','_ws_ti.png'))
+            plt.close()
                 
           
 def mid(x):
@@ -370,14 +427,55 @@ def datestr(num,format="%Y-%m-%d %H:%M:%S.%f"):
     string=datetime.utcfromtimestamp(num).strftime(format)
     return string
     
-def LiSBOA_v7_2(x_exp,mins,maxs,Dn0,sigma,max_iter=None,calculate_stats=False,f=None,order=2,R_max=3,grid_factor=0.25,tol_dist=0.1,max_Dd=1,verbose=True):
-    #03/01/2021 (v 5): undersampling checkes in hypercubes instead of hyperspheres (faster)
-    #03/02/2022: finalized
-    #08/28/2023 (v 7): added HOM,handled 0 dimensions, finalized
-    #09/20/2023 (v 7.1): fixed bug on dimension number, handling grid in infinite dimension, finalized
-    #03/05/2024 (v 7.2): spatial bins centered
-    #03/06/2024: added verbosity, finalized
-    #10/15/2024: rounded coordinate, finalized
+def LiSBOA(x_exp,mins,maxs,Dn0,sigma,max_iter=None,calculate_stats=False,f=None,order=2,R_max=3,grid_factor=0.25,tol_dist=0.1,max_Dd=1,verbose=True):
+    '''
+    Lidar Statistical Barnes Objective Analysis (Letizia et al., AMT, 2021)
+    
+    Inputs:
+    -----
+    x_exp: list of arrays of floats
+        x,y,z coordinates
+    mins: list
+        minimum x,y,z
+    maxs: list
+        maximum x,y,z
+    Dn0: list
+        fundamental half-wavelength
+    sigma: float
+        smoothing parameter
+    max_iter: int
+        iterations of Barnes scheme
+    calculate_stats: bool
+        whether to calculate statistics or just calculate weights and local spacing
+    f: array of floats
+        scalar function to be analyzed
+    order: int
+        order of higher-prder moment
+    R_max: float
+        maximum non-dimensional radius of spatial average of Barnes scheme
+    grid_factor: float
+        non-dimensional spacing of grid points
+    tol_dist: float
+        points closer than this are counted as 1 (non-dimensional)
+    max_Dd: float
+        maximum non-dimensional local spacing of points
+    verbose: bool
+        whether to print debug information
+        
+    Outputs:
+    -----
+    X2: list of arrays of floats
+        grid points [X,Y,Z]
+    Dd: array of floats
+        local spacing at each grid point
+    excl: array of bools
+        QC flag (True=bad)
+    avg: list of arrays of floats
+        mean field at each iteration (0,1,...,m)
+    HOM: list of arrays of floats
+        high-order moment at each iteration (1,...,m)
+    
+    '''
     
     from scipy.special import gamma
     from scipy.interpolate import interpn
@@ -522,6 +620,9 @@ def LiSBOA_v7_2(x_exp,mins,maxs,Dn0,sigma,max_iter=None,calculate_stats=False,f=
         
             
 def remove_labels(fig):
+    '''
+    Graphic helper
+    '''
     axs=fig.axes
 
     for ax in axs:
@@ -539,7 +640,9 @@ def remove_labels(fig):
 
   
 if __name__ == "__main__":
-
+    '''
+    Test block
+    '''
     cd=os.path.dirname(__file__)
         
     source='data/volumetric-wake-csm/rt1.lidar.z02.b0.20240304.032004.user5.awaken.wake.stats3d.nc'
