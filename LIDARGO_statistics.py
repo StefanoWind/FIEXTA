@@ -66,9 +66,7 @@ class LIDARGO:
         if self.logger is not None:
             self.logger.info(message)
             
-    def process_scan(
-        self, make_figures=True, save_file=False, save_path=None, replace=True, process_time=True
-    ):
+    def process_scan(self, make_figures=True, save_file=False, save_path=None, replace=True, process_time=True):
         """
         Run all the processing.
     
@@ -114,7 +112,7 @@ class LIDARGO:
             self.plots()
         
         if save_file:
-            self.Data.to_netcdf(save_filename)
+            self.outputData.to_netcdf(save_filename)
             
             
     def statistics(self):
@@ -153,17 +151,17 @@ class LIDARGO:
         u_std=HOM[-1]**0.5
         u_std[excl]=np.nan
         
-        self.Data=xr.Dataset()
-        self.Data['u_avg']=xr.DataArray(data=u_avg,coords={'x':x,'y':y,'z':z},
+        self.outputData=xr.Dataset()
+        self.outputData['u_avg']=xr.DataArray(data=u_avg,coords={'x':x,'y':y,'z':z},
                                attrs={'long_name':'Mean streamwise velocity',
                                       'units':'m/s',
                                       'description':'LiSBOA-average of the de-projected line-of-sight velocity assuming 0 yaw misalignment.'})
-        self.Data['u_stdev']=xr.DataArray(data=u_std,coords={'x':x,'y':y,'z':z},
+        self.outputData['u_stdev']=xr.DataArray(data=u_std,coords={'x':x,'y':y,'z':z},
                                attrs={'long_name':'Standard deviation of streamwise velocity',
                                       'units':'m/s',
                                       'description':'LiSBOA-standard deviation of the de-projected line-of-sight velocity assuming 0 yaw misalignment.'})
-        self.Data.attrs['start_time']=datestr(dt64_to_num(np.nanmin(time)),'%Y%m%d %H-%M-%S')
-        self.Data.attrs['end_time']=  datestr(dt64_to_num(np.nanmax(time)),'%Y%m%d %H-%M-%S')
+        self.outputData.attrs['start_time']=datestr(dt64_to_num(np.nanmin(time)),'%Y%m%d %H-%M-%S')
+        self.outputData.attrs['end_time']=  datestr(dt64_to_num(np.nanmax(time)),'%Y%m%d %H-%M-%S')
         
     def plots(self):
         '''
@@ -171,144 +169,188 @@ class LIDARGO:
         '''
         
         #Spatial coordinates
-        x=self.Data['x'].values
-        y=self.Data['y'].values
-        z=self.Data['z'].values
+        x=self.outputData['x'].values
+        y=self.outputData['y'].values
+        z=self.outputData['z'].values
         D=self.diameter
         H=self.ground_level
         
-        #Extract hub-height plane
-        u_avg_int=self.Data['u_avg'].sel(z=0).values
-        u_std_int=self.Data['u_stdev'].sel(z=0).values
-        TI_int=u_std_int.T/np.abs(u_avg_int.T)*100
-        
-        #Plot mean velocity at hub height
-        fig=plt.figure(figsize=(18,6.6))
-        ax = plt.subplot(1,2,1)
-        ax.set_facecolor((0,0,0,0.2))
-        levels=np.unique(np.round(np.linspace(np.nanpercentile(u_avg_int,5)-0.5, np.nanpercentile(u_avg_int,95)+0.5, 20),1))
-        cf=plt.contourf(x,y,u_avg_int.T,levels, cmap='coolwarm',extend='both')
-        plt.xlim([self.xmin*D,self.xmax*D])
-        plt.ylim([self.ymin*D,self.ymax*D])
-        plt.grid(alpha=0.5)
-        xlim=ax.get_xlim()
-        ylim=ax.get_ylim()
-        ax.set_box_aspect(np.diff(ylim)/np.diff(xlim))
-        plt.xlabel(r'$x$ [m]')
-        plt.ylabel(r'$y$ [m]')
-        plt.title('Mean streamwise velocity at on '+self.Data.attrs['start_time'][:8]+'\n File: '+os.path.basename(self.source)\
-                  +'\n'+self.Data.attrs['start_time'][9:]+' - '+self.Data.attrs['end_time'][9:])
-        fig.subplots_adjust(left=0.1, right=0.9, wspace=0.4)
-        cax=fig.add_axes([ax.get_position().x0+ax.get_position().width+0.01,ax.get_position().y0,0.015,ax.get_position().height])
-        plt.colorbar(cf, cax=cax,label=r'Mean streamwise velocity [m s$^{-1}$]')
-        
-        #plot TI at hub height
-        ax = plt.subplot(1,2,2)
-        ax.set_facecolor((0,0,0,0.2))
-        cf=plt.contourf(x,y,TI_int,np.unique(np.round(np.linspace(np.nanpercentile(TI_int,5)-0.5, np.nanpercentile(TI_int,95)+0.5, 20),1)), cmap='hot',extend='both')
-        plt.xlim([self.xmin*D,self.xmax*D])
-        plt.ylim([self.ymin*D,self.ymax*D])
-        plt.grid(alpha=0.5)
-        xlim=ax.get_xlim()
-        ylim=ax.get_ylim()
-        ax.set_box_aspect(np.diff(ylim)/np.diff(xlim))
-        plt.xlabel(r'$x$ [m]')
-        plt.ylabel(r'$y$ [m]')
-        plt.title('Turbulence intensity at on '+self.Data.attrs['start_time'][:8]+'\n File: '+os.path.basename(self.source)\
-                  +'\n'+self.Data.attrs['start_time'][9:]+' - '+self.Data.attrs['end_time'][9:])
-        cax=fig.add_axes([ax.get_position().x0+ax.get_position().width+0.01,ax.get_position().y0,0.015,ax.get_position().height])
-        plt.colorbar(cf, cax=cax,label=r'Turbulence intensity [%]')
-        
-        fig.savefig(self.save_filename.replace('.nc','_hub_height.png'))
-        plt.close()
-        
-        #y-z planes (for 3D scans only)
-        if len(z)>1:
-            x_plot_wake=[np.float(xp) for xp in self.plot_locations.split(',')]
-                
-            u_avg=self.Data['u_avg'].values
-            TI=self.Data['u_stdev'].values/u_avg*100
+        #Plot statistics for nacelle lidar
+        if D!=1:
+            #Extract hub-height plane
+            u_avg_int=self.outputData['u_avg'].sel(z=0).values
+            u_std_int=self.outputData['u_stdev'].sel(z=0).values
+            TI_int=u_std_int.T/np.abs(u_avg_int.T)*100
             
-
-            fig=plt.figure(figsize=(18,10))
-                
-            ctr=1
-
-            for x_plot in x_plot_wake:
-                u_avg_int=self.Data['u_avg'].interp(x=x_plot*D,method='linear').values
-                u_std_int=self.Data['u_stdev'].interp(x=x_plot*D,method='linear').values
-                TI_int=u_std_int/u_avg_int*100
-                
-                #Plot mean velocity
-  
-                ax = plt.subplot(len(x_plot_wake),2,(ctr-1)*2+1)
-                if ctr==1:
-                    plt.title('Mean streamwise velocity at '+self.inputData.attrs['location_id']+' on '+self.Data.attrs['start_time'][:8]+'\n File: '+os.path.basename(self.source)\
-                              +'\n'+self.Data.attrs['start_time'][9:]+' - '+self.Data.attrs['end_time'][9:]+'\n'+r'$x='+str(x_plot)+'D$')
-                else:
-                    plt.title(r'$x='+str(x_plot)+'D$')
-                        
-                ax.set_facecolor((0,0,0,0.2))
-                cf1=plt.contourf(y,z,u_avg_int.T,np.round(np.linspace(np.nanpercentile(u_avg,5), np.nanpercentile(u_avg,95), 10),2), cmap='coolwarm',extend='both')
-                plt.grid(alpha=0.5)
-
-                circle = Circle((0, 0), D/2, edgecolor='k', facecolor='none')
-                ax.add_patch(circle)
-                plt.plot(y,y*0+H,'k')
-                
-                plt.xlabel(r'$y$ [m]') 
-                plt.ylabel(r'$z$ [m]')
-                
-                plt.xlim([self.ymin*D,self.ymax*D])
-                plt.ylim([self.zmin*D,self.zmax*D])
-                
-                xlim=ax.get_xlim()
-                ylim=ax.get_ylim()
-                ax.set_box_aspect(np.diff(ylim)/np.diff(xlim))
-                    
-
-
-                #Plot TI
-                
-                    
-                ax = plt.subplot(len(x_plot_wake),2,(ctr-1)*2+2)
-                if ctr==1:
-                    plt.title('Turbulence intensity at '+self.inputData.attrs['location_id']+' on '+self.Data.attrs['start_time'][:8]+'\n File: '+os.path.basename(self.source)\
-                            +'\n'+self.Data.attrs['start_time'][9:]+' - '+self.Data.attrs['end_time'][9:]+'\n'+r'$x='+str(x_plot)+'D$')
-                else:
-                    plt.title(r'$x='+str(x_plot)+'D$')
-                    
-                ax.set_facecolor((0,0,0,0.2))
-                cf2=plt.contourf(y,z,TI_int.T,np.unique(np.round(np.linspace(np.nanpercentile(TI,5), np.nanpercentile(TI,95), 20),1)), cmap='hot',extend='both')
-                plt.grid(alpha=0.5)
-                
-                circle = Circle((0, 0), D/2, edgecolor='k', facecolor='none')
-                ax.add_patch(circle)
-                plt.plot(y,y*0+H,'k')
-                
-                plt.xlabel(r'$y$ [m]') 
-                plt.ylabel(r'$z$ [m]')
-               
-                plt.xlim([self.ymin*D,self.ymax*D])
-                plt.ylim([self.zmin*D,self.zmax*D])
-                xlim=ax.get_xlim()
-                ylim=ax.get_ylim()
-                ax.set_box_aspect(np.diff(ylim)/np.diff(xlim))
-                
-                ctr+=1
-            remove_labels(fig)
-        
-            axs=fig.axes
-            cax = fig.add_axes([axs[-2].get_position().x0+axs[-2].get_position().width+0.0075,axs[-2].get_position().y0,
-                                0.01,axs[0].get_position().y0+axs[0].get_position().height-axs[-2].get_position().y0])
-            plt.colorbar(cf1,cax=cax,label=r'Mean streamwise velocity [m s$^{-1}$]')
-            cax = fig.add_axes([axs[-1].get_position().x0+axs[-1].get_position().width+0.0075,axs[-1].get_position().y0,
-                                0.01,axs[1].get_position().y0+axs[1].get_position().height-axs[-1].get_position().y0])
-            plt.colorbar(cf2,cax=cax,label=r'Turbulence intensity [%]')
+            #Plot mean velocity at hub height
+            fig=plt.figure(figsize=(18,6.6))
+            ax = plt.subplot(1,2,1)
+            ax.set_facecolor((0,0,0,0.2))
+            levels=np.unique(np.round(np.linspace(np.nanpercentile(u_avg_int,5)-0.5, np.nanpercentile(u_avg_int,95)+0.5, 20),1))
+            cf=plt.contourf(x,y,u_avg_int.T,levels, cmap='coolwarm',extend='both')
+            plt.xlim([self.xmin*D,self.xmax*D])
+            plt.ylim([self.ymin*D,self.ymax*D])
+            plt.grid(alpha=0.5)
+            xlim=ax.get_xlim()
+            ylim=ax.get_ylim()
+            ax.set_box_aspect(np.diff(ylim)/np.diff(xlim))
+            plt.xlabel(r'$x$ [m]')
+            plt.ylabel(r'$y$ [m]')
+            plt.title('Mean streamwise velocity at on '+self.outputData.attrs['start_time'][:8]+'\n File: '+os.path.basename(self.source)\
+                      +'\n'+self.outputData.attrs['start_time'][9:]+' - '+self.outputData.attrs['end_time'][9:])
+            fig.subplots_adjust(left=0.1, right=0.9, wspace=0.4)
+            cax=fig.add_axes([ax.get_position().x0+ax.get_position().width+0.01,ax.get_position().y0,0.015,ax.get_position().height])
+            plt.colorbar(cf, cax=cax,label=r'Mean streamwise velocity [m s$^{-1}$]')
             
-            fig.savefig(self.save_filename.replace('.nc','_cross-planes.png'))
+            #plot TI at hub height
+            ax = plt.subplot(1,2,2)
+            ax.set_facecolor((0,0,0,0.2))
+            cf=plt.contourf(x,y,TI_int,np.unique(np.round(np.linspace(np.nanpercentile(TI_int,5)-0.5, np.nanpercentile(TI_int,95)+0.5, 20),1)), cmap='hot',extend='both')
+            plt.xlim([self.xmin*D,self.xmax*D])
+            plt.ylim([self.ymin*D,self.ymax*D])
+            plt.grid(alpha=0.5)
+            xlim=ax.get_xlim()
+            ylim=ax.get_ylim()
+            ax.set_box_aspect(np.diff(ylim)/np.diff(xlim))
+            plt.xlabel(r'$x$ [m]')
+            plt.ylabel(r'$y$ [m]')
+            plt.title('Turbulence intensity at on '+self.outputData.attrs['start_time'][:8]+'\n File: '+os.path.basename(self.source)\
+                      +'\n'+self.outputData.attrs['start_time'][9:]+' - '+self.outputData.attrs['end_time'][9:])
+            cax=fig.add_axes([ax.get_position().x0+ax.get_position().width+0.01,ax.get_position().y0,0.015,ax.get_position().height])
+            plt.colorbar(cf, cax=cax,label=r'Turbulence intensity [%]')
+            
+            fig.savefig(self.save_filename.replace('.nc','_hub_height.png'))
             plt.close()
+            
+            #y-z planes (for 3D scans only)
+            if len(z)>1:
+                x_plot_wake=[np.float(xp) for xp in self.plot_locations.split(',')]
+                    
+                u_avg=self.outputData['u_avg'].values
+                TI=self.outputData['u_stdev'].values/u_avg*100
+                
+    
+                fig=plt.figure(figsize=(18,10))
+                    
+                ctr=1
+    
+                for x_plot in x_plot_wake:
+                    u_avg_int=self.outputData['u_avg'].interp(x=x_plot*D,method='linear').values
+                    u_std_int=self.outputData['u_stdev'].interp(x=x_plot*D,method='linear').values
+                    TI_int=u_std_int/u_avg_int*100
+                    
+                    #Plot mean velocity
       
+                    ax = plt.subplot(len(x_plot_wake),2,(ctr-1)*2+1)
+                    if ctr==1:
+                        plt.title('Mean streamwise velocity at '+self.inputData.attrs['location_id']+' on '+self.outputData.attrs['start_time'][:8]+'\n File: '+os.path.basename(self.source)\
+                                  +'\n'+self.outputData.attrs['start_time'][9:]+' - '+self.outputData.attrs['end_time'][9:]+'\n'+r'$x='+str(x_plot)+'D$')
+                    else:
+                        plt.title(r'$x='+str(x_plot)+'D$')
+                            
+                    ax.set_facecolor((0,0,0,0.2))
+                    cf1=plt.contourf(y,z,u_avg_int.T,np.round(np.linspace(np.nanpercentile(u_avg,5), np.nanpercentile(u_avg,95), 10),2), cmap='coolwarm',extend='both')
+                    plt.grid(alpha=0.5)
+    
+                    circle = Circle((0, 0), D/2, edgecolor='k', facecolor='none')
+                    ax.add_patch(circle)
+                    plt.plot(y,y*0+H,'k')
+                    
+                    plt.xlabel(r'$y$ [m]') 
+                    plt.ylabel(r'$z$ [m]')
+                    
+                    plt.xlim([self.ymin*D,self.ymax*D])
+                    plt.ylim([self.zmin*D,self.zmax*D])
+                    
+                    xlim=ax.get_xlim()
+                    ylim=ax.get_ylim()
+                    ax.set_box_aspect(np.diff(ylim)/np.diff(xlim))
+                        
+    
+                    #Plot TI
+                    ax = plt.subplot(len(x_plot_wake),2,(ctr-1)*2+2)
+                    if ctr==1:
+                        plt.title('Turbulence intensity at '+self.inputData.attrs['location_id']+' on '+self.outputData.attrs['start_time'][:8]+'\n File: '+os.path.basename(self.source)\
+                                +'\n'+self.outputData.attrs['start_time'][9:]+' - '+self.outputData.attrs['end_time'][9:]+'\n'+r'$x='+str(x_plot)+'D$')
+                    else:
+                        plt.title(r'$x='+str(x_plot)+'D$')
+                        
+                    ax.set_facecolor((0,0,0,0.2))
+                    cf2=plt.contourf(y,z,TI_int.T,np.unique(np.round(np.linspace(np.nanpercentile(TI,5), np.nanpercentile(TI,95), 20),1)), cmap='hot',extend='both')
+                    plt.grid(alpha=0.5)
+                    
+                    circle = Circle((0, 0), D/2, edgecolor='k', facecolor='none')
+                    ax.add_patch(circle)
+                    plt.plot(y,y*0+H,'k')
+                    
+                    plt.xlabel(r'$y$ [m]') 
+                    plt.ylabel(r'$z$ [m]')
+                   
+                    plt.xlim([self.ymin*D,self.ymax*D])
+                    plt.ylim([self.zmin*D,self.zmax*D])
+                    xlim=ax.get_xlim()
+                    ylim=ax.get_ylim()
+                    ax.set_box_aspect(np.diff(ylim)/np.diff(xlim))
+                    
+                    ctr+=1
+                remove_labels(fig)
+            
+                axs=fig.axes
+                cax = fig.add_axes([axs[-2].get_position().x0+axs[-2].get_position().width+0.0075,axs[-2].get_position().y0,
+                                    0.01,axs[0].get_position().y0+axs[0].get_position().height-axs[-2].get_position().y0])
+                plt.colorbar(cf1,cax=cax,label=r'Mean streamwise velocity [m s$^{-1}$]')
+                cax = fig.add_axes([axs[-1].get_position().x0+axs[-1].get_position().width+0.0075,axs[-1].get_position().y0,
+                                    0.01,axs[1].get_position().y0+axs[1].get_position().height-axs[-1].get_position().y0])
+                plt.colorbar(cf2,cax=cax,label=r'Turbulence intensity [%]')
+                
+                fig.savefig(self.save_filename.replace('.nc','_cross-planes.png'))
+                plt.close()
+                
+        else:
+            if self.inputData.attrs['scan_mode']=='RHI':
+                u_avg=self.outputData['u_avg'].sel(y=0).values
+                TI=self.outputData['u_stdev'].sel(y=0).values/u_avg*100
+                
+                fig=plt.figure(figsize=(18,6.6))
+                ax = plt.subplot(1,2,1)
+                ax.set_facecolor((0,0,0,0.2))
+                levels=np.unique(np.round(np.linspace(np.nanpercentile(u_avg,5)-0.5, np.nanpercentile(u_avg,95)+0.5, 20),1))
+                cf=plt.contourf(x,z,u_avg[:,0,:].T,levels, cmap='coolwarm',extend='both')
+                plt.xlim([self.xmin*D,self.xmax*D])
+                plt.ylim([self.zmin*D,self.zmax*D])
+                plt.grid(alpha=0.5)
+                xlim=ax.get_xlim()
+                zlim=ax.get_zlim()
+                ax.set_box_aspect(np.diff(zlim)/np.diff(xlim))
+                plt.xlabel(r'$x$ [m]')
+                plt.ylabel(r'$z$ [m]')
+                plt.title('Mean streamwise velocity at on '+self.outputData.attrs['start_time'][:8]+'\n File: '+os.path.basename(self.source)\
+                          +'\n'+self.outputData.attrs['start_time'][9:]+' - '+self.outputData.attrs['end_time'][9:])
+                fig.subplots_adjust(left=0.1, right=0.9, wspace=0.4)
+                cax=fig.add_axes([ax.get_position().x0+ax.get_position().width+0.01,ax.get_position().y0,0.015,ax.get_position().height])
+                plt.colorbar(cf, cax=cax,label=r'Mean streamwise velocity [m s$^{-1}$]')
+                
+                #plot TI at hub height
+                ax = plt.subplot(1,2,2)
+                ax.set_facecolor((0,0,0,0.2))
+                cf=plt.contourf(z,y,TI_int,np.unique(np.round(np.linspace(np.nanpercentile(TI_int,5)-0.5, np.nanpercentile(TI_int,95)+0.5, 20),1)), cmap='hot',extend='both')
+                plt.xlim([self.xmin*D,self.xmax*D])
+                plt.ylim([self.zmin*D,self.zmax*D])
+                plt.grid(alpha=0.5)
+                xlim=ax.get_xlim()
+                ylim=ax.get_zlim()
+                ax.set_box_aspect(np.diff(zlim)/np.diff(xlim))
+                plt.xlabel(r'$x$ [m]')
+                plt.ylabel(r'$z$ [m]')
+                plt.title('Turbulence intensity at on '+self.outputData.attrs['start_time'][:8]+'\n File: '+os.path.basename(self.source)\
+                          +'\n'+self.outputData.attrs['start_time'][9:]+' - '+self.outputData.attrs['end_time'][9:])
+                cax=fig.add_axes([ax.get_position().x0+ax.get_position().width+0.01,ax.get_position().y0,0.015,ax.get_position().height])
+                plt.colorbar(cf, cax=cax,label=r'Turbulence intensity [%]')
+                
+                fig.savefig(self.save_filename.replace('.nc','_ws_ti.png'))
+                plt.close()
+                
+          
 def mid(x):
     return (x[:-1]+x[1:])/2
 
@@ -335,6 +377,7 @@ def LiSBOA_v7_2(x_exp,mins,maxs,Dn0,sigma,max_iter=None,calculate_stats=False,f=
     #09/20/2023 (v 7.1): fixed bug on dimension number, handling grid in infinite dimension, finalized
     #03/05/2024 (v 7.2): spatial bins centered
     #03/06/2024: added verbosity, finalized
+    #10/15/2024: rounded coordinate, finalized
     
     from scipy.special import gamma
     from scipy.interpolate import interpn
@@ -378,7 +421,7 @@ def LiSBOA_v7_2(x_exp,mins,maxs,Dn0,sigma,max_iter=None,calculate_stats=False,f=
         xc[j]=np.nanmean(x_exp[j])
         x[j]=(x_exp[j]-xc[j])/Dn0[j]       
         X_bin.append((np.arange(mins[j]-dx[j]/2,maxs[j]+dx[j]/2+dx[j]*10**-10,dx[j])-xc[j])/Dn0[j])
-        X_vec.append(mid(X_bin[j]))
+        X_vec.append(np.round(mid(X_bin[j]),10))
 
     NoD=np.ceil(np.log10(np.max(np.abs(np.array(x)/tol_dist))))+1
     X=np.meshgrid(*[X_vec[j] for j in range(n)], indexing='ij')
@@ -471,7 +514,7 @@ def LiSBOA_v7_2(x_exp,mins,maxs,Dn0,sigma,max_iter=None,calculate_stats=False,f=
                 avg.append(avg[m-1]+WM)
                 HOM.append(WM_HOM)
             
-            df=f-interpn(tuple(X_vec),avg[m],np.transpose(x),bounds_error=False,fill_value=np.nan)
+            df=f-interpn(tuple(X_vec),avg[m],np.transpose(np.round(x,10)),bounds_error=False,fill_value=np.nan)
         if verbose:
             sys.stdout.flush()
     return X2,Dd,excl,avg,HOM 
