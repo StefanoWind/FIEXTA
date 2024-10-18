@@ -164,7 +164,7 @@ class LIDARGO:
                                attrs={'long_name':'Standard deviation of streamwise velocity',
                                       'units':'m/s',
                                       'description':'LiSBOA-standard deviation of the de-projected line-of-sight velocity assuming mean flow aligned with x-direction.'})
-        self.outputData.attrs['start_time']=datestr(dt64_to_num(np.nanmin(time)),'%Y-%-m-%d %H:%M:%S')
+        self.outputData.attrs['start_time']=datestr(dt64_to_num(np.nanmin(time)),'%Y-%m-%d %H:%M:%S')
         self.outputData.attrs['end_time']=  datestr(dt64_to_num(np.nanmax(time)),'%Y-%m-%d %H:%M:%S')
         
     def plots(self):

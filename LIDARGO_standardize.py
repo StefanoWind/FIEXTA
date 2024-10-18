@@ -535,7 +535,7 @@ class LIDARGO:
         df=df.drop('filtered_temp', axis=1)
             
         filterdf = filterdf.replace(np.nan, False).astype(np.int8)
-        self.print_and_log(f'Retained {np.round(100*filterdf.all(axis=1).sum()/len(filterdf),1)}% of data after QC')
+        self.print_and_log(f'Retained {np.round(100*filterdf.all(axis=1).sum()/len(filterdf),2)}% of data after QC')
 
         return filterdf,df['rws_norm'],df['snr_norm'],df['probability']
   
@@ -974,7 +974,6 @@ class LIDARGO:
                 f=rws[:,:,i].values
                 real=~np.isnan(x+y+z+f)
                 
-                print(np.sum(real))
                 if np.sum(real)>10000:
                     skip=int(np.sum(real)/10000)
                 else:
