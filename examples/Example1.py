@@ -88,7 +88,7 @@ for rep in range(len(time[0,:])):
     cb=plt.colorbar(label='QC radial wind speed [m s$^{-1}$]',orientation='horizontal')   
     plt.title('Rep #'+str(rep)+': '+str(time[0,rep])[:-10].replace('T',' ')+' - '+str(time[-1,rep])[:-10].replace('T',' '))
 
-    fig_name=os.path.join(cd,'figures',os.path.basename(filename2).replace('.nc','{i:02d}'.format(i=rep)+'.png'))
+    fig_name=os.path.join(cd,'figures/Example1',os.path.basename(filename2).replace('.nc','{i:02d}'.format(i=rep)+'.png'))
     os.makedirs(os.path.dirname(fig_name),exist_ok=True)
     plt.savefig(fig_name)
     plt.close()
