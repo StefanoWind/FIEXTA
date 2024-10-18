@@ -733,7 +733,7 @@ class LIDARGO:
         plt.xlabel('Normalized radial wind speed [m s$^{-1}$]')
         plt.ylabel('Normalized SNR [dB]')
         plt.grid()
-        plt.title('QC of data at '+self.inputData.attrs['location_id']+' on '+datestr(np.nanmean(dt64_to_num(self.inputData['time'])),'%Y%m%d')+\
+        plt.title('QC of data at '+self.inputData.attrs['location_id']+' on '+datestr(np.nanmean(dt64_to_num(self.inputData['time'])),'%Y-%m-%d')+\
                     '\n File: '+os.path.basename(self.source))
         
         ax2=plt.subplot(1,2,2)
@@ -750,7 +750,7 @@ class LIDARGO:
         cax=fig_probability.add_axes([ax1.get_position().x0+ax1.get_position().width+0.01,ax1.get_position().y0,0.015,ax1.get_position().height])
         cbar = plt.colorbar(sp, cax=cax,label='Probability')
         cbar.set_ticks(prob_arange)
-        cbar.set_ticklabels([r'$10^{p}$'.format(p=int(p)) for p in prob_arange])
+        cbar.set_ticklabels([r'$10^{'+str(int(p))+'}$' for p in prob_arange])
         
         N_plot=np.min(np.array([5,len(self.outputData.scanID)]))
         i_plot=[int(i) for i in np.linspace(0,len(self.outputData.scanID)-1,N_plot)]
@@ -762,12 +762,12 @@ class LIDARGO:
             pc=plt.pcolor(self.outputData['time'],r,rws[:,0,:],cmap='coolwarm',vmin=np.nanpercentile(rws_qc,5)-1,vmax=np.nanpercentile(rws_qc,95)+1)
             plt.xlabel('Time (UTC)')
             plt.ylabel(r'Range [m]')
-            date_fmt = mdates.DateFormatter('%H-%M-%S')
+            date_fmt = mdates.DateFormatter('%H:%M:%S')
             plt.gca().xaxis.set_major_formatter(date_fmt)
             plt.grid()
-            plt.title('Radial wind speed at '+self.inputData.attrs['location_id']+' on '+datestr(np.nanmean(time),'%Y%m%d')+\
+            plt.title('Radial wind speed at '+self.inputData.attrs['location_id']+' on '+datestr(np.nanmean(time),'%Y-%m-%d')+\
                 '\n File: '+os.path.basename(self.source)\
-                      +'\n'+ datestr(np.nanmin(time),'%H-%M-%S')+' - '+datestr(np.nanmax(time),'%H-%M-%S'))
+                      +'\n'+ datestr(np.nanmin(time),'%H:%M:%S')+' - '+datestr(np.nanmax(time),'%H:%M:%S'))
                 
             cax=fig_rws.add_axes([ax.get_position().x0+ax.get_position().width+0.01,ax.get_position().y0,0.015,ax.get_position().height])
             cbar = plt.colorbar(pc, cax=cax,label='Raw radial \n'+r' wind speed [m s$^{-1}$]')
@@ -776,7 +776,7 @@ class LIDARGO:
             pc=plt.pcolor(self.outputData['time'],r,rws_qc[:,0,:],cmap='coolwarm',vmin=np.nanpercentile(rws_qc,5)-1,vmax=np.nanpercentile(rws_qc,95)+1)
             plt.xlabel('Time (UTC)')
             plt.ylabel(r'Range [m]')
-            date_fmt = mdates.DateFormatter('%H-%M-%S')
+            date_fmt = mdates.DateFormatter('%H:%M:%S')
             plt.gca().xaxis.set_major_formatter(date_fmt)
             plt.grid()
             cax=fig_rws.add_axes([ax.get_position().x0+ax.get_position().width+0.01,ax.get_position().y0,0.015,ax.get_position().height])
@@ -791,11 +791,11 @@ class LIDARGO:
             plt.plot(self.azimuth_regularized.time,self.azimuth_regularized,'.g',markersize=5,label='Regularized azimuth')
             plt.xlabel('Time (UTC)')
             plt.ylabel(r'Azimuth [$^\circ$]')
-            date_fmt = mdates.DateFormatter('%H-%M-%S')
+            date_fmt = mdates.DateFormatter('%H:%M:%S')
             plt.gca().xaxis.set_major_formatter(date_fmt)
             plt.legend()
             plt.grid()
-            plt.title('Beam angles at '+self.inputData.attrs['location_id']+' on '+datestr(np.nanmean(dt64_to_num(self.inputData['time'])),'%Y%m%d')+\
+            plt.title('Beam angles at '+self.inputData.attrs['location_id']+' on '+datestr(np.nanmean(dt64_to_num(self.inputData['time'])),'%Y-%m-%d')+\
                     '\n File: '+os.path.basename(self.source))
             
             plt.subplot(2,1,2)
@@ -824,12 +824,12 @@ class LIDARGO:
                 ax.set_box_aspect(np.diff(ylim)/np.diff(xlim))
                 plt.xlim(xlim)
                 plt.ylim(ylim)
-                plt.title(datestr(np.nanmin(time),'%H-%M-%S')+' - '+datestr(np.nanmax(time),'%H-%M-%S'))
+                plt.title(datestr(np.nanmin(time),'%H:%M:%S')+' - '+datestr(np.nanmax(time),'%H:%M:%S'))
                
                 if ctr==np.ceil(N_plot/2):
-                    plt.title('Radial wind speed at '+self.inputData.attrs['location_id']+' on '+datestr(np.nanmean(time),'%Y%m%d')+\
+                    plt.title('Radial wind speed at '+self.inputData.attrs['location_id']+' on '+datestr(np.nanmean(time),'%Y-%m-%d')+\
                         '\n File: '+os.path.basename(self.source)\
-                              +'\n'+ datestr(np.nanmin(time),'%H-%M-%S')+' - '+datestr(np.nanmax(time),'%H-%M-%S'))
+                              +'\n'+ datestr(np.nanmin(time),'%H:%M:%S')+' - '+datestr(np.nanmax(time),'%H:%M:%S'))
             
                 if ctr==N_plot:
                     cax=fig_rws.add_axes([ax.get_position().x0+ax.get_position().width+0.01,ax.get_position().y0,0.015,ax.get_position().height])
@@ -864,11 +864,11 @@ class LIDARGO:
             plt.plot(self.elevation_regularized.time,self.elevation_regularized,'.g',markersize=5,label='Regularized elevation')
             plt.xlabel('Time (UTC)')
             plt.ylabel(r'Elevation [$^\circ$]')
-            date_fmt = mdates.DateFormatter('%H-%M-%S')
+            date_fmt = mdates.DateFormatter('%H:%M:%S')
             plt.gca().xaxis.set_major_formatter(date_fmt)
             plt.legend()
             plt.grid()
-            plt.title('Beam angles at '+self.inputData.attrs['location_id']+' on '+datestr(np.nanmean(dt64_to_num(self.inputData['time'])),'%Y%m%d')+\
+            plt.title('Beam angles at '+self.inputData.attrs['location_id']+' on '+datestr(np.nanmean(dt64_to_num(self.inputData['time'])),'%Y-%m-%d')+\
                     '\n File: '+os.path.basename(self.source))
             
             
@@ -897,12 +897,12 @@ class LIDARGO:
                 ax.set_box_aspect(np.diff(zlim)/np.diff(xlim))
                 plt.xlim(xlim)
                 plt.ylim(zlim)
-                plt.title(datestr(np.nanmin(time),'%H-%M-%S')+' - '+datestr(np.nanmax(time),'%H-%M-%S'))
+                plt.title(datestr(np.nanmin(time),'%H:%M:%S')+' - '+datestr(np.nanmax(time),'%H:%M:%S'))
                
                 if ctr==np.ceil(N_plot/2):
-                     plt.title('Radial wind speed at '+self.inputData.attrs['location_id']+' on '+datestr(np.nanmean(time),'%Y%m%d')+\
+                     plt.title('Radial wind speed at '+self.inputData.attrs['location_id']+' on '+datestr(np.nanmean(time),'%Y-%m-%d')+\
                         '\n File: '+os.path.basename(self.source)\
-                              +'\n'+ datestr(np.nanmin(time),'%H-%M-%S')+' - '+datestr(np.nanmax(time),'%H-%M-%S'))
+                              +'\n'+ datestr(np.nanmin(time),'%H:%M:%S')+' - '+datestr(np.nanmax(time),'%H:%M:%S'))
 
                 if ctr==N_plot:
                     cax=fig_rws.add_axes([ax.get_position().x0+ax.get_position().width+0.01,ax.get_position().y0,0.015,ax.get_position().height])
@@ -935,11 +935,11 @@ class LIDARGO:
             plt.plot(self.azimuth_selected.time,self.azimuth_selected,'.r',markersize=5,label='Selected azimuth')
             plt.plot(self.azimuth_regularized.time,self.azimuth_regularized,'.g',markersize=5,label='Regularized azimuth')
             plt.ylabel(r'Azimuth [$^\circ$]')
-            date_fmt = mdates.DateFormatter('%H-%M-%S')
+            date_fmt = mdates.DateFormatter('%H:%M:%S')
             plt.gca().xaxis.set_major_formatter(date_fmt)
             plt.legend()
             plt.grid()
-            plt.title('Beam angles at '+self.inputData.attrs['location_id']+' on '+datestr(np.nanmean(dt64_to_num(self.inputData['time'])),'%Y%m%d')+\
+            plt.title('Beam angles at '+self.inputData.attrs['location_id']+' on '+datestr(np.nanmean(dt64_to_num(self.inputData['time'])),'%Y-%m-%d')+\
                     '\n File: '+os.path.basename(self.source))
             
                     
@@ -949,7 +949,7 @@ class LIDARGO:
             plt.plot(self.elevation_regularized.time,self.elevation_regularized,'.g',markersize=5,label='Regularized elevation')
             plt.xlabel('Time (UTC)')
             plt.ylabel(r'Elevation [$^\circ$]')
-            date_fmt = mdates.DateFormatter('%H-%M-%S')
+            date_fmt = mdates.DateFormatter('%H:%M:%S')
             plt.gca().xaxis.set_major_formatter(date_fmt)
             plt.legend()
             plt.grid()
@@ -1000,12 +1000,12 @@ class LIDARGO:
                 ax.set_xlim(xlim)
                 ax.set_ylim(ylim)
                 ax.set_zlim(zlim)
-                plt.title(datestr(np.nanmin(time),'%H-%M-%S')+' - '+datestr(np.nanmax(time),'%H-%M-%S'))
+                plt.title(datestr(np.nanmin(time),'%H:%M:%S')+' - '+datestr(np.nanmax(time),'%H:%M:%S'))
                
                 if ctr==np.ceil(N_plot/2):
-                    plt.title('Radial wind speed at '+self.inputData.attrs['location_id']+' on '+datestr(np.nanmean(time),'%Y%m%d')+\
+                    plt.title('Radial wind speed at '+self.inputData.attrs['location_id']+' on '+datestr(np.nanmean(time),'%Y-%m-%d')+\
                         '\n File: '+os.path.basename(self.source)\
-                              +'\n'+ datestr(np.nanmin(time),'%H-%M-%S')+' - '+datestr(np.nanmax(time),'%H-%M-%S'))
+                              +'\n'+ datestr(np.nanmin(time),'%H:%M:%S')+' - '+datestr(np.nanmax(time),'%H:%M:%S'))
             
                 if ctr==N_plot:
                     cax=fig_rws.add_axes([ax.get_position().x0+ax.get_position().width+0.035,ax.get_position().y0,0.015,ax.get_position().height])
@@ -1101,7 +1101,7 @@ def local_probability(df, config):
     #Set up bin sizes
     df['rws_filt']=df['rws_norm'].where(df['filtered_temp'])
     df['snr_filt']=df['snr_norm'].where(df['filtered_temp'])
-    delta_rws = 3.49 * df['rws_filt'].std() / (df['rws_filt'].count()) ** (1 / 3)
+    delta_rws = 3.49 * df['rws_filt'].std() / np.sum(~np.isnan(df['rws_filt'].unique())) ** (1 / 3)
     eps = 10**-10
     
     rws_bins = np.arange(
@@ -1110,7 +1110,7 @@ def local_probability(df, config):
         delta_rws,
     )
     
-    delta_snr = 3.49 * df['snr_filt'].std() / (df['snr_filt'].count()) ** (1 / 3)
+    delta_snr = 3.49 * df['snr_filt'].std() / np.sum(~np.isnan(df['snr_filt'].unique())) ** (1 / 3)
     snr_bins = np.arange(
         np.floor(df['snr_filt'].min() / delta_snr) * delta_snr,
         np.ceil(df['snr_filt'].max() / delta_snr) * delta_snr + eps,
