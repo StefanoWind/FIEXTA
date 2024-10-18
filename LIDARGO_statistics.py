@@ -140,10 +140,10 @@ class LIDARGO:
         
         #Velocity de-projection (assumes flow aligned with x direction)
         u_qc=(self.inputData['wind_speed'].where(self.inputData['qc_wind_speed']==0)/(self.inputData['x']/(self.inputData['x']**2+self.inputData['y']**2+self.inputData['z']**2)**0.5)).values
-        self.print_and_log('WARNING: Assuming mean flow laigned with x-direction.')
+        self.print_and_log('WARNING: Assuming mean flow aligned with x-direction.')
 
         #Run LiSBOA
-        X2,Dd,excl,avg,HOM=LiSBOA_v7_2(coords,mins,maxs,Dn0,sigma,max_iter=max_iter,calculate_stats=True,f=u_qc.ravel(),order=2,R_max=3,grid_factor=0.25,tol_dist=0.1,max_Dd=1,verbose=self.verbose)
+        X2,Dd,excl,avg,HOM=LiSBOA(coords,mins,maxs,Dn0,sigma,max_iter=max_iter,calculate_stats=True,f=u_qc.ravel(),order=2,R_max=3,grid_factor=0.25,tol_dist=0.1,max_Dd=1,verbose=self.verbose)
             
         #Extract statistics
         x=np.round(X2[0][:,0,0]*D,1)
