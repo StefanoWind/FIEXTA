@@ -35,10 +35,10 @@ class LIDARGO:
         plt.close('all')
         
         self.source=source
-        self.verbose = verbose
+        self.verbose=verbose
         self.logger=logger
         
-        self.print_and_log(f'Initializing standardization of {os.path.basename(self.source)}.')
+        self.print_and_log(f'Initializing standardization of {os.path.basename(self.source)}')
         
         #load configuration
         configs=pd.read_excel(config_file).set_index('PARAMETER')
@@ -52,10 +52,10 @@ class LIDARGO:
                 matches.append(regex)
         
         if len(matches)==0:
-            self.print_and_log('No regular expression matching the file name.')
+            self.print_and_log('No regular expression matching the file name')
             return
         elif len(matches)>1:
-            self.print_and_log('Mulitple regular expressions matching the file name.')
+            self.print_and_log('Mulitple regular expressions matching the file name')
             return
                 
         config=configs[matches[0]].to_dict()
@@ -70,7 +70,8 @@ class LIDARGO:
        
         
     def print_and_log(self,message):
-        print(message)
+        if self.verbose:
+            print(message)
         if self.logger is not None:
             self.logger.info(message)
         
@@ -87,25 +88,25 @@ class LIDARGO:
                 distance = np.unique(self.inputData['distance'])
             distance = distance[~np.isnan(distance)]
             if len(distance) == 0:
-                self.print_and_log(f'WARNING: All distance values are invalid on {os.path.basename(self.source)}. Skipping it.')
+                self.print_and_log(f'WARNING: All distance values are invalid on {os.path.basename(self.source)}, skipping it')
                 return False
 
         # Check for valid radial wind speed values
         if self.inputData['wind_speed'].isnull().sum() == self.inputData['wind_speed'].size:
             # All wind speeds are NaNs. Skipping
-            self.print_and_log(f'WARNING: All wind speeds are invalid on {os.path.basename(self.source)}. Skipping it.')
+            self.print_and_log(f'WARNING: All wind speeds are invalid on {os.path.basename(self.source)}, skipping it')
             return False
 
         # Check for valid azimuth angles
         if self.inputData['azimuth'].isnull().sum() == self.inputData['azimuth'].size:
             # All azimuths are NaNs. Skipping
-            self.print_and_log(f'WARNING: All azimuths are invalid on {os.path.basename(self.source)}. Skipping it.')
+            self.print_and_log(f'WARNING: All azimuths are invalid on {os.path.basename(self.source)}, skipping it')
             return False
         
         # Check for valid elevation angles
         if self.inputData['elevation'].isnull().sum() == self.inputData['elevation'].size:
             # All azimuths are NaNs. Skipping
-            self.print_and_log(f'WARNING: All elevations are invalid on {os.path.basename(self.source)}. Skipping it.')
+            self.print_and_log(f'WARNING: All elevations are invalid on {os.path.basename(self.source)}, skipping it')
             return False
 
         return True
@@ -144,10 +145,10 @@ class LIDARGO:
             os.makedirs(os.path.dirname(save_filename))
             
         if save_file and not replace and os.path.isfile(save_filename):
-            self.print_and_log(f'Processed file {save_filename} already exists. Skipping it.')
+            self.print_and_log(f'Processed file {save_filename} already exists, skipping it')
             return
         else:
-            self.print_and_log(f'Processing file {save_filename}.')
+            self.print_and_log(f'Generating standardized file {os.path.basename(save_filename)}')
     
         # Check data
         if not self.check_data():
@@ -173,6 +174,7 @@ class LIDARGO:
     
         if save_file:
             self.outputData.to_netcdf(save_filename)
+            self.print_and_log(f'Standardized file saved as {save_filename}')
 
     def remove_back_swipe(self):
         
@@ -221,8 +223,7 @@ class LIDARGO:
         self.azimuth_selected=self.outputData['azimuth'].copy()
         self.elevation_selected=self.outputData['elevation'].copy()
         
-        if self.verbose:
-            self.print_and_log(f'Back-swipe removal: {np.round(np.sum(forward_swipe_condition).values/len(self.inputData.azimuth)*100,2)}% retained')
+        self.print_and_log(f'Back-swipe removal: {np.round(np.sum(forward_swipe_condition).values/len(self.inputData.azimuth)*100,2)}% retained')
 
     def bin_and_count_angles(self):
         '''
@@ -272,11 +273,10 @@ class LIDARGO:
             self.azimuth_regularized=self.outputData['azimuth'].copy()
             self.elevation_regularized=self.outputData['elevation'].copy()
             
-            if self.verbose:
-                self.print_and_log(f'Relevant angles detection: {np.round(np.sum(~np.isnan(self.azimuth_regularized.values+self.elevation_regularized.values))/len(self.inputData.azimuth)*100,2)}% retained')
+            self.print_and_log(f'Relevant angles detection: {np.round(np.sum(~np.isnan(self.azimuth_regularized.values+self.elevation_regularized.values))/len(self.inputData.azimuth)*100,2)}% retained')
           
         else:
-            raise ValueError('Dataset is not initialized or does not contain angle values.')
+            raise ValueError('Dataset is not initialized or does not contain angle values')
 
     
     def filter_scan_data(self):
@@ -389,26 +389,22 @@ class LIDARGO:
         
         #Range limits
         filt=(df['range']>=self.range_min)&(df['range']<=self.range_max)
-        if self.verbose:
-            self.print_and_log(f'range_limit filter: {np.round(filt.sum()/len(filt)*100,2)}% retained')
+        self.print_and_log(f'range_limit filter: {np.round(filt.sum()/len(filt)*100,2)}% retained')
         filterdf['range_limit'] = filt.values
         
         #Ground rejection
         filt=df['z']>self.ground_level
-        if self.verbose:
-            self.print_and_log(f'ground_limit filter: {np.round(filt.sum()/len(filt)*100,2)}% retained')
+        self.print_and_log(f'ground_limit filter: {np.round(filt.sum()/len(filt)*100,2)}% retained')
         filterdf['ground_limit'] = filt.values
         
         #SNR limit
         filt=df['SNR']>=self.snr_min
-        if self.verbose:
-            self.print_and_log(f'snr_limit filter: {np.round(filt.sum()/len(filt)*100,2)}% retained')
+        self.print_and_log(f'snr_limit filter: {np.round(filt.sum()/len(filt)*100,2)}% retained')
         filterdf['snr_limit'] = filt
         
         #Wind speed max limit
         filt=np.abs(df['wind_speed'])<=self.rws_max
-        if self.verbose:    
-            self.print_and_log(f'rws_max filter: {np.round(filt.sum()/len(filt)*100,2)}% retained')
+        self.print_and_log(f'rws_max filter: {np.round(filt.sum()/len(filt)*100,2)}% retained')
         filterdf['rws_max'] = filt
 
         #Wind speed min limit
@@ -416,8 +412,7 @@ class LIDARGO:
         self.rws_min=self.detect_resonance(df_temp)
         
         filt=np.abs(df['wind_speed'])>=self.rws_min
-        if self.verbose:    
-            self.print_and_log(f'rws_min filter: {np.round(filt.sum()/len(filt)*100,2)}% retained')
+        self.print_and_log(f'rws_min filter: {np.round(filt.sum()/len(filt)*100,2)}% retained')
         filterdf['rws_min'] = filt
      
         return filterdf
@@ -488,8 +483,7 @@ class LIDARGO:
         
         #Normalized wind speed limit
         filt = np.abs(df['rws_norm']) <= self.rws_norm_limit
-        if self.verbose:
-            self.print_and_log(f'rws_norm_limit filter: {np.round(filt.sum()/len(filt)*100,2)}% retained')
+        self.print_and_log(f'rws_norm_limit filter: {np.round(filt.sum()/len(filt)*100,2)}% retained')
         filterdf['rws_norm_limit'] =  filt
             
         #Minimum population
@@ -497,8 +491,7 @@ class LIDARGO:
         temp = df.set_index(['xbins', 'ybins','zbins','timebins']).copy()
         temp['local_population_min_limit'] = filt
         filt = temp['local_population_min_limit'].reset_index(drop=True)
-        if self.verbose:
-            self.print_and_log(f'local_population_min_limit filter: {np.round(filt.sum()/len(filt)*100,2)}% retained')
+        self.print_and_log(f'local_population_min_limit filter: {np.round(filt.sum()/len(filt)*100,2)}% retained')
         filterdf['local_population_min_limit'] = filt
 
         #Standard error on the median filter
@@ -509,8 +502,7 @@ class LIDARGO:
         temp = df.set_index(['xbins', 'ybins','zbins','timebins']).copy()
         temp['rws_standard_error_limit'] = filt
         filt = temp['rws_standard_error_limit'].reset_index(drop=True)
-        if self.verbose:
-            self.print_and_log(f'rws_standard_error_limit filter: {np.round(filt.sum()/len(filt)*100,2)}% retained')
+        self.print_and_log(f'rws_standard_error_limit filter: {np.round(filt.sum()/len(filt)*100,2)}% retained')
         filterdf['rws_standard_error_limit'] = filt
 
         filt = groups['snr_norm'].apply(
@@ -520,15 +512,13 @@ class LIDARGO:
         temp = df.set_index(['xbins', 'ybins','zbins','timebins']).copy()
         temp['snr_standard_error_limit'] = filt
         filt = temp['snr_standard_error_limit'].reset_index(drop=True)
-        if self.verbose:
-            self.print_and_log(f'snr_standard_error_limit filter: {np.round(filt.sum()/len(filt)*100,2)}% retained')
+        self.print_and_log(f'snr_standard_error_limit filter: {np.round(filt.sum()/len(filt)*100,2)}% retained')
         filterdf['snr_standard_error_limit'] = filt
 
         #Probability conditions (applies actual dynamic filter)
         df['filtered_temp']=filterdf.sum(axis=1)==len(filterdf.columns)#points retained in previous steps
         filt,df,rws_range,probability_threshold = local_probability(df, self.config)
-        if self.verbose:
-            self.print_and_log(f'probability_limit filter: {np.round(filt.sum()/len(filt)*100,2)}% retained')
+        self.print_and_log(f'probability_limit filter: {np.round(filt.sum()/len(filt)*100,2)}% retained')
         filterdf['probability_limit'] = filt
         self.qc_rws_range=rws_range
         self.qc_probability_threshold=probability_threshold
@@ -540,14 +530,12 @@ class LIDARGO:
         temp['local_scattering_min_limit'] = filt
         filt = temp['local_scattering_min_limit'].reset_index(drop=True)
         filt = filt.reset_index(drop=True)
-        if self.verbose:
-            self.print_and_log(f'local_scattering_min_limit filter: {np.round(filt.sum()/len(filt)*100,2)}% retained')
+        self.print_and_log(f'local_scattering_min_limit filter: {np.round(filt.sum()/len(filt)*100,2)}% retained')
         filterdf['local_scattering_min_limit' ] = filt
         df=df.drop('filtered_temp', axis=1)
             
         filterdf = filterdf.replace(np.nan, False).astype(np.int8)
-        if self.verbose:
-            self.print_and_log(f'Retained {np.round(100*filterdf.all(axis=1).sum()/len(filterdf),1)}% of data after QC')
+        self.print_and_log(f'Retained {np.round(100*filterdf.all(axis=1).sum()/len(filterdf),1)}% of data after QC')
 
         return filterdf,df['rws_norm'],df['snr_norm'],df['probability']
   
@@ -986,13 +974,19 @@ class LIDARGO:
                 f=rws[:,:,i].values
                 real=~np.isnan(x+y+z+f)
                 
+                print(np.sum(real))
+                if np.sum(real)>10000:
+                    skip=int(np.sum(real)/10000)
+                else:
+                    skip=1
+                
                 #plot raw rws
                 xlim=[np.min(self.outputData.x),np.max(self.outputData.x)]
                 ylim=[np.min(self.outputData.y),np.max(self.outputData.y)]
                 zlim=[np.min(self.outputData.z),np.max(self.outputData.z)]
                 
                 ax=plt.subplot(2,N_plot,ctr, projection='3d')
-                sc=ax.scatter(x[real],y[real],z[real],s=2,c=f[real],cmap='coolwarm',vmin=np.nanpercentile(rws_qc,5)-1,vmax=np.nanpercentile(rws_qc,95)+1)
+                sc=ax.scatter(x[real][::skip],y[real][::skip],z[real][::skip],s=2,c=f[real][::skip],cmap='coolwarm',vmin=np.nanpercentile(rws_qc,5)-1,vmax=np.nanpercentile(rws_qc,95)+1)
                 if ctr==1:
                     ax.set_xlabel(r'$x$ [m]',labelpad=10)
                     ax.set_ylabel(r'$y$ [m]')
@@ -1048,6 +1042,8 @@ class LIDARGO:
             fig_angles.savefig(self.save_filename.replace('.nc','_angles.png'))
         fig_probability.savefig(self.save_filename.replace('.nc','_probability.png'))
         fig_rws.savefig(self.save_filename.replace('.nc','_wind_speed.png'))
+        
+        self.print_and_log(f'QC figures saved in {os.path.dirname(self.save_filename)}')
                 
 def datestr(num,format='%Y-%m-%d %H:%M:%S.%f'):
     '''
