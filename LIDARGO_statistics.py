@@ -116,7 +116,7 @@ class LIDARGO:
         
         if save_file:
             self.outputData.to_netcdf(save_filename)
-            
+            self.print_and_log(f'Statistics file saved as {save_filename}')
             
     def statistics(self):
         '''
