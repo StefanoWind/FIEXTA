@@ -15,7 +15,7 @@ import sys
 
 matplotlib.rcParams['font.family'] = 'serif'
 matplotlib.rcParams['mathtext.fontset'] = 'cm'
-matplotlib.rcParams['font.size'] = 12
+matplotlib.rcParams['font.size'] = 10
 warnings.filterwarnings("ignore")
 
 class LIDARGO:
@@ -135,7 +135,7 @@ class LIDARGO:
             return
         
         #Compose filename
-        save_filename = self.data_level_out.join(self.source.split(self.data_level_in)).replace('.nc','.'+self.project+'.'+self.name+'.nc')
+        save_filename = ('.'+self.data_level_out+'.').join(self.source.split('.'+self.data_level_in+'.')).replace('.nc','.'+self.project+'.'+self.name+'.nc')
         if save_path is not None:
             save_filename=os.path.join(save_path,os.path.basename(save_filename))
         
@@ -805,7 +805,7 @@ class LIDARGO:
             plt.grid()
          
             
-            fig_rws=plt.figure(figsize=(18,6))
+            fig_rws=plt.figure(figsize=(18,8))
             ctr=1
             for i in i_plot:
                 time=(self.outputData.time[:,i] - np.datetime64('1970-01-01T00:00:00')) / np.timedelta64(1, 's')
@@ -878,7 +878,7 @@ class LIDARGO:
             plt.ylabel('Occurrence')
             plt.grid()
             
-            fig_rws=plt.figure(figsize=(18,6))
+            fig_rws=plt.figure(figsize=(18,8))
             ctr=1
             for i in i_plot:
                 time=(self.outputData.time[:,i] - np.datetime64('1970-01-01T00:00:00')) / np.timedelta64(1, 's')

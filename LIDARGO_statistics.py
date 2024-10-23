@@ -9,7 +9,7 @@ import matplotlib
 from matplotlib.patches import Circle
 matplotlib.rcParams['font.family'] = 'serif'
 matplotlib.rcParams['mathtext.fontset'] = 'cm'
-matplotlib.rcParams['font.size'] = 12
+matplotlib.rcParams['font.size'] = 10
 warnings.filterwarnings('ignore',message='Mean of empty slice')
 warnings.filterwarnings('ignore',message='.*pcolor.*')
 warnings.filterwarnings('ignore',message='.*encountered in log10.*')
@@ -94,7 +94,8 @@ class LIDARGO:
             return False
             
         #Compose filename
-        save_filename = self.data_level_out.join(self.source.split(self.data_level_in))
+        save_filename = ('.'+self.data_level_out+'.').join(self.source.split('.'+self.data_level_in+'.'))
+        
         if save_path is not None:
             save_filename=os.path.join(save_path,os.path.basename(save_filename))
         
