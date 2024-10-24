@@ -555,6 +555,8 @@ class LIDARGO:
         scan_duration=np.diff(np.append(scan_start,time[-1]))
         scanID = pd.Series(data=np.zeros(len(scan_start))-9999, index=scan_start).rename_axis('time')
         duration_condition=pd.Series(data=scan_duration>np.timedelta64(int(self.min_scan_duration*10**9),'ns'), index=scanID.index)
+        self.print_and_log(f'Scan duration check: {np.round(100*duration_condition.sum()/len(duration_condition),2)}% retained')
+
         scanID[duration_condition]=np.arange(np.sum(duration_condition))
         scan_start_time=pd.Series(data=scan_start, index=scanID.index).rename_axis('time')
         
@@ -621,11 +623,11 @@ class LIDARGO:
         azimuth_variation= np.abs(np.nanmax(np.tan(azi))-np.nanmin(np.tan(azi)))
         elevation_variation= np.abs(np.nanmax(np.cos(ele))-np.nanmin(np.cos(ele)))
         
-        if elevation_variation<10**-10 and azimuth_variation<10**-10:
+        if elevation_variation<self.ang_tol and azimuth_variation<self.ang_tol:
             self.outputData.attrs['scan_mode']='Stare'
-        elif elevation_variation<10**-10 and azimuth_variation>10**-10:
+        elif elevation_variation<self.ang_tol and azimuth_variation>self.ang_tol:
             self.outputData.attrs['scan_mode']='PPI'
-        elif elevation_variation>10**-10 and azimuth_variation<10**-10:
+        elif elevation_variation>self.ang_tol and azimuth_variation<self.ang_tol:
             self.outputData.attrs['scan_mode']='RHI'
         else:
             self.outputData.attrs['scan_mode']='3D'
