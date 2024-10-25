@@ -1,6 +1,6 @@
 # -*- coding: utf-8 -*-
 '''
-Example of application of LiDARGO to AWAKEN VAD data from sa1.lidar.z05 data channel.
+Example of application of LiDARGO to AWAKEN VAD data from sa1.lidar.z05 data channel and wind retrieval.
 '''
 
 import os
@@ -30,7 +30,7 @@ filename1=os.path.join(pwd,'data/Example3/sa1.lidar.z05.vad.a2.20240824.085030.u
 filename2=os.path.join(pwd,'data/Example3/sa1.lidar.z05.vad.b0.20240824.085030.user5.awaken.vad.nc')
 source_config_stand=os.path.join(pwd,'config/config_examples_stand.xlsx')
 
-min_N=5
+min_N=5#minimum number of point to carry out wind retrieval
 
 #%% Functions
 def radial_velocity(X,u,v,w):
