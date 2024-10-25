@@ -1,5 +1,5 @@
 '''
-Example of application of LiDARGO to AWAKEN RHI data from sc1.lidar.z01 data channel.
+Example of application of LiDARGO to AWAKEN RHI data from sc1.lidar.z01 data channel and plot of snapshots and QC flags.
 '''
 
 import os
@@ -31,8 +31,8 @@ source_config_stand=os.path.join(pwd,'config/config_examples_stand.xlsx')
 source_config_stats=os.path.join(pwd,'config/config_examples_stats.xlsx')
 
 #graphics
-xlim=[-3000,3000]
-zlim=[0,1500]
+xlim=[-3000,3000]#[m]
+zlim=[0,1500]#[m]
 max_ele=34#[deg]
 
 #%% Main
@@ -58,7 +58,6 @@ X_all=Data['x'].values
 Y_all=Data['y'].values
 Z_all=Data['z'].values
 
-
 #wind speed
 rws1=Data['wind_speed'].where(Data['qc_wind_speed']==0).where(Data['elevation']<max_ele).values
 rws2=Data['wind_speed'].where(Data['qc_wind_speed']==0).where(Data['elevation']>180-max_ele).values
@@ -68,12 +67,14 @@ scan_mode=Data.attrs['scan_mode']
 qc=Data['qc_wind_speed'].values
 
 #%% Plots
+plt.close('all')
+
 #all snapshots
 for rep in range(len(time[0,:])):
     plt.figure(figsize=(18,8))
     
-    pc=plt.pcolor(X,Z,rws1[:,:,rep],cmap='seismic',vmin=-10,vmax=10)
-    plt.pcolor(X,Z,rws2[:,:,rep],cmap='seismic',vmin=-10,vmax=10)
+    pc=plt.pcolor(X,Z,np.abs(rws1[:,:,rep]),cmap='coolwarm',vmin=0,vmax=10)
+    plt.pcolor(X,Z,np.abs(rws2[:,:,rep]),cmap='coolwarm',vmin=0,vmax=10)
     plt.xlabel(r'$x$ [m]')
     plt.ylabel(r'$z$ [m]')
     ax=plt.gca()
@@ -85,13 +86,15 @@ for rep in range(len(time[0,:])):
     
     ax.set_box_aspect(np.diff(zlim)/np.diff(xlim))
     
-    cb=plt.colorbar(label='QC radial wind speed [m s$^{-1}$]',orientation='horizontal')   
+    cb=plt.colorbar(label='QC $|u_{LOS}|$ [m s$^{-1}$]',orientation='horizontal')   
     plt.title('Rep #'+str(rep)+': '+str(time[0,rep])[:-10].replace('T',' ')+' - '+str(time[-1,rep])[:-10].replace('T',' '))
 
     fig_name=os.path.join(cd,'figures/Example1',os.path.basename(filename2).replace('.nc','{i:02d}'.format(i=rep)+'.png'))
     os.makedirs(os.path.dirname(fig_name),exist_ok=True)
     plt.savefig(fig_name)
     plt.close()
+    
+print('Snapshots were saved in '+(os.path.dirname(fig_name)))
 
 #%QC insight
 plt.figure(figsize=(18,10))
