@@ -90,7 +90,7 @@ for i in range(len(Data_avg.range)):
         
 #%% Plots
 plt.close('all')
-plt.figure(figsize=(12,10))
+plt.figure(figsize=(12,8))
 plt.subplot(1,2,1)
 plt.plot(WS,z,'.k',markersize=5)
 plt.xlabel(r'Mean horizontal wind speed [m s $^{-1}$]')
