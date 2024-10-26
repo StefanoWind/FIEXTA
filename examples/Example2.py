@@ -28,7 +28,6 @@ filename2=os.path.join(pwd,'data/Example2/sa1.lidar.z05.b0.20240824.085030.user5
 source_config_stand=os.path.join(pwd,'config/config_examples_stand.xlsx')
 source_config_stats=os.path.join(pwd,'config/config_examples_stats.xlsx')
 
-
 #%% Main
 
 #standardization
