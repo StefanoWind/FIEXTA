@@ -1,7 +1,7 @@
 '''
 Example of application of LiDARGO to AWAKEN voluetric data from sa1.lidar.z05 data channel.
 '''
-
+ 
 import os
 cd=os.getcwd()
 pwd=os.path.dirname(cd)
@@ -37,4 +37,3 @@ lproc.process_scan(filename1,replace=True,save_file=True)
 #average
 lproc = stats.LIDARGO(filename2,source_config_stats, verbose=True)
 lproc.process_scan(filename2,replace=True,save_file=True)
-
