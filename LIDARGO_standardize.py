@@ -31,6 +31,8 @@ class LIDARGO:
             The configuration file
         verbose: bool
             Whether or not print QC-related information
+        logger: logger object
+            external error logger (if any)
         '''
         plt.close('all')
         

@@ -28,6 +28,8 @@ class LIDARGO:
             The configuration file
         verbose: bool
             Whether or not print LiSBOA output
+        logger: logger object
+            external error logger (if any)
         '''
         
         plt.close('all')
