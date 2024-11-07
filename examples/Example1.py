@@ -112,7 +112,7 @@ print('Snapshots were saved in '+(os.path.dirname(fig_name)))
 plt.figure(figsize=(18,10))
 for qc_sel in range(12):
     ax=plt.subplot(4,3,qc_sel+1)  
-    sel=~np.isnan(X_all+Y_all+qc)*(qc==qc_sel)
+    sel=~np.isnan(X_all+Z_all+qc)*(qc==qc_sel)
     if qc_sel==0:
         sc=ax.scatter(X_all[sel],Z_all[sel],s=5,c='g',alpha=0.1)
         plt.title('good')
@@ -121,10 +121,8 @@ for qc_sel in range(12):
         plt.title(Data['qc_wind_speed'].attrs['bit_{qc_sel}_description'.format(qc_sel=qc_sel)].replace('Value rejected due to ','')[:-1])
     
     ax.set_xlabel(r'$x$')
-    ax.set_ylabel(r'$y$')
+    ax.set_ylabel(r'$z$')
     plt.grid()
-    plt.xlabel(r'$x$ [m]')
-    plt.ylabel(r'$z$ [m]')
     ax=plt.gca()
     ax.set_xlim(xlim)
     ax.set_ylim(zlim)
