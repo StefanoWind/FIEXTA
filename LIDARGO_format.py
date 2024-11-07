@@ -328,6 +328,10 @@ class LIDARGO():
         distance=outputData['range']
         outputData['distance']=distance
 
+        #dd missing variables
+        outputData['pitch']=outputData['azimuth']*0
+        outputData['roll']=outputData['azimuth']*0
+        
         #add missing attributes
         outputData.attrs['Scan type']=''
         outputData.attrs['code_version']=''
