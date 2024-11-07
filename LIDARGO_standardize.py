@@ -1204,8 +1204,8 @@ if __name__ == '__main__':
     '''
     cd=os.path.dirname(__file__)
         
-    source='data/360ppi-csm/rt5.lidar.z02.a0.20230711.173203.user1.nc'
-    config_file='config/configs_standardize.xlsx'
+    source='C:/Users/SLETIZIA/OneDrive - NREL/Desktop/PostDoc/Technical/LiDAR/LIDARGO/data/Example5/sc1.lidar.z02.a0.20230822.071301.ppi.50.nc'
+    config_file='C:/Users/SLETIZIA/OneDrive - NREL/Desktop/PostDoc/Technical/LiDAR/LIDARGO/config/config_examples_stand.xlsx'
 
     # Create an instance of LIDARGO
     lproc = LIDARGO(source,config_file, verbose=True)
