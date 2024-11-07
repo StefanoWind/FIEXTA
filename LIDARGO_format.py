@@ -1,5 +1,5 @@
 '''
-Convert hpl Halo files to netCDF in WDH a0 format
+Convert raw lidar files to netCDF in WDH-compatible netCDF format
 '''
 import os
 cd=os.path.dirname(__file__)
@@ -29,7 +29,7 @@ class LIDARGO_format():
         self.verbose=verbose
         
         
-    def process_scan(self, source, model, site,z_id, level_out, save_file=True, save_path=None, replace=True):
+    def process_scan(self, source, model, site,z_id, data_level_out, save_file=True, save_path=None, replace=True):
         
         '''
         Format the raw scan file into WDH-compatible netCDF file
@@ -58,25 +58,41 @@ class LIDARGO_format():
         '''
         
         source00=self.rename(source,model,site,z_id,save_path,replace)
-        
-        self.read(source00,model)
+        if source00 is not None:
+            save_filename = ('.'+data_level_out+'.').join(source00.split('.00.')).replace('.hpl','.nc')
+            if save_path is not None:
+                save_filename=os.path.join(save_path,os.path.basename(save_filename))
+            
+            if save_file and not replace and os.path.isfile(save_filename):
+                self.print_and_log(f'Processed file {save_filename} already exists, skipping it')
+                return
+            else:
+                self.print_and_log(f'Generating formatted file {os.path.basename(save_filename)}')
+                outputData=self.read(source00,model)
+            
+                if save_file:
+                    outputData.to_netcdf(save_filename)
+                    self.print_and_log(f'Formatted file saved as {save_filename}')
+        else:
+            self.print_and_log(f'Formatting of {source} failed')
         
 
     def rename(self,source,model,site,z_id,save_path=None,replace=False):
+                
         if save_path is None:
-            save_path=os.path.join('/'.join(os.path.dirname(source).split('/')[:-1]),site+'.lidar.'+z_id+'.'+'00')
+            save_path=os.path.join('/'.join(os.path.dirname(source).split('/')[:-1]),site+'.lidar.z'+z_id+'.'+'00')
         os.makedirs(save_path,exist_ok=True)
         
         if model=='Halo XR':
-            if 'Stare' in source:
+            if 'Stare' in os.path.basename(source):
                 pattern = r"Stare_\d+_(\d{8})_(\d{2})_(.*?)\.hpl"
                 scan_type='stare'
-            elif 'User' in source:
+            elif 'User' in os.path.basename(source):
                 pattern = r"User\d{1}_\d+_(\d{8})_(\d{6})\.hpl"
-                scan_type='user'+source[source.find('User')+4]
+                scan_type='user'+os.path.basename(source)[source.find('User')+1]
             else:
-                
-                raise NameError(f"Source of {source} not supported.")
+                self.print_and_log(f"Scan type of {source} not supported.")
+                return
                 
             match = re.search(pattern, os.path.basename(source))
             date_part = match.group(1)  
@@ -96,12 +112,32 @@ class LIDARGO_format():
             else:
                 time_part = match.group(2)
                 
-            save_filename=site+'.lidar.'+z_id+'.'+'00'+'.'+date_part+'.'+time_part+'.'+scan_type+os.path.splitext(source)[1]
+            save_filename=site+'.lidar.z'+z_id+'.'+'00'+'.'+date_part+'.'+time_part+'.'+scan_type+os.path.splitext(source)[1]
             if os.path.exists(os.path.join(save_path,save_filename))==False or replace==True:
                 shutil.copyfile(source, os.path.join(save_path,save_filename))
+                
+        else: 
+            self.print_and_log(f"Lidar model {model} not supported")
+            return
         return os.path.join(os.path.join(save_path,save_filename))
 
-    def read(self,source,model):
+    def read(self,source,model,overlapping_distance=1.5):
+        
+        '''
+        Format raw lidar data file into WDH-compatible netCDF
+        
+        Inputs:
+            source: str
+                source of the 00-level file
+            model: str
+                lidar model
+            overlapping_distance: float
+                distance between gates in overlapping mode in meters
+                
+        Outputs:
+            outputData: netDFC
+                formatted data structure
+        '''
         
         if model=='Halo XR':
             with open(source, "r") as f:
@@ -174,7 +210,7 @@ class LIDARGO_format():
         
             start_time = np.datetime64(start_time_string)
             datetimes = [
-                start_time + np.timedelta64(int(3600 * 1e6 * dtime), "us") for dtime in time
+                start_time + np.timedelta64(int(3600 * 1e9 * dtime), "ns") for dtime in time
             ]
         
             outputData = xr.Dataset(
@@ -200,10 +236,10 @@ class LIDARGO_format():
             outputData.attrs["Scan type"] = str(metadata["Scan type"]).strip()
             outputData.attrs["Pulses per ray"] = float(metadata["Pulses/ray"])  # type: ignore
             outputData.attrs["System ID"] = int(metadata["System ID"])  # type: ignore
-            outputData.attrs["source"] = str(metadata["source"])[1:-5]
+            outputData.attrs["source"] = str(metadata["Filename"])[1:-1]
             outputData.attrs["code_version"]=''
-            outputData.attrs["title"]='Lidar Halo XRP'
-            outputData.attrs["description"]='AWAKEN XRP Halo Lidar data'
+            outputData.attrs["title"]='Lidar Halo XR'
+            outputData.attrs["description"]='AWAKEN XR Halo Lidar data'
             outputData.attrs["location_id"]=os.path.basename(source).split('.')[0]
             
             outputData["distance"] = (
@@ -213,7 +249,7 @@ class LIDARGO_format():
             )
             outputData["distance_overlapped"] = (
                 "range_gate",
-                outputData.coords["range_gate"].data * 1.5
+                outputData.coords["range_gate"].data * overlapping_distance
                 + outputData.attrs["Range gate length (m)"] / 2,
             )
             intensity = outputData.intensity.data.copy()
@@ -241,7 +277,7 @@ class LIDARGO_format():
         
             valid_types = ["user", "stare", "vad", "wind_profile", "rhi"]
             if not any(valid_type in scan_type for valid_type in valid_types):
-                raise NameError(f"Scan type '{scan_type}' not supported.")
+                self.print_and_log(f"Scan type '{scan_type}' not supported.")
         
             outputData.attrs["scan_type"] = scan_type
             outputData.attrs["z_id"] = z_id
@@ -262,10 +298,11 @@ if __name__ == '__main__':
     site='sc1'
     model='Halo XR'
     z_id='01'
-    level_out='a0'
+    data_level_out='a0'
+    save_path='C:/Users/SLETIZIA/OneDrive - NREL/Desktop/PostDoc/Technical/LiDAR/LIDARGO/data/Example1/'
     
     lproc=LIDARGO_format()
-    lproc.process_scan(source,model, site,z_id, level_out, replace=False,save_file=True)
+    lproc.process_scan(source,model, site,z_id, data_level_out, replace=True,save_path=save_path,save_file=True)
     
     
     
