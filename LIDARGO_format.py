@@ -10,7 +10,7 @@ import shutil
 import re
 from matplotlib import pyplot as plt
 
-class LIDARGO_format():
+class LIDARGO():
     def __init__(self,verbose=True,logger=None):
         '''
         Initialize the LIDAR data formatter

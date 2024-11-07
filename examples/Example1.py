@@ -1,5 +1,5 @@
 '''
-Example of application of LiDARGO to AWAKEN RHI data from sc1.lidar.z01 data channel and plot of snapshots and QC flags.
+Example of application of LiDARGO to AWAKEN RHI data from site C1a and plot of snapshots and QC flags.
 '''
 
 import os
@@ -7,6 +7,7 @@ cd=os.getcwd()
 pwd=os.path.dirname(cd)
 import sys
 sys.path.append(pwd)
+import LIDARGO_format as form
 import LIDARGO_standardize as stand
 import LIDARGO_statistics as stats
 import xarray as xr
@@ -25,10 +26,17 @@ matplotlib.rcParams['font.size'] = 14
 #%% Inputs
 
 #paths
-filename1=os.path.join(pwd,'data/Example1/sc1.lidar.z01.a0.20230830.064613.user4.nc')
-filename2=os.path.join(pwd,'data/Example1/sc1.lidar.z01.b0.20230830.064613.user4.awaken.rhi.nc')
+filename0=os.path.join(pwd,'data/Example1/User4_137_20230830_064606.hpl')
+filename1=os.path.join(pwd,'data/Example1/sc1.lidar.z01.a0.20230830.064606.user4.nc')
+filename2=os.path.join(pwd,'data/Example1/sc1.lidar.z01.b0.20230830.064606.user4.awaken.rhi.nc')
 source_config_stand=os.path.join(pwd,'config/config_examples_stand.xlsx')
 source_config_stats=os.path.join(pwd,'config/config_examples_stats.xlsx')
+
+#formatting
+model='Halo XR' #lidar model for formatting raw file
+site='sc1' #site ID
+z_id='01'#instrument ID (if multiple lidars are present)
+data_level_format='a0' #data level after formatting
 
 #graphics
 xlim=[-3000,3000]#[m]
@@ -36,6 +44,10 @@ zlim=[0,1500]#[m]
 max_ele=34#[deg]
 
 #%% Main
+
+#formatting
+lproc = form.LIDARGO(verbose=True)
+lproc.process_scan(filename0,model, site,z_id, data_level_format, replace=False,save_path=os.path.dirname(filename0), save_file=True)
 
 #standardization
 lproc = stand.LIDARGO(filename1,source_config_stand, verbose=True)
