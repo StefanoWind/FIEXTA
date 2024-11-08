@@ -12,6 +12,7 @@ from datetime import datetime
 import matplotlib.dates as mdates
 from scipy.optimize import curve_fit
 import sys
+import .utils
 
 matplotlib.rcParams["font.family"] = "serif"
 matplotlib.rcParams["mathtext.fontset"] = "cm"
@@ -359,7 +360,7 @@ class LIDARGO:
         ulimit_ele = ceil(self.outputData.elevation.max(), self.ang_tol) + self.ang_tol
         ele_bins = np.arange(llimit_ele, ulimit_ele, self.ang_tol)
 
-        E, A = np.meshgrid(mid(ele_bins), mid(azi_bins))
+        E, A = np.meshgrid(utils.mid(ele_bins), utils.mid(azi_bins))
         counts = stats.binned_statistic_2d(
             self.outputData.azimuth,
             self.outputData.elevation,
@@ -496,10 +497,12 @@ class LIDARGO:
         self.outputData = self.outputData.assign_coords({"range": distance})
 
         # Add 3D coordinates
-        self.outputData["x"], self.outputData["y"], self.outputData["z"] = lidar_xyz(
-            self.outputData["range"],
-            self.outputData["elevation"],
-            self.outputData["azimuth"] + self.azimuth_offset,
+        self.outputData["x"], self.outputData["y"], self.outputData["z"] = (
+            utils.lidar_xyz(
+                self.outputData["range"],
+                self.outputData["elevation"],
+                self.outputData["azimuth"] + self.azimuth_offset,
+            )
         )
 
         df = (
@@ -615,10 +618,10 @@ class LIDARGO:
 
         # Single-parameter Gaussian fit
         H_x = np.array([x.mid for x in H.index])
-        sigma = curve_fit(gaussian, H_x, H, p0=[0.1], bounds=[0, 1])[0][0]
+        sigma = curve_fit(utils.gaussian, H_x, H, p0=[0.1], bounds=[0, 1])[0][0]
 
         # Check Gaussiainity and possibly calculate rws_min
-        rmse = np.nanmean((gaussian(H_x, sigma) - H) ** 2) ** 0.5
+        rmse = np.nanmean((utils.gaussian(H_x, sigma) - H) ** 2) ** 0.5
         if rmse <= self.max_resonance_rmse:
             rws_min = 2 * sigma * df["wind_speed"].max()
             self.print_and_log("Detected resonance")
@@ -646,7 +649,7 @@ class LIDARGO:
         filterdf = pd.DataFrame()
 
         # Group df by x, y, z, time bins
-        df = defineLocalBins(df, self.config)
+        df = utils.defineLocalBins(df, self.config)
         groups = df.groupby(["xbins", "ybins", "zbins", "timebins"], group_keys=False)
 
         # Normalized wind speed and SNR data channels
