@@ -1,6 +1,6 @@
 # -*- coding: utf-8 -*-
 '''
-Example of application of LiDARGO to AWAKEN VAD data from sa1.lidar.z05 data channel and wind retrieval.
+Example of application of LiDARGO to AWAKEN VAD formatted data from Cornell Halo XR at site A1.
 '''
 
 import os

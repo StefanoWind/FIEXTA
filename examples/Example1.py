@@ -1,5 +1,5 @@
 '''
-Example of application of LiDARGO to AWAKEN RHI data from site C1a and plot of snapshots and QC flags.
+Example of application of LiDARGO to AWAKEN RHI raw data from UT Dallas Halo XR at site C1a and plot of snapshots and QC flags.
 '''
 
 import os
@@ -120,8 +120,8 @@ for qc_sel in range(12):
         ax.scatter(X_all[sel],Z_all[sel],s=5,c='r',alpha=0.1)
         plt.title(Data['qc_wind_speed'].attrs['bit_{qc_sel}_description'.format(qc_sel=qc_sel)].replace('Value rejected due to ','')[:-1])
     
-    ax.set_xlabel(r'$x$')
-    ax.set_ylabel(r'$z$')
+    ax.set_xlabel(r'$x$ [m]')
+    ax.set_ylabel(r'$z$ [m]')
     plt.grid()
     ax=plt.gca()
     ax.set_xlim(xlim)

@@ -1,6 +1,6 @@
 # -*- coding: utf-8 -*-
 '''
-Example of application of LiDARGO to AWAKEN stare data from sa5.lidar.z03 data channel and radial velocity spectra.
+Example of application of LiDARGO to AWAKEN formatted stare data from NREL Halo AllSky at site A5 and plot of radial velocity spectra.
 '''
 
 import os

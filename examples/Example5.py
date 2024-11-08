@@ -1,5 +1,5 @@
 '''
-Example of application of LiDARGO to AWAKEN RHI data from site C1a and plot of snapshots and QC flags.
+Example of application of LiDARGO to AWAKEN PPI raw data from UT Dallas WindCube 200S at site C1a and plot of QC flags.
 '''
 
 import os
@@ -50,19 +50,12 @@ lproc.process_scan(filename0,model, site,z_id, data_level_format, replace=False,
 lproc = stand.LIDARGO(filename1,source_config_stand, verbose=True)
 lproc.process_scan(filename1,replace=False,save_file=True)
 
-
 #read standardized data
 Data=xr.open_dataset(filename2)
 
 #coordinates
-time=Data['time'].values
-
-X=Data['x'].mean(dim='scanID').values
-Z=Data['z'].mean(dim='scanID').values
-
 X_all=Data['x'].values
 Y_all=Data['y'].values
-Z_all=Data['z'].values
 
 #other
 qc=Data['qc_wind_speed'].values
@@ -72,7 +65,7 @@ plt.close('all')
 
 #%QC insight
 plt.figure(figsize=(18,10))
-for qc_sel in range(12):s
+for qc_sel in range(12):
     ax=plt.subplot(4,3,qc_sel+1)  
     sel=~np.isnan(X_all+Y_all+qc)*(qc==qc_sel)
     if qc_sel==0:
@@ -82,8 +75,8 @@ for qc_sel in range(12):s
         ax.scatter(X_all[sel],Y_all[sel],s=5,c='r',alpha=0.1)
         plt.title(Data['qc_wind_speed'].attrs['bit_{qc_sel}_description'.format(qc_sel=qc_sel)].replace('Value rejected due to ','')[:-1])
     
-    ax.set_xlabel(r'$x$')
-    ax.set_ylabel(r'$y$')
+    ax.set_xlabel(r'$x$ [m]')
+    ax.set_ylabel(r'$y$ [m]')
     plt.grid()
     ax=plt.gca()
     ax.set_xlim(xlim)
