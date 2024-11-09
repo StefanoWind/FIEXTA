@@ -1,11 +1,46 @@
-# Welcome to your Jupyter Book
+# LiDAR General Operation (LIDARGO)
 
-This is a small sample book to give you a feel for how book content is
-structured.
-It shows off a few of the major file types, as well as some sample content.
-It does not go in-depth into any particular topic - check out [the Jupyter Book documentation](https://jupyterbook.org) for more information.
+LIDARGO is a general processor for raw lidar data that allows to reformat, standardize, quality-control and carry out objective statistics analysis.
 
-Check out the content pages bundled with this sample book to see more.
+The LiDARGO data archicture is inspired from the guidelines available at the [Wind Data Hub](https://a2e.energy.gov/login) and follows the following logic:
+
+```{list-table} Description of levels within LIDARGO.
+:header-rows: 1
+:name: tab-data_levels
+
+* - Data level
+  - Definition
+  - Description
+  - Format
+  - Generator
+* - 0x
+  - Raw   
+  - Raw data file as produced by the instrument
+  - native
+  - Lidar                       
+* - ax    
+  - Formatted  
+  - Data reformated with minimal changes  
+  - netCDF 
+  - [LIDARGO_format](LIDARGO_format.md)  
+* - bx    
+  - Reviewed  
+  - Data with QC flags  
+  - netCDF 
+  - [LIDARGO_standardize](LIDARGO_standardize.md) 
+* - cx    
+  - Derived  
+  - Value-added product derived from bx level  
+  - netCDF 
+  - [LIDARGO_statistics](LIDARGO_statistics.md) 
+```
+
+The "x" is an index that is used to identify further layer within each data level. E.g., if b0 are data quality-controlled through a method X, b2 can be data quality-controlled through a method Y, generally more advanced.
+
+In this context, each LIDARGO instance will generate output files of the data level specified in the table.
+
+
 
 ```{tableofcontents}
 ```
+
