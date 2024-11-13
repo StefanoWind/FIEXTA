@@ -5,9 +5,10 @@ __version__ = "0.1.0"
 # from .stump import Stump
 
 from .standardize import Standardize
-from .standardize import Standardize
+from .config import LidarConfig
 from .statistics import Statistics
 from .qcReport import QCReport
+from .logger import SingletonLogger
 
 # from .reconstruction import Reconstructor
 
