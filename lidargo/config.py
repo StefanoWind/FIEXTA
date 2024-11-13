@@ -138,7 +138,7 @@ class LidarConfig:
         )
 
         # Validate data levels
-        valid_data_levels = ["b0", "b1", "b2"]
+        valid_data_levels = ["b0", "b1", "b2", "c0", "c1", "c2"]
         if self.data_level_in not in valid_data_levels:
             raise ValueError(f"data_level_in must be one of {valid_data_levels}")
         if self.data_level_out not in valid_data_levels:
