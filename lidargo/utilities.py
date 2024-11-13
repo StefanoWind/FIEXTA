@@ -5,6 +5,47 @@ import pandas as pd
 from datetime import datetime
 import socket
 import getpass
+from .logger import SingletonLogger
+from functools import wraps
+import logging
+from dataclasses import is_dataclass, fields, asdict
+from typing import Optional
+
+
+def get_logger(
+    name: str = "default", verbose: bool = True, logger: Optional[object] = None
+) -> SingletonLogger:
+    """Utility function to get or create a logger instance."""
+    logger = logging.getLogger(name)
+    return SingletonLogger(logger=logger, verbose=verbose)
+
+
+def with_logging(func):
+    """Decorator to add logging to any class method."""
+
+    @wraps(func)
+    def wrapper(self, *args, **kwargs):
+        logger = get_logger()
+
+        if logger.verbose:
+            class_name = self.__class__.__name__
+            func_name = func.__name__
+            logger.log(f"Calling {class_name}.{func_name}")
+
+        try:
+            result = func(self, *args, **kwargs)
+            return result
+
+        except Exception as e:
+            if logger.verbose:
+                class_name = self.__class__.__name__
+                func_name = func.__name__
+                logger.log(
+                    f"Error in {class_name}.{func_name}: {str(e)}", level="error"
+                )
+            raise
+
+    return wrapper
 
 
 def lidar_xyz(r, ele, azi):
@@ -34,14 +75,16 @@ def defineLocalBins(df, config):
             delta,
         )
 
-    if "dx" in config.keys():
-        df["xbins"] = pd.cut(df.x, bins(df.x, config["dx"]))
-    if "dy" in config.keys():
-        df["ybins"] = pd.cut(df.y, bins(df.y, config["dy"]))
-    if "dz" in config.keys():
-        df["zbins"] = pd.cut(df.z, bins(df.z, config["dz"]))
-    if "dtime" in config.keys():
-        df["timebins"] = pd.cut(df.deltaTime, bins(df.deltaTime, config["dtime"]))
+    keys = [field.name for field in fields(config)]
+
+    if "dx" in keys:
+        df["xbins"] = pd.cut(df.x, bins(df.x, config.dx))
+    if "dy" in keys:
+        df["ybins"] = pd.cut(df.y, bins(df.y, config.dy))
+    if "dz" in keys:
+        df["zbins"] = pd.cut(df.z, bins(df.z, config.dz))
+    if "dtime" in keys:
+        df["timebins"] = pd.cut(df.deltaTime, bins(df.deltaTime, config.dtime))
 
     return df
 
@@ -221,7 +264,15 @@ def add_qc_attrs(ds, qcAttrDict: dict):
         ds["qc_wind_speed"].attrs[f"bit_{v}_assessment"] = "Bad"
 
     # Add config attributes to QC wind speed
+    if is_dataclass(qcAttrDict["processConfig"]):
+        qcAttrDict["processConfig"] = asdict(qcAttrDict["processConfig"])
+
     ds["qc_wind_speed"].attrs.update(qcAttrDict["processConfig"])
+    ds["qc_wind_speed"].attrs.update(
+        {
+            "qc_probability_threshold": qcAttrDict["qc_probability_threshold"],
+        }
+    )
 
     # Set global attributes
     global_attrs = {
