@@ -167,6 +167,26 @@ def add_attributes(ds):
 
     # Define common attributes for multiple variables
     common_attrs = {
+        "azimuth": {
+            "long_name": "Azimuth",
+            "description": "Beam azimuth angle",
+            "units": "degrees",
+        },
+        "elevation": {
+            "long_name": "Elevation",
+            "description": "Beam elevation angle",
+            "units": "degrees",
+        },
+        "pitch": {
+            "long_name": "Pitch",
+            "description": "Lidar pitch angle",
+            "units": "degrees",
+        },
+        "roll": {
+            "long_name": "Roll",
+            "description": "Lidar roll angle",
+            "units": "degrees",
+        },
         "range": {
             "long_name": "Range",
             "description": "Distance from the lidar source.",
@@ -223,23 +243,10 @@ def add_attributes(ds):
         },
     }
 
-    # Simple description attributes
-    simple_attrs = {
-        "azimuth": "Beam azimuth angle",
-        "elevation": "Beam elevation angle",
-        "pitch": "Lidar pitch angle",
-        "roll": "Lidar roll angle",
-    }
-
     # Apply common attributes
     for var, attrs in common_attrs.items():
         if var in ds:
             ds[var].attrs.update(attrs)
-
-    # Apply simple description attributes
-    for var, desc in simple_attrs.items():
-        if var in ds:
-            ds[var].attrs["description"] = desc
 
     return ds
 
