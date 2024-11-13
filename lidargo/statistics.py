@@ -1089,25 +1089,25 @@ def local_probability(df, config):
     probability_bins = np.linspace(
         np.log10(df["probability"].min() + eps) - 1,
         np.log10(df["probability"].max()),
-        config["N_probability_bins"],
+        config.N_probability_bins,
     )
     df["probability_bins"] = pd.cut(np.log10(df["probability"]), probability_bins)
     groups = df.groupby(["probability_bins"], observed=True)
     rws_range = groups["rws_norm"].apply(
-        lambda x: np.nanpercentile(x, config["max_percentile"])
-        - np.nanpercentile(x, config["min_percentile"])
+        lambda x: np.nanpercentile(x, config.max_percentile)
+        - np.nanpercentile(x, config.min_percentile)
     )
-    max_rws_range = rws_range.min() + config["rws_norm_increase_limit"] * (
+    max_rws_range = rws_range.min() + config.rws_norm_increase_limit * (
         rws_range.max() - rws_range.min()
     )
     if np.max(rws_range) > max_rws_range:
         i_threshold = np.where(rws_range > max_rws_range)[0][-1] + 1
         probability_threshold = 10 ** rws_range.index[i_threshold].left
     else:
-        probability_threshold = config["min_probability_range"]
+        probability_threshold = config.min_probability_range
 
-    if probability_threshold > config["max_probability_range"]:
-        probability_threshold = config["max_probability_range"]
+    if probability_threshold > config.max_probability_range:
+        probability_threshold = config.max_probability_range
 
     filt = df["probability"] > probability_threshold
 
