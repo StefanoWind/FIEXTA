@@ -5,6 +5,7 @@ import numpy as np
 from lidargo import utilities
 import os
 import warnings
+from lidargo.utilities import with_logging
 
 # Suppress all UserWarnings containing 'interpreted as cell centers' for pcolormesh and pcolor
 warnings.filterwarnings(
@@ -158,6 +159,7 @@ def stare(ds):
     raise NotImplementedError("Stare plotting is not implemented yet.")
 
 
+@with_logging
 def azimuthScatter(dsInput, dsStandardized, ax=None, fig=None, **kwargs):
     """scatter plot showing observed and standardized azimuth angles"""
     if fig is None or ax is None:
@@ -374,6 +376,7 @@ def volumetric(ds):
     return fig
 
 
+@with_logging
 def windSpeedQCfig(ds, qc_rws_range):
     """wrapper method to make qc and probability scatter plots"""
     fig = plt.figure(figsize=(10, 4), layout="constrained")
@@ -393,6 +396,7 @@ def windSpeedQCfig(ds, qc_rws_range):
     return fig
 
 
+@with_logging
 def scanFig(ds):
     """wrapper method to make scans pcolor figures"""
     fig = plt.figure(figsize=(12, 3), layout="constrained")
@@ -420,6 +424,7 @@ def scanFig(ds):
     return fig
 
 
+@with_logging
 def azHistFig(ds, dsInput):
     """wrapper method to make azimuth histograms"""
     fig, ax = plt.subplots(1, 2, figsize=(10, 3))
