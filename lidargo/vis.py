@@ -1,69 +1,76 @@
-# import warnings
-import os
 import matplotlib.pyplot as plt
-import numpy as np
 import matplotlib.dates as mdates
-
+from matplotlib.gridspec import GridSpec
+import numpy as np
 from lidargo import utilities
+import os
+import warnings
 
-# Not sure we need this here
-# matplotlib.rcParams["font.family"] = "serif"
-# matplotlib.rcParams["mathtext.fontset"] = "cm"
-# matplotlib.rcParams["font.size"] = 10
-
-
-#### Danger Danger!! Not sure this is a good idea
-# warnings.filterwarnings("ignore", message="Mean of empty slice")
-# warnings.filterwarnings("ignore", message=".*pcolor.*")
-# warnings.filterwarnings("ignore", message=".*encountered in log10.*")
-# warnings.filterwarnings("ignore", message=".*converting a masked element to nan.*")
+# Suppress all UserWarnings containing 'interpreted as cell centers' for pcolormesh and pcolor
+warnings.filterwarnings(
+    "ignore",
+    message=".*interpreted as cell centers, but are not monotonically increasing or decreasing.*",
+)
 
 
-def probabilityFig(ds, qc_rws_range):
+def probabilityScatter(ds, ax=None, cax=None, fig=None, **kwargs):
+    if fig is None or ax is None:
+        fig, ax = plt.subplots(figsize=kwargs.get("figsize", (9, 8)))
 
-    fig_probability = plt.figure(figsize=(18, 8))
     prob_arange = np.arange(
         np.log10(ds.qc_wind_speed.attrs["min_probability_range"]) - 1,
         np.log10(ds.qc_wind_speed.attrs["max_probability_range"]) + 1,
     )
-    ax1 = plt.subplot(1, 2, 1)
-    sp = plt.scatter(
+
+    sp = ax.scatter(
         ds.rws_norm,
         ds.snr_norm,
         s=3,
         c=np.log10(ds.probability),
-        cmap="hot",
+        cmap=kwargs.get("cmap", "hot"),
         vmin=prob_arange[0],
         vmax=prob_arange[-1],
     )
-    plt.xlabel("Normalized radial wind speed [m s$^{-1}$]")
-    plt.ylabel("Normalized SNR [dB]")
-    plt.grid()
-    plt.title(
-        "QC of data at "
-        + ds.attrs["location_id"]
-        + " on "
-        + utilities.datestr(np.nanmean(utilities.dt64_to_num(ds["time"])), "%Y-%m-%d")
-        + "\n File: "
-        + os.path.basename(ds.attrs["datastream"])
-    )
+    ax.set_xlabel("Normalized radial wind speed [m s$^{-1}$]")
+    ax.set_ylabel("Normalized SNR [dB]")
+    ax.grid(True)
 
-    ax2 = plt.subplot(1, 2, 2)
-    plt.semilogx(
+    if cax is None:
+        cax = fig.add_axes(
+            [
+                ax.get_position().x0 + ax.get_position().width + 0.01,
+                ax.get_position().y0,
+                0.015,
+                ax.get_position().height,
+            ]
+        )
+    cbar = plt.colorbar(sp, cax=cax, label="Probability")
+    cbar.set_ticks(prob_arange)
+    cbar.set_ticklabels([r"$10^{" + str(int(p)) + "}$" for p in prob_arange])
+    # fig.tight_layout()
+    return ax
+
+
+# Second function: Semilog plot
+def probabilityVSrws(ds, qc_rws_range, ax=None, fig=None, **kwargs):
+    if fig is None or ax is None:
+        fig, ax = plt.subplots(figsize=kwargs.get("figsize", (9, 8)))
+
+    ax.semilogx(
         ds.probability.values.ravel(),
         ds.rws_norm.values.ravel(),
         ".k",
-        alpha=0.01,
-        label="All points",
+        alpha=kwargs.get("alpha", 0.01),
+        label=kwargs.get("label_all", "All points"),
     )
-    plt.semilogx(
+    ax.semilogx(
         [10**b.mid for b in qc_rws_range.index],
         qc_rws_range.values,
         ".b",
-        markersize=10,
-        label="Range",
+        markersize=kwargs.get("markersize", 10),
+        label=kwargs.get("label_range", "Range"),
     )
-    plt.semilogx(
+    ax.semilogx(
         [
             ds["qc_wind_speed"].attrs["qc_probability_threshold"],
             ds["qc_wind_speed"].attrs["qc_probability_threshold"],
@@ -73,474 +80,156 @@ def probabilityFig(ds, qc_rws_range):
             ds["qc_wind_speed"].attrs["rws_norm_limit"],
         ],
         "--r",
-        label="Threshold",
-    )
-    plt.xlabel("Probability")
-    plt.ylabel("Normalized radial wind speed [m s$^{-1}$]")
-    ax2.yaxis.set_label_position("right")
-    plt.legend()
-    plt.grid()
-
-    fig_probability.subplots_adjust(left=0.1, right=0.9, wspace=0.3)
-    cax = fig_probability.add_axes(
-        [
-            ax1.get_position().x0 + ax1.get_position().width + 0.01,
-            ax1.get_position().y0,
-            0.015,
-            ax1.get_position().height,
-        ]
-    )
-    cbar = plt.colorbar(sp, cax=cax, label="Probability")
-    cbar.set_ticks(prob_arange)
-    cbar.set_ticklabels([r"$10^{" + str(int(p)) + "}$" for p in prob_arange])
-
-    N_plot = np.min(np.array([5, len(ds.scanID)]))
-    i_plot = [int(i) for i in np.linspace(0, len(ds.scanID) - 1, N_plot)]
-
-
-def stareFig(ds):
-    if ds.attrs["scan_mode"] == "Stare":
-        time = (ds.time - np.datetime64("1970-01-01T00:00:00")) / np.timedelta64(1, "s")
-        fig_rws = plt.figure(figsize=(18, 9))
-        ax = plt.subplot(2, 1, 1)
-        pc = plt.pcolor(
-            ds["time"],
-            r,
-            rws[:, 0, :],
-            cmap="coolwarm",
-            vmin=np.nanpercentile(rws_qc, 5) - 1,
-            vmax=np.nanpercentile(rws_qc, 95) + 1,
-        )
-        plt.xlabel("Time (UTC)")
-        plt.ylabel(r"Range [m]")
-        date_fmt = mdates.DateFormatter("%H:%M:%S")
-        plt.gca().xaxis.set_major_formatter(date_fmt)
-        plt.grid()
-        plt.title(
-            "Radial wind speed at "
-            + ds.inputData.attrs["location_id"]
-            + " on "
-            + utilities.datestr(np.nanmean(time), "%Y-%m-%d")
-            + "\n File: "
-            + os.path.basename(ds.source)
-            + "\n"
-            + utilities.datestr(np.nanmin(time), "%H:%M:%S")
-            + " - "
-            + utilities.datestr(np.nanmax(time), "%H:%M:%S")
-        )
-
-        cax = fig_rws.add_axes(
-            [
-                ax.get_position().x0 + ax.get_position().width + 0.01,
-                ax.get_position().y0,
-                0.015,
-                ax.get_position().height,
-            ]
-        )
-        cbar = plt.colorbar(
-            pc, cax=cax, label="Raw radial \n" + r" wind speed [m s$^{-1}$]"
-        )
-
-        ax = plt.subplot(2, 1, 2)
-        pc = plt.pcolor(
-            ds["time"],
-            r,
-            rws_qc[:, 0, :],
-            cmap="coolwarm",
-            vmin=np.nanpercentile(rws_qc, 5) - 1,
-            vmax=np.nanpercentile(rws_qc, 95) + 1,
-        )
-        plt.xlabel("Time (UTC)")
-        plt.ylabel(r"Range [m]")
-        date_fmt = mdates.DateFormatter("%H:%M:%S")
-        plt.gca().xaxis.set_major_formatter(date_fmt)
-        plt.grid()
-        cax = fig_rws.add_axes(
-            [
-                ax.get_position().x0 + ax.get_position().width + 0.01,
-                ax.get_position().y0,
-                0.015,
-                ax.get_position().height,
-            ]
-        )
-        cbar = plt.colorbar(
-            pc, cax=cax, label="Filtered radial \n" + r" wind speed [m s$^{-1}$]"
-        )
-
-
-def ppiFig(ds):
-    # if ds.attrs["scan_mode"] == "PPI":
-    fig_angles = plt.figure(figsize=(18, 10))
-    plt.subplot(2, 1, 1)
-    plt.plot(
-        ds.inputData["time"],
-        ds.inputData["azimuth"].values.ravel(),
-        ".k",
-        markersize=5,
-        label="Raw azimuth",
-    )
-    plt.plot(
-        ds.azimuth_selected.time,
-        ds.azimuth_selected,
-        ".r",
-        markersize=5,
-        label="Selected azimuth",
-    )
-    plt.plot(
-        ds.azimuth_regularized.time,
-        ds.azimuth_regularized,
-        ".g",
-        markersize=5,
-        label="Regularized azimuth",
-    )
-    plt.xlabel("Time (UTC)")
-    plt.ylabel(r"Azimuth [$^\circ$]")
-    date_fmt = mdates.DateFormatter("%H:%M:%S")
-    plt.gca().xaxis.set_major_formatter(date_fmt)
-    plt.legend()
-    plt.grid()
-    plt.title(
-        "Beam angles at "
-        + ds.inputData.attrs["location_id"]
-        + " on "
-        + utilities.datestr(
-            np.nanmean(utilities.dt64_to_num(ds.inputData["time"])),
-            "%Y-%m-%d",
-        )
-        + "\n File: "
-        + os.path.basename(ds.source)
+        label=kwargs.get("label_threshold", "Threshold"),
     )
 
-    plt.subplot(2, 1, 2)
-    plt.bar(ds.azimuth_detected, ds.counts, color="k")
-    plt.xlabel(r"Detected significant azimuth [$^\circ$]")
-    plt.ylabel("Occurrence")
-    plt.grid()
+    ax.set_xlabel("Probability")
+    ax.set_ylabel("Normalized radial wind speed [m s$^{-1}$]")
+    ax.yaxis.set_label_position("right")
+    ax.legend()
+    ax.grid(True)
+
+    return ax
 
 
-def rhiFig(ds):
-    # if ds.attrs["scan_mode"] == "RHI":
-    fig_angles = plt.figure(figsize=(18, 10))
-    plt.subplot(2, 1, 1)
-    plt.plot(
-        ds.inputData["time"],
-        ds.inputData["elevation"].values.ravel(),
-        ".k",
-        markersize=5,
-        label="Raw elevation",
-    )
-    plt.plot(
-        ds.elevation_selected.time,
-        ds.elevation_selected,
-        ".r",
-        markersize=5,
-        label="Selected elevation",
-    )
-    plt.plot(
-        ds.elevation_regularized.time,
-        ds.elevation_regularized,
-        ".g",
-        markersize=5,
-        label="Regularized elevation",
-    )
-    plt.xlabel("Time (UTC)")
-    plt.ylabel(r"Elevation [$^\circ$]")
-    date_fmt = mdates.DateFormatter("%H:%M:%S")
-    plt.gca().xaxis.set_major_formatter(date_fmt)
-    plt.legend()
-    plt.grid()
-    plt.title(
-        "Beam angles at "
-        + ds.inputData.attrs["location_id"]
-        + " on "
-        + utilities.datestr(
-            np.nanmean(utilities.dt64_to_num(ds.inputData["time"])),
-            "%Y-%m-%d",
-        )
-        + "\n File: "
-        + os.path.basename(ds.source)
-    )
-
-    plt.subplot(2, 1, 2)
-    plt.bar(ds.elevation_detected, ds.counts, color="k")
-    plt.xlabel(r"Detected significant elevation [$^\circ$]")
-    plt.ylabel("Occurrence")
-    plt.grid()
-
-
-def volumetricScanFig(ds):
-    # if ds.attrs["scan_mode"] == "3D":
-    fig_angles = plt.figure(figsize=(18, 10))
-    plt.subplot(4, 1, 1)
-    plt.plot(
-        ds.inputData["time"],
-        ds.inputData["azimuth"].values.ravel(),
-        ".k",
-        markersize=5,
-        label="Raw azimuth",
-    )
-    plt.plot(
-        ds.azimuth_selected.time,
-        ds.azimuth_selected,
-        ".r",
-        markersize=5,
-        label="Selected azimuth",
-    )
-    plt.plot(
-        ds.azimuth_regularized.time,
-        ds.azimuth_regularized,
-        ".g",
-        markersize=5,
-        label="Regularized azimuth",
-    )
-    plt.ylabel(r"Azimuth [$^\circ$]")
-    date_fmt = mdates.DateFormatter("%H:%M:%S")
-    plt.gca().xaxis.set_major_formatter(date_fmt)
-    plt.legend()
-    plt.grid()
-    plt.title(
-        "Beam angles at "
-        + ds.inputData.attrs["location_id"]
-        + " on "
-        + utilities.datestr(
-            np.nanmean(utilities.dt64_to_num(ds.inputData["time"])),
-            "%Y-%m-%d",
-        )
-        + "\n File: "
-        + os.path.basename(ds.source)
-    )
-
-    plt.subplot(4, 1, 2)
-    plt.plot(
-        ds.inputData["time"],
-        ds.inputData["elevation"].values.ravel(),
-        ".k",
-        markersize=5,
-        label="Raw elevation",
-    )
-    plt.plot(
-        ds.elevation_selected.time,
-        ds.elevation_selected,
-        ".r",
-        markersize=5,
-        label="Selected elevation",
-    )
-    plt.plot(
-        ds.elevation_regularized.time,
-        ds.elevation_regularized,
-        ".g",
-        markersize=5,
-        label="Regularized elevation",
-    )
-    plt.xlabel("Time (UTC)")
-    plt.ylabel(r"Elevation [$^\circ$]")
-    date_fmt = mdates.DateFormatter("%H:%M:%S")
-    plt.gca().xaxis.set_major_formatter(date_fmt)
-    plt.legend()
-    plt.grid()
-
-    ax = plt.subplot(2, 1, 2)
-    plt.plot(ds.azimuth_detected, ds.elevation_detected, "--k")
-    sc = plt.scatter(
-        ds.azimuth_detected,
-        ds.elevation_detected,
-        c=ds.counts,
-        cmap="hot",
-    )
-    plt.xlabel(r"Azimuth [$^\circ$]")
-    plt.ylabel(r"Elevation [$^\circ$]")
-    plt.grid()
-    cax = fig_angles.add_axes(
-        [
-            ax.get_position().x0 + ax.get_position().width + 0.01,
-            ax.get_position().y0,
-            0.015,
-            ax.get_position().height,
-        ]
-    )
-    cbar = plt.colorbar(sc, cax=cax, label="Occurrence")
-    ax.set_facecolor("lightgrey")
-
-
-def plot_rws(self, plot_type="xy"):
+def rws(ds, ax=None, fig=None, cax=None, **kwargs):
     """
-    Plot 2D radial wind speed (RWS) data in different projections.
+    Plot radial wind speed (RWS) data in different projections based on scan type.
 
     Parameters:
     -----------
-    plot_type : str
-        Type of plot projection to use: 'xy' for horizontal, 'xz' for vertical
+    ds : xarray.Dataset
+        Dataset containing the RWS data.
     """
-    fig_rws = plt.figure(figsize=(18, 8))
-    ctr = 1
 
-    for i in i_plot:
-        time = (ds.time[:, i] - np.datetime64("1970-01-01T00:00:00")) / np.timedelta64(
-            1, "s"
+    if ds.attrs["scan_mode"].lower() == "ppi":
+        fig, ax, cbar = ppi(ds, ax=ax, fig=fig, cax=cax)
+    elif ds.attrs["scan_mode"].lower() == "rhi":
+        fig, ax, cbar = rhi(ds, ax=ax, fig=fig, cax=cax)
+    elif ds.attrs["scan_mode"].lower() == "volumetric":
+        fig, ax, cbar = plot_volumetric(ds, ax=ax, fig=fig, cax=cax)
+    elif ds.attrs["scan_mode"].lower() == "stare":
+        fig, ax, cbar = stare(ds, ax=ax, fig=fig, cax=cax)
+    else:
+        raise ValueError(f"Unsupported scan type: {ds.attrs['scan_mode']}")
+
+    return fig, ax, cbar
+
+
+def ppi(ds, n_subplots: int = 5, ax=None, fig=None, cax=None, **kwargs):
+    """Plot plan position indicator (PPI) for radial wind speed data."""
+
+    if fig is None or ax is None:
+        fig, ax = plt.subplots(
+            1,
+            n_subplots,
+            sharex=True,
+            sharey=True,
+            figsize=kwargs.get("figsize", (9, 8)),
         )
 
-        # Set axes based on plot type
-        if plot_type == "xy":
-            X2, Y2 = X, Y
-            y_label = r"$y$ [m]"
-            ylim = [np.min(ds.y), np.max(ds.y)]
-        else:  # xz projection
-            X2, Y2 = X, Z
-            y_label = r"$z$ [m]"
-            ylim = [np.min(ds.z), np.max(ds.z)]
-
-        xlim = [np.min(ds.x), np.max(ds.x)]
-
-        # Plot raw and QC'ed RWS
-        for subplot_idx, (data, label) in enumerate(
-            [(rws, "Raw"), (rws_qc, "Filtered")]
-        ):
-            ax = plt.subplot(2, N_plot, ctr + subplot_idx * N_plot)
-            pc = plt.pcolor(
-                X2,
-                Y2,
-                data[:, :, i],
-                cmap="coolwarm",
-                vmin=np.nanpercentile(rws_qc, 5) - 1,
-                vmax=np.nanpercentile(rws_qc, 95) + 1,
-            )
-
-            if ctr == 1:
-                plt.ylabel(y_label)
-            else:
-                ax.set_yticklabels([])
-
-            if subplot_idx == 1:
-                plt.xlabel(r"$x$ [m]")
-
-            plt.grid()
-            ax.set_box_aspect(np.diff(ylim) / np.diff(xlim))
-            plt.xlim(xlim)
-            plt.ylim(ylim)
-
-            # Add title and colorbar
-            if ctr == np.ceil(N_plot / 2) and subplot_idx == 0:
-                self._add_main_title(time)
-            elif subplot_idx == 0:
-                self._add_time_title(time)
-
-            if ctr == N_plot:
-                self._add_colorbar(
-                    fig_rws, ax, pc, f"{label} radial\n wind speed [m s$^{-1}$]"
-                )
-
-        ctr += 1
-
-    return fig_rws
-
-
-def plot_beam_angles(self):
-    """Plot beam angles analysis including azimuth, elevation, and occurrence."""
-    fig_angles = plt.figure(figsize=(18, 10))
-
-    # Azimuth time series
-    plt.subplot(4, 1, 1)
-    self._plot_angle_timeseries("azimuth")
-    plt.ylabel(r"Azimuth [$^\circ$]")
-    self._add_main_title(self.inputData["time"])
-
-    # Elevation time series
-    plt.subplot(4, 1, 2)
-    self._plot_angle_timeseries("elevation")
-    plt.xlabel("Time (UTC)")
-    plt.ylabel(r"Elevation [$^\circ$]")
-
-    # Azimuth vs Elevation occurrence plot
-    ax = plt.subplot(2, 1, 2)
-    plt.plot(self.azimuth_detected, self.elevation_detected, "--k")
-    sc = plt.scatter(
-        self.azimuth_detected, self.elevation_detected, c=self.counts, cmap="hot"
+    scans = np.linspace(
+        ds.scanID.values.min(), ds.scanID.values.max(), n_subplots, dtype=int
     )
-    plt.xlabel(r"Azimuth [$^\circ$]")
-    plt.ylabel(r"Elevation [$^\circ$]")
-    plt.grid()
-    ax.set_facecolor("lightgrey")
-    self._add_colorbar(fig_angles, ax, sc, "Occurrence")
 
-    return fig_angles
+    for i, scan in enumerate(scans):
+        subset = ds.isel(scanID=scan)
+        im = ax[i].pcolormesh(
+            subset.x, subset.y, subset.wind_speed, cmap="RdBu_r", shading="auto"
+        )
+        ax[i].set_xlabel(r"$x$ [m]")
+        if i == 0:
+            ax[i].set_ylabel(r"$y$ [m]")
+        ax[i].set_aspect("equal")
+        add_time_title(ax[i], ds.time.sel(scanID=scan))
+
+    if cax is None:
+        fig.tight_layout()
+        cbar = add_colorbar(fig, ax[-1], im, "Radial Wind \n Speed [m/s]")
+    else:
+        cbar = plt.colorbar(im, cax=cax, label="Radial Wind \n Speed [m/s]")
+
+    return fig, ax, cbar
 
 
-def plot_3d_rws(self):
-    """Plot 3D visualization of radial wind speed data."""
-    fig_rws = plt.figure(figsize=(18, 9))
-    ctr = 1
+def stare(ds):
+    """Plot stare visualization for radial wind speed data."""
+    # Implement stare plotting logic here
+    raise NotImplementedError("Stare plotting is not implemented yet.")
 
-    for i in i_plot:
-        time = (
-            self.outputData.time[:, i] - np.datetime64("1970-01-01T00:00:00")
-        ) / np.timedelta64(1, "s")
-        x, y, z = [self.outputData[coord][:, :, i].values for coord in ["x", "y", "z"]]
 
-        # Plot raw and QC'ed RWS in 3D
-        for subplot_idx, (data, label) in enumerate(
-            [(rws, "Raw"), (rws_qc, "Filtered")]
-        ):
-            f = data[:, :, i].values
-            real = ~np.isnan(x + y + z + f)
+def azimuthScatter(dsInput, dsStandardized, ax=None, fig=None, **kwargs):
+    """scatter plot showing observed and standardized azimuth angles"""
+    if fig is None or ax is None:
+        fig, ax = plt.subplots(figsize=kwargs.get("figsize", (9, 8)))
 
-            # Subsample if too many points
-            skip = int(np.sum(real) / 10000) if np.sum(real) > 10000 else 1
-
-            ax = plt.subplot(2, N_plot, ctr + subplot_idx * N_plot, projection="3d")
-            sc = self._plot_3d_scatter(ax, x, y, z, f, real, skip)
-
-            if ctr == np.ceil(N_plot / 2) and subplot_idx == 0:
-                self._add_main_title(time)
-            elif subplot_idx == 0:
-                self._add_time_title(time)
-
-            if ctr == N_plot:
-                self._add_colorbar(
-                    fig_rws,
-                    ax,
-                    sc,
-                    f"{label} radial\n wind speed [m s$^{-1}$]",
-                    position_adjust=0.035,
-                )
-
-        ctr += 1
-
-    plt.subplots_adjust(
-        left=0.05, bottom=0.1, right=0.9, top=0.9, wspace=0.4, hspace=0.25
+    ax.scatter(
+        dsInput.time,
+        dsInput.azimuth,
+        marker=".",
+        c="C0",
+        label="input data",
     )
-    return fig_rws
-
-
-def _plot_angle_timeseries(self, angle_type):
-    """Helper function to plot angle time series."""
-    plt.plot(
-        self.inputData["time"],
-        self.inputData[angle_type].values.ravel(),
-        ".k",
-        markersize=5,
-        label=f"Raw {angle_type}",
+    ax.scatter(
+        dsStandardized.time,
+        dsStandardized.azimuth,
+        marker=".",
+        c="C1",
+        label="regularized data",
     )
-    plt.plot(
-        getattr(self, f"{angle_type}_selected").time,
-        getattr(self, f"{angle_type}_selected"),
-        ".r",
-        markersize=5,
-        label=f"Selected {angle_type}",
+
+    xformatter = mdates.DateFormatter("%H:%M")
+    ax.xaxis.set_major_formatter(xformatter)
+    ax.set_xlabel(f"Time (UTC)")
+    ax.set_ylabel(f"Azimuth Angle [˚]")
+
+    ax.set_title(
+        titleGenerator(
+            dsStandardized,
+            "Beam angles",
+            ["location", "date", "file"],
+        )
     )
-    plt.plot(
-        getattr(self, f"{angle_type}_regularized").time,
-        getattr(self, f"{angle_type}_regularized"),
-        ".g",
-        markersize=5,
-        label=f"Regularized {angle_type}",
-    )
-    date_fmt = mdates.DateFormatter("%H:%M:%S")
-    plt.gca().xaxis.set_major_formatter(date_fmt)
-    plt.legend()
-    plt.grid()
+
+    return fig, ax
 
 
-def _plot_3d_scatter(self, ax, x, y, z, f, real, skip):
+def azimuthhist(ds, ax=None, fig=None, rwidth=0.8, **kwargs):
+    """bar plot of occurrences of azimuth angles"""
+    if fig is None or ax is None:
+        fig, ax = plt.subplots(figsize=kwargs.get("figsize", (5, 3)))
+
+    ax.hist(ds.azimuth.values.flatten(), bins=len(ds.beamID), rwidth=rwidth, **kwargs)
+    ax.set_xlabel("Azimuth Angle [˚]")
+    ax.set_ylabel("Occurrence")
+
+    return fig, ax
+
+
+def azimuthDeltaHist(ds1, ds2, bins: int = 10, ax=None, fig=None, **kwargs):
+    """plot a histogram of recorded vs standardized azimuth angles"""
+
+    if fig is None or ax is None:
+        fig, ax = plt.subplots(figsize=kwargs.get("figsize", (5, 3)))
+
+    az = {}
+    for ds in [ds1, ds2]:
+        if len(ds.azimuth.coords) != 1:
+            az["standardized"] = ds.azimuth.stack(time=["scanID", "beamID"]).values
+        else:
+            az["input"] = ds.azimuth.values
+
+    deltaAzimuth = az["input"] - az["standardized"]
+
+    ax.hist(deltaAzimuth, bins=bins, **kwargs)
+    plt.xticks(rotation=30)
+    ax.set_xlabel("Change in Azimuth Angle [˚]")
+    ax.set_ylabel("Occurrence")
+
+    return fig, ax
+
+
+def rws3Dscatter(ax, x, y, z, f, real, skip):
     """Helper function for 3D scatter plotting."""
     sc = ax.scatter(
         x[real][::skip],
@@ -549,13 +238,13 @@ def _plot_3d_scatter(self, ax, x, y, z, f, real, skip):
         s=2,
         c=f[real][::skip],
         cmap="coolwarm",
-        vmin=np.nanpercentile(rws_qc, 5) - 1,
-        vmax=np.nanpercentile(rws_qc, 95) + 1,
+        vmin=np.nanpercentile(f, 5) - 1,
+        vmax=np.nanpercentile(f, 95) + 1,
     )
 
-    xlim = [np.min(self.outputData.x), np.max(self.outputData.x)]
-    ylim = [np.min(self.outputData.y), np.max(self.outputData.y)]
-    zlim = [np.min(self.outputData.z), np.max(self.outputData.z)]
+    xlim = [np.min(x), np.max(x)]
+    ylim = [np.min(y), np.max(y)]
+    zlim = [np.min(z), np.max(z)]
 
     if ctr == 1:
         ax.set_xlabel(r"$x$ [m]", labelpad=10)
@@ -573,7 +262,7 @@ def _plot_3d_scatter(self, ax, x, y, z, f, real, skip):
     return sc
 
 
-def _add_colorbar(self, fig, ax, mappable, label, position_adjust=0.01):
+def add_colorbar(fig, ax, mappable, label, position_adjust=0.01):
     """Helper function to add colorbar."""
     cax = fig.add_axes(
         [
@@ -586,354 +275,165 @@ def _add_colorbar(self, fig, ax, mappable, label, position_adjust=0.01):
     return plt.colorbar(mappable, cax=cax, label=label)
 
 
-def _add_main_title(self, time):
+def titleGenerator(ds, inputString: str = None, components=["location", "date"]):
+    """build title for figures"""
+    componentDict = {
+        "date": f"on {ds.time.dt.strftime('%Y-%m-%d').values.flatten()[0]}",
+        "location": f"at {ds.attrs['location_id']}",
+        "file": f"\nFile: {ds.attrs['datastream']}",
+    }
+
+    title = [inputString] + [componentDict[comp] for comp in components]
+
+    return " ".join(title)
+
+
+def add_main_title(fig, time, location_id, filename):
     """Helper function to add main title."""
-    plt.title(
-        f"Radial wind speed at {self.inputData.attrs['location_id']} on "
+    fig.suptitle(
+        f"Radial wind speed at {location_id} on "
         f"{utilities.datestr(np.nanmean(time), '%Y-%m-%d')}\n"
-        f"File: {os.path.basename(self.source)}\n"
+        f"File: {filename}\n"
         f"{utilities.datestr(np.nanmin(time), '%H:%M:%S')} - "
         f"{utilities.datestr(np.nanmax(time), '%H:%M:%S')}"
     )
 
 
-def _add_time_title(self, time):
+def add_time_title(ax, time):
     """Helper function to add time-only title."""
-    plt.title(
-        f"{utilities.datestr(np.nanmin(time), '%H:%M:%S')} - "
-        f"{utilities.datestr(np.nanmax(time), '%H:%M:%S')}"
+    ax.set_title(
+        f"{time.min().dt.strftime('%H:%M:%S').values} - "
+        f"{time.max().dt.strftime('%H:%M:%S').values}"
     )
 
 
-# def rwsfig(ds):
-#     fig_rws = plt.figure(figsize=(18, 8))
-#     ctr = 1
-#     for i in i_plot:
-#         time = (ds.time[:, i] - np.datetime64("1970-01-01T00:00:00")) / np.timedelta64(
-#             1, "s"
-#         )
-
-#         # plot raw rws
-#         ax = plt.subplot(2, N_plot, ctr)
-#         pc = plt.pcolor(
-#             X,
-#             Y,
-#             rws[:, :, i],
-#             cmap="coolwarm",
-#             vmin=np.nanpercentile(rws_qc, 5) - 1,
-#             vmax=np.nanpercentile(rws_qc, 95) + 1,
-#         )
-#         if ctr == 1:
-#             plt.ylabel(r"$y$ [m]")
-#         else:
-#             ax.set_yticklabels([])
-#         plt.grid()
-
-#         xlim = [np.min(ds.x), np.max(ds.x)]
-#         ylim = [np.min(ds.y), np.max(ds.y)]
-#         ax.set_box_aspect(np.diff(ylim) / np.diff(xlim))
-#         plt.xlim(xlim)
-#         plt.ylim(ylim)
-#         plt.title(
-#             utilities.datestr(np.nanmin(time), "%H:%M:%S")
-#             + " - "
-#             + utilities.datestr(np.nanmax(time), "%H:%M:%S")
-#         )
-
-#         if ctr == np.ceil(N_plot / 2):
-#             plt.title(
-#                 "Radial wind speed at "
-#                 + ds.inputData.attrs["location_id"]
-#                 + " on "
-#                 + utilities.datestr(np.nanmean(time), "%Y-%m-%d")
-#                 + "\n File: "
-#                 + os.path.basename(ds.source)
-#                 + "\n"
-#                 + utilities.datestr(np.nanmin(time), "%H:%M:%S")
-#                 + " - "
-#                 + utilities.datestr(np.nanmax(time), "%H:%M:%S")
-#             )
-
-#         if ctr == N_plot:
-#             cax = fig_rws.add_axes(
-#                 [
-#                     ax.get_position().x0 + ax.get_position().width + 0.01,
-#                     ax.get_position().y0,
-#                     0.015,
-#                     ax.get_position().height,
-#                 ]
-#             )
-#             cbar = plt.colorbar(
-#                 pc, cax=cax, label="Raw radial \n" + r" wind speed [m s$^{-1}$]"
-#             )
-
-#         # plot qc'ed rws
-#         ax = plt.subplot(2, N_plot, ctr + N_plot)
-#         plt.pcolor(
-#             X,
-#             Y,
-#             rws_qc[:, :, i],
-#             cmap="coolwarm",
-#             vmin=np.nanpercentile(rws_qc, 5) - 1,
-#             vmax=np.nanpercentile(rws_qc, 95) + 1,
-#         )
-#         plt.xlabel(r"$x$ [m]")
-#         if ctr == 1:
-#             plt.ylabel(r"$y$ [m]")
-#         else:
-#             ax.set_yticklabels([])
-#         xlim = [np.min(ds.x), np.max(ds.x)]
-#         ylim = [np.min(ds.y), np.max(ds.y)]
-#         ax.set_box_aspect(np.diff(ylim) / np.diff(xlim))
-#         plt.xlim(xlim)
-#         plt.ylim(ylim)
-#         plt.grid()
-
-#         if ctr == N_plot:
-#             if ctr == N_plot:
-#                 cax = fig_rws.add_axes(
-#                     [
-#                         ax.get_position().x0 + ax.get_position().width + 0.01,
-#                         ax.get_position().y0,
-#                         0.015,
-#                         ax.get_position().height,
-#                     ]
-#                 )
-#                 cbar = plt.colorbar(
-#                     pc,
-#                     cax=cax,
-#                     label="Filtered radial \n" + r" wind speed [m s$^{-1}$]",
-#                 )
-#         ctr += 1
+def rhi(ds):
+    """Plot range height indicator (RHI) for radial wind speed data."""
+    # Implement RHI plotting logic here
+    raise NotImplementedError("RHI plotting is not implemented yet.")
 
 
-# def rwsFig2(ds):
-#     fig_rws = plt.figure(figsize=(18, 8))
-#     ctr = 1
-#     for i in i_plot:
-#         time = (ds.time[:, i] - np.datetime64("1970-01-01T00:00:00")) / np.timedelta64(
-#             1, "s"
-#         )
-
-#         # plot raw rws
-#         ax = plt.subplot(2, N_plot, ctr)
-#         pc = plt.pcolor(
-#             X,
-#             Z,
-#             rws[:, :, i],
-#             cmap="coolwarm",
-#             vmin=np.nanpercentile(rws_qc, 5) - 1,
-#             vmax=np.nanpercentile(rws_qc, 95) + 1,
-#         )
-#         if ctr == 1:
-#             plt.ylabel(r"$z$ [m]")
-#         else:
-#             ax.set_yticklabels([])
-#         plt.grid()
-
-#         xlim = [np.min(ds.x), np.max(ds.x)]
-#         zlim = [np.min(ds.z), np.max(ds.z)]
-#         ax.set_box_aspect(np.diff(zlim) / np.diff(xlim))
-#         plt.xlim(xlim)
-#         plt.ylim(zlim)
-#         plt.title(
-#             utilities.datestr(np.nanmin(time), "%H:%M:%S")
-#             + " - "
-#             + utilities.datestr(np.nanmax(time), "%H:%M:%S")
-#         )
-
-#         if ctr == np.ceil(N_plot / 2):
-#             plt.title(
-#                 "Radial wind speed at "
-#                 + ds.inputData.attrs["location_id"]
-#                 + " on "
-#                 + utilities.datestr(np.nanmean(time), "%Y-%m-%d")
-#                 + "\n File: "
-#                 + os.path.basename(ds.source)
-#                 + "\n"
-#                 + utilities.datestr(np.nanmin(time), "%H:%M:%S")
-#                 + " - "
-#                 + utilities.datestr(np.nanmax(time), "%H:%M:%S")
-#             )
-
-#         if ctr == N_plot:
-#             cax = fig_rws.add_axes(
-#                 [
-#                     ax.get_position().x0 + ax.get_position().width + 0.01,
-#                     ax.get_position().y0,
-#                     0.015,
-#                     ax.get_position().height,
-#                 ]
-#             )
-#             cbar = plt.colorbar(
-#                 pc, cax=cax, label="Raw radial \n" + r" wind speed [m s$^{-1}$]"
-#             )
-
-#         # plot qc'ed rws
-#         ax = plt.subplot(2, N_plot, ctr + N_plot)
-#         plt.pcolor(
-#             X,
-#             Z,
-#             rws_qc[:, :, i],
-#             cmap="coolwarm",
-#             vmin=np.nanpercentile(rws_qc, 5) - 1,
-#             vmax=np.nanpercentile(rws_qc, 95) + 1,
-#         )
-#         plt.xlabel(r"$x$ [m]")
-#         if ctr == 1:
-#             plt.ylabel(r"$z$ [m]")
-#         else:
-#             ax.set_yticklabels([])
-
-#         ax.set_box_aspect(np.diff(zlim) / np.diff(xlim))
-#         plt.xlim(xlim)
-#         plt.ylim(zlim)
-#         plt.grid()
-
-#         if ctr == N_plot:
-#             if ctr == N_plot:
-#                 cax = fig_rws.add_axes(
-#                     [
-#                         ax.get_position().x0 + ax.get_position().width + 0.01,
-#                         ax.get_position().y0,
-#                         0.015,
-#                         ax.get_position().height,
-#                     ]
-#                 )
-#                 cbar = plt.colorbar(
-#                     pc,
-#                     cax=cax,
-#                     label="Filtered radial \n" + r" wind speed [m s$^{-1}$]",
-#                 )
-#         ctr += 1
+def plot_volumetric(ds):
+    """Plot volumetric visualization for radial wind speed data."""
+    # Implement volumetric plotting logic here
+    raise NotImplementedError("Volumetric plotting is not implemented yet.")
 
 
-# def rwsfig3(ds):
-#     fig_rws = plt.figure(figsize=(18, 9))
-#     ctr = 1
-#     for i in i_plot:
-#         time = (ds.time[:, i] - np.datetime64("1970-01-01T00:00:00")) / np.timedelta64(
-#             1, "s"
-#         )
-#         x = ds.x[:, :, i].values
-#         y = ds.y[:, :, i].values
-#         z = ds.z[:, :, i].values
-#         f = rws[:, :, i].values
-#         real = ~np.isnan(x + y + z + f)
+def volumetric(ds):
+    """Plot 3D visualization of radial wind speed data."""
+    fig = plt.figure(figsize=(18, 9))
+    ctr = 1
 
-#         if np.sum(real) > 10000:
-#             skip = int(np.sum(real) / 10000)
-#         else:
-#             skip = 1
+    for i in range(min(5, len(ds.scanID))):
+        time = (ds.time[:, i] - np.datetime64("1970-01-01T00:00:00")) / np.timedelta64(
+            1, "s"
+        )
+        x, y, z = [ds[coord][:, :, i].values for coord in ["x", "y", "z"]]
 
-#         # plot raw rws
-#         xlim = [np.min(ds.x), np.max(ds.x)]
-#         ylim = [np.min(ds.y), np.max(ds.y)]
-#         zlim = [np.min(ds.z), np.max(ds.z)]
+        for subplot_idx, (data, label) in enumerate(
+            [(ds.rws, "Raw"), (ds.rws_qc, "Filtered")]
+        ):
+            f = data[:, :, i].values
+            real = ~np.isnan(x + y + z + f)
 
-#         ax = plt.subplot(2, N_plot, ctr, projection="3d")
-#         sc = ax.scatter(
-#             x[real][::skip],
-#             y[real][::skip],
-#             z[real][::skip],
-#             s=2,
-#             c=f[real][::skip],
-#             cmap="coolwarm",
-#             vmin=np.nanpercentile(rws_qc, 5) - 1,
-#             vmax=np.nanpercentile(rws_qc, 95) + 1,
-#         )
-#         if ctr == 1:
-#             ax.set_xlabel(r"$x$ [m]", labelpad=10)
-#             ax.set_ylabel(r"$y$ [m]")
-#             ax.set_zlabel(r"$z$ [m]")
-#         else:
-#             ax.set_xticklabels([])
-#             ax.set_yticklabels([])
-#             ax.set_zticklabels([])
+            # Subsample if too many points
+            skip = int(np.sum(real) / 10000) if np.sum(real) > 10000 else 1
 
-#         ax.set_box_aspect((np.diff(xlim)[0], np.diff(ylim)[0], np.diff(zlim)[0]))
-#         ax.set_xlim(xlim)
-#         ax.set_ylim(ylim)
-#         ax.set_zlim(zlim)
-#         plt.title(
-#             utilities.datestr(np.nanmin(time), "%H:%M:%S")
-#             + " - "
-#             + utilities.datestr(np.nanmax(time), "%H:%M:%S")
-#         )
+            ax = plt.subplot(
+                2,
+                min(5, len(ds.scanID)),
+                ctr + subplot_idx * min(5, len(ds.scanID)),
+                projection="3d",
+            )
+            sc = rws3Dscatter(ax, x, y, z, f, real, skip)
 
-#         if ctr == np.ceil(N_plot / 2):
-#             plt.title(
-#                 "Radial wind speed at "
-#                 + ds.inputData.attrs["location_id"]
-#                 + " on "
-#                 + utilities.datestr(np.nanmean(time), "%Y-%m-%d")
-#                 + "\n File: "
-#                 + os.path.basename(ds.source)
-#                 + "\n"
-#                 + utilities.datestr(np.nanmin(time), "%H:%M:%S")
-#                 + " - "
-#                 + utilities.datestr(np.nanmax(time), "%H:%M:%S")
-#             )
+            if ctr == np.ceil(min(5, len(ds.scanID)) / 2) and subplot_idx == 0:
+                add_main_title(
+                    fig,
+                    time,
+                    ds.attrs["location_id"],
+                    os.path.basename(ds.attrs["datastream"]),
+                )
+            elif subplot_idx == 0:
+                add_time_title(ax, time)
 
-#         if ctr == N_plot:
-#             cax = fig_rws.add_axes(
-#                 [
-#                     ax.get_position().x0 + ax.get_position().width + 0.035,
-#                     ax.get_position().y0,
-#                     0.015,
-#                     ax.get_position().height,
-#                 ]
-#             )
-#             cbar = plt.colorbar(
-#                 sc, cax=cax, label="Raw radial \n" + r" wind speed [m s$^{-1}$]"
-#             )
+            if ctr == min(5, len(ds.scanID)):
+                add_colorbar(
+                    fig,
+                    ax,
+                    sc,
+                    f"{label} radial\n wind speed [m s$^{-1}$]",
+                    position_adjust=0.035,
+                )
 
-#         # plot qc'ed rws
-#         f = rws_qc[:, :, i].values
-#         real = ~np.isnan(x + y + z + f)
-#         ax = plt.subplot(2, N_plot, ctr + N_plot, projection="3d")
-#         sc = ax.scatter(
-#             x[real],
-#             y[real],
-#             z[real],
-#             s=2,
-#             c=f[real],
-#             cmap="coolwarm",
-#             vmin=np.nanpercentile(rws_qc, 5) - 1,
-#             vmax=np.nanpercentile(rws_qc, 95) + 1,
-#         )
+        ctr += 1
 
-#         if ctr == 1:
-#             ax.set_xlabel(r"$x$ [m]", labelpad=10)
-#             ax.set_ylabel(r"$y$ [m]")
-#             ax.set_zlabel(r"$z$ [m]")
-#         else:
-#             ax.set_xticklabels([])
-#             ax.set_yticklabels([])
-#             ax.set_zticklabels([])
+    plt.subplots_adjust(
+        left=0.05, bottom=0.1, right=0.9, top=0.9, wspace=0.4, hspace=0.25
+    )
+    return fig
 
-#         ax.set_box_aspect((np.diff(xlim)[0], np.diff(ylim)[0], np.diff(zlim)[0]))
-#         ax.set_xlim(xlim)
-#         ax.set_ylim(ylim)
-#         ax.set_zlim(zlim)
-#         plt.grid()
 
-#         if ctr == N_plot:
-#             if ctr == N_plot:
-#                 cax = fig_rws.add_axes(
-#                     [
-#                         ax.get_position().x0 + ax.get_position().width + 0.035,
-#                         ax.get_position().y0,
-#                         0.015,
-#                         ax.get_position().height,
-#                     ]
-#                 )
-#                 cbar = plt.colorbar(
-#                     sc,
-#                     cax=cax,
-#                     label="Filtered radial \n" + r" wind speed [m s$^{-1}$]",
-#                 )
-#         ctr += 1
-#         plt.subplots_adjust(
-#             left=0.05, bottom=0.1, right=0.9, top=0.9, wspace=0.4, hspace=0.25
-#         )
+def windSpeedQCfig(ds, qc_rws_range):
+    """wrapper method to make qc and probability scatter plots"""
+    fig = plt.figure(figsize=(10, 4), layout="constrained")
+    gs = GridSpec(nrows=1, ncols=3, width_ratios=[6, 0.25, 6], figure=fig)
+
+    ax0 = fig.add_subplot(gs[0, 0])
+    cax = fig.add_subplot(gs[0, 1])
+    ax1 = fig.add_subplot(gs[0, 2])
+
+    probabilityScatter(ds, ax=ax0, fig=fig, cax=cax)
+    probabilityVSrws(ds, qc_rws_range, ax=ax1, fig=fig)
+
+    fig.suptitle(
+        titleGenerator(ds, "QC of data", components=["location", "date", "file"])
+    )
+
+    return fig
+
+
+def scanFig(ds):
+    """wrapper method to make scans pcolor figures"""
+    fig = plt.figure(figsize=(12, 3), layout="constrained")
+    gs = GridSpec(nrows=2, ncols=6, width_ratios=[6, 6, 6, 6, 6, 0.5], figure=fig)
+
+    ax1 = fig.add_subplot(gs[0, 0])
+    ax2 = fig.add_subplot(gs[1, 0])
+    axt = [ax1] + [
+        fig.add_subplot(gs[0, x], sharex=ax1, sharey=ax1) for x in range(1, 5)
+    ]
+    axb = [ax2] + [
+        fig.add_subplot(gs[1, x], sharex=ax2, sharey=ax2) for x in range(1, 5)
+    ]
+    caxt = fig.add_subplot(gs[0, -1])
+    caxb = fig.add_subplot(gs[1, -1])
+
+    fig, axt, _ = rws(ds, fig=fig, ax=axt, cax=caxt)
+
+    b1qc = ds.copy()
+    b1qc["wind_speed"] = b1qc["wind_speed"].where(
+        (b1qc.qc_wind_speed == 0.0)
+    )  # & (b1qc.range <= 1000.0)
+    fig, axb, _ = rws(b1qc, fig=fig, ax=axb, cax=caxb)
+
+    return fig
+
+
+def azHistFig(ds, dsInput):
+    """wrapper method to make azimuth histograms"""
+    fig, ax = plt.subplots(1, 2, figsize=(10, 3))
+    fig, _ = azimuthhist(ds, ax=ax[0], fig=fig, rwidth=0.7, color=".25")
+    fig, _ = azimuthDeltaHist(dsInput, ds, ax=ax[1], fig=fig, color="C2")
+
+    return fig
+
+
+def qcReport(ds, dsInput, qc_rws_range):
+    """wrapper method to make qc figures"""
+    wsqc_fig = windSpeedQCfig(ds, qc_rws_range)
+    scanqc_fig = scanFig(ds)
+    az_fig, _ = azimuthScatter(dsInput, ds, figsize=(10, 3))
+    azhist_fig = azHistFig(ds, dsInput)
+
+    return wsqc_fig, scanqc_fig, az_fig, azhist_fig

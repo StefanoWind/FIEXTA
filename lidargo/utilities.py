@@ -63,6 +63,18 @@ def lidar_xyz(r, ele, azi):
     return X, Y, Z
 
 
+def dropDuplicatedCoords(ds, varsToClean=["x", "y", "z"]):
+    """drop duplicated Cartesian coordinate info"""
+    dupcoord = []
+    for coord in ds.x.coords:
+        tmp = ds.x.std(dim=coord).mean()
+        if tmp < 1e-10:
+            dupcoord.append(coord)
+
+    cleanCoords = ds[varsToClean].mean(dupcoord)
+    return ds.assign(cleanCoords)
+
+
 def defineLocalBins(df, config):
     """
     Helper function for making tidy bins based on ranges and bin sizes
