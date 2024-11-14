@@ -828,8 +828,8 @@ class Standardize:
                 ["scan_start_time", "deltaTime"]
             )
 
-            # else:
-            #     raise ValueError("Dataset is not initialized")
+            self.outputData = utilities.dropDuplicatedCoords(self.outputData)
+
         except ValueError as e:
             self.logger.log(f"Dataset is not initialized: {str(e)}", level="error")
             raise
@@ -875,24 +875,24 @@ class Standardize:
         }
         self.outputData = utilities.add_qc_attrs(self.outputData, qcAttrDict)
 
-    def qc_report(self):
+    @with_logging
+    def qc_report(self, saveFigs: bool = False, filetype: str = "png"):
         """
         Make figures.
+        #TODO should the qc report have more flexibility?
         """
 
-        # if not ds.attrs["scan_mode"] == "Stare":
-        #     fig_angles.savefig(self.save_filename.replace(".nc", "_angles.png"))
-
-        fig_probability = vis.probability(
-            self.outputData, self.qc_probability_threshold
+        wsqc_fig, scanqc_fig, az_fig, azhist_fig = vis.qcReport(
+            self.outputData, self.inputData, self.qc_rws_range
         )
-        fig_probability.savefig(self.save_filename.replace(".nc", "_probability.png"))
 
-        fig_rws = vis.rwsfig
-        fig_rws.savefig(self.save_filename.replace(".nc", "_wind_speed.png"))
-
-        # self.logger.log(f"QC figures saved in {os.path.dirname(self.save_filename)}")
-        # pass
+        if saveFigs:
+            wsqc_fig.savefig(
+                self.save_filename.replace(".nc", ".probability." + filetype)
+            )
+            scanqc_fig.savefig(self.save_filename.replace(".nc", ".qcscan." + filetype))
+            az_fig.savefig(self.save_filename.replace(".nc", ".azScatter." + filetype))
+            azhist_fig.savefig(self.save_filename.replace(".nc", ".azHist." + filetype))
 
 
 if __name__ == "__main__":
