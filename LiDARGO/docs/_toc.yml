@@ -1,0 +1,13 @@
+# Table of contents
+# Learn more at https://jupyterbook.org/customize/toc.html
+
+format: jb-book
+root: intro
+chapters:
+- file: format
+- file: standardize
+  sections: 
+  - file: standardize_prec
+  # - file: LiDARGO_standardize_restr
+  # - file: LiDARGO_standardize_qc
+- file: statistics

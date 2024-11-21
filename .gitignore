@@ -5,5 +5,7 @@ __pycache__
 *.csv
 *.log
 *.yaml
-trash/*
+*/trash/*
 *.hpl
+*.html
+*/docs/_build/*
