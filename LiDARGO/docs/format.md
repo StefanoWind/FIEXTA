@@ -1,9 +1,9 @@
-# LIDARGO_format
+# LIDARGO format
 
-*LIDARGO_format.py* is a class that converts raw lidar data files into netCDF datasets compatible with *LIDARGO_standardize.py* and compliant with the [Wind Data Hub](https://a2e.energy.gov/login) standards.
+The LIDARGO *format.py* is a class that converts raw lidar data files into netCDF datasets compatible with *standardize.py* and compliant with the [Wind Data Hub](https://a2e.energy.gov/login) standards.
 
 The class initialization requires the folling inputs:
-```{list-table} Inputs to LIDARGO_format initialization.
+```{list-table} Inputs to LIDARGO *format.py* initialization.
 :header-rows: 1
 :name: tab-LiDARGO_format1
 
@@ -24,7 +24,7 @@ The class initialization requires the folling inputs:
 
 The main module is the *process_scan* which accepts the following inputs:
 
-```{list-table} Inputs to *process_scan* in LIDARGO_format.
+```{list-table} Inputs to *process_scan* in LIDARGO *format.py*.
 :header-rows: 1
 :name: tab-LiDARGO_format2
 
@@ -68,7 +68,7 @@ The main module is the *process_scan* which accepts the following inputs:
 ```
 
 LiDAR models that currently are supported are:
-* Streamline Halo XR and XR+ that produce .hpl files
-* WindCube 200S that produce netCDF files
+* Streamline Halo XR and XR+ that produces .hpl files
+* WindCube 200S that produces netCDF files
 
-New models can be added by creating dedicated functions inside the LIDARGO_format class.
+New models can be added by creating dedicated functions inside the *format.py* class.

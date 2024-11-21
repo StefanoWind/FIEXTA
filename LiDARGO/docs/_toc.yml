@@ -4,6 +4,10 @@
 format: jb-book
 root: intro
 chapters:
-- file: LIDARGO_format
-# - file: LiDARGO_standardize
-# - file: LiDARGO_statistics
+- file: format
+- file: standardize
+  sections: 
+  - file: standardize_prec
+  # - file: LiDARGO_standardize_restr
+  # - file: LiDARGO_standardize_qc
+- file: statistics

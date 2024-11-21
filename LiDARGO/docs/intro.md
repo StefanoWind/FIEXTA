@@ -22,17 +22,17 @@ The LIDARGO data nomenclature is inspired by the guidelines available at the [Wi
   - Formatted  
   - Data reformated with minimal changes  
   - netCDF 
-  - [LIDARGO_format](LIDARGO_format.md)  
+  - [format](format.md)  
 * - bx    
   - Reviewed  
   - Data with QC flags  
   - netCDF 
-  - [LIDARGO_standardize](LIDARGO_standardize.md) 
+  - [standardize](standardize.md) 
 * - cx    
   - Derived  
   - Value-added product derived from bx level  
   - netCDF 
-  - [LIDARGO_statistics](LIDARGO_statistics.md) 
+  - [statistics](statistics.md) 
 ```
 
 The "x" is an index that is used to identify further layer within each data level. E.g., if b0 are data quality-controlled through a method X, b2 can be data quality-controlled through a method Y, generally more advanced.
