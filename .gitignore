@@ -6,4 +6,5 @@ __pycache__
 *.log
 *.yaml
 trash/*
+*.egg-info/
 *.hpl
