@@ -1,5 +1,7 @@
 '''
-Example of application of LiDARGO to AWAKEN voluetric data from sa1.lidar.z05 data channel.
+Example of application of LiDARGO to AWAKEN volumetric formatted data from Cornell Halo XR at site A1.
+
+!This example requires a significant CPU time to complete!
 '''
  
 import os

@@ -17,3 +17,4 @@ files=glob.glob('data/propietary/awaken/volumetric-wake-csm/*b0*nc')#add wildcar
 for f in files:
     lproc = lc0.LIDARGO(f,'config/config_awaken_c0.xlsx', verbose=True)
     lproc.process_scan(f,replace=True,save_file=True)
+

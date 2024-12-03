@@ -1,10 +1,12 @@
 README.md
 setup.py
 lidargo/__init__.py
+lidargo/config.py
+lidargo/logger.py
 lidargo/qcReport.py
 lidargo/standardize.py
 lidargo/statistics.py
-lidargo/test.py
+lidargo/utilities.py
 lidargo/vis.py
 lidargo.egg-info/PKG-INFO
 lidargo.egg-info/SOURCES.txt

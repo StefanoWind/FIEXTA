@@ -1,23 +1,3 @@
-Metadata-Version: 2.1
-Name: lidargo
-Version: 0.1.0
-Summary: A package for LIDAR data processing and analysis
-Home-page: hhttps://github.com/nREL/fiexta/LIDARGO
-Author: Nicholas Hamilton
-Author-email: nicholas.hamilton@nrel.gov
-Classifier: Development Status :: 3 - Alpha
-Classifier: Intended Audience :: Science/Research
-Classifier: Programming Language :: Python :: 3
-Classifier: Programming Language :: Python :: 3.8
-Classifier: Programming Language :: Python :: 3.9
-Classifier: Programming Language :: Python :: 3.10
-Classifier: License :: OSI Approved :: MIT License
-Classifier: Operating System :: OS Independent
-Classifier: Topic :: Scientific/Engineering
-Requires-Python: >=3.8
-Description-Content-Type: LIDARGO (LIDAR General Operator): Standardization, quality control, and statistics of scanning lidar data.
-Provides-Extra: dev
-
 # LIDARGO
 LIDAR General Operator: Standardization, quality control, and statistics of scanning lidar data.
 
