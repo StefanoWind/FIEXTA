@@ -4,8 +4,10 @@ Run all examples
 
 import os
 import pandas as pd
+import sys
+sys.path.append('../../lidargo')
 
-import lidargo as lg
+import LIDARGO_standardize as stand
 import xarray as xr
 import numpy as np
 from matplotlib import pyplot as plt
@@ -30,35 +32,10 @@ source_config_stats = os.path.join('../../configs/config_examples_stats.xlsx')
 
 #%% Initialization
 files=glob.glob(source,recursive=True)
-config_stand=pd.read_excel(source_config_stand).set_index('regex')
 
 #%% Main
-files_stand=[]
-configs_stand=[]
 for f in files:
-    
-    date_source=np.int64(re.search(r'\d{8}.\d{6}',f).group(0)[:8])
-    
-    #match standfardized config
-    matches=[]
-    for regex in config_stand.columns:
-        match = re.findall(regex, f)
-        sdate=config_stand[regex]['start_date']
-        edate=config_stand[regex]['end_date']
-        if len(match)>0 and date_source>=sdate and date_source<=edate:
-            matches.append(regex)
+    lproc = stand.LIDARGO(f,source_config_stand, verbose=True)
+    lproc.process_scan(replace=False,save_file=True,make_figures=False)
             
-    if len(matches)==1:
-        files_stand.append(f)
-        configs_stand.append(config_stand[matches[0]].to_dict())
-            
-        
-for f,c in zip(files_stand,configs_stand):
-    
-    ## Instantiate a configuration object
-    config = lg.LidarConfig(**c)
-
-    # standardization
-    lproc = lg.Standardize(f, config=config, verbose=True)
-    lproc.process_scan(replace=False, save_file=True, make_figures=False)
-
+      

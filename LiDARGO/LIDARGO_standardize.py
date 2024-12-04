@@ -43,7 +43,7 @@ class LIDARGO:
         self.print_and_log(f'Initializing standardization of {os.path.basename(self.source)}')
         
         #load configuration
-        configs=pd.read_excel(config_file).set_index('PARAMETER')
+        configs=pd.read_excel(config_file).set_index('regex')
         date_source=np.int64(re.search(r'\d{8}.\d{6}',source).group(0)[:8])
         matches=[]
         for regex in configs.columns:
