@@ -146,9 +146,9 @@ def ppi(ds, n_subplots: int = 5, ax=None, fig=None, cax=None, **kwargs):
 
     if cax is None:
         fig.tight_layout()
-        cbar = add_colorbar(fig, ax[-1], im, "Radial Wind \n Speed [m/s]")
+        cbar = add_colorbar(fig, ax[-1], im, "Radial Wind \n"+r"Speed [m s${-1}$]")
     else:
-        cbar = plt.colorbar(im, cax=cax, label="Radial Wind \n Speed [m/s]")
+        cbar = plt.colorbar(im, cax=cax, label="Radial Wind \n"+r"Speed [m s${-1}$]")
 
     return fig, ax, cbar
 
@@ -182,8 +182,8 @@ def azimuthScatter(dsInput, dsStandardized, ax=None, fig=None, **kwargs):
 
     xformatter = mdates.DateFormatter("%H:%M")
     ax.xaxis.set_major_formatter(xformatter)
-    ax.set_xlabel(f"Time (UTC)")
-    ax.set_ylabel(f"Azimuth Angle [˚]")
+    ax.set_xlabel("Time (UTC)")
+    ax.set_ylabel("Azimuth Angle [˚]")
 
     ax.set_title(
         titleGenerator(
@@ -309,10 +309,42 @@ def add_time_title(ax, time):
     )
 
 
-def rhi(ds):
+def rhi(ds, n_subplots: int = 5, ax=None, fig=None, cax=None, **kwargs):
     """Plot range height indicator (RHI) for radial wind speed data."""
-    # Implement RHI plotting logic here
-    raise NotImplementedError("RHI plotting is not implemented yet.")
+    
+    if fig is None or ax is None:
+        fig, ax = plt.subplots(
+            1,
+            n_subplots,
+            sharex=True,
+            sharey=True,
+            figsize=kwargs.get("figsize", (9, 8)),
+        )
+
+    scans = np.linspace(
+        ds.scanID.values.min(), ds.scanID.values.max(), n_subplots, dtype=int
+    )
+
+    for i, scan in enumerate(scans):
+        subset = ds.isel(scanID=scan)
+        im = ax[i].pcolormesh(
+            subset.x, subset.z, subset.wind_speed, cmap="RdBu_r", shading="auto"
+        )
+        ax[i].set_xlabel(r"$x$ [m]")
+        if i == 0:
+            ax[i].set_ylabel(r"$z$ [m]")
+        ax[i].set_aspect("equal")
+        add_time_title(ax[i], ds.time.sel(scanID=scan))
+
+    if cax is None:
+        fig.tight_layout()
+        cbar = add_colorbar(fig, ax[-1], im, "Radial Wind \n"+r"Speed [m s${-1}$]")
+    else:
+        cbar = plt.colorbar(im, cax=cax, label="Radial Wind \n"+r"Speed [m s${-1}$]")
+
+    return fig, ax, cbar
+
+    # raise NotImplementedError("RHI plotting is not implemented yet.")
 
 
 def plot_volumetric(ds):
