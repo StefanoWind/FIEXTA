@@ -5,7 +5,13 @@ __pycache__
 *.csv
 *.log
 *.yaml
+<<<<<<< HEAD
+trash/*
+*.egg-info/
+*.hpl
+=======
 */trash/*
 *.hpl
 *.html
 */docs/_build/*
+>>>>>>> main
