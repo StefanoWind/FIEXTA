@@ -153,6 +153,14 @@ def ceil(value, step):
     """
     return np.ceil(value / step) * step
 
+def nanmin_time(value,_format='%Y-%m-%d %H:%M:%S'):
+    min_time=np.min(value[value>np.datetime64('1970-01-01T00:00:00')])
+    return min_time.dt.strftime(_format).values
+
+
+def nanmax_time(value,_format):
+    max_time=np.max(value[value>np.datetime64('1970-01-01T00:00:00')])
+    return max_time.dt.strftime(_format).values
 
 def remove_labels(fig):
     """

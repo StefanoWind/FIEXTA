@@ -907,8 +907,8 @@ if __name__ == "__main__":
     matplotlib.rcParams['mathtext.fontset'] = 'cm' 
     matplotlib.rcParams['font.size'] = 12
 
-    source = "../data/lidargo/example1/sc1.lidar.z01.a0.20230830.064613.user4.nc"
-    config_file = "../configs/lidargo/config_examples_stand.xlsx"
+    source = "C:/Users/SLETIZIA/OneDrive - NREL/Desktop/PostDoc/AWAKEN/LIDARGO_samples/data/propietary/awaken/volumetric-raster-wake-csm/rt3.lidar.z02.a0.20230403.054004.user5.nc"
+    config_file = "C:/Users/SLETIZIA/OneDrive - NREL/Desktop/PostDoc/AWAKEN/LIDARGO_samples/config/config_awaken_b0_test.xlsx"
     
     config_stand=pd.read_excel(config_file).set_index('regex')
     
@@ -928,5 +928,5 @@ if __name__ == "__main__":
     
         # Run processing
         lproc = lg.Standardize(source, config=config, verbose=True)
-        lproc.process_scan(replace=True, save_file=True, make_figures=True)
+        lproc.process_scan(replace=True, save_file=False, make_figures=True)
 
