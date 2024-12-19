@@ -882,7 +882,7 @@ class Standardize:
         #TODO should the qc report have more flexibility?
         """
 
-        wsqc_fig, scanqc_fig, az_fig, azhist_fig = vis.qcReport(
+        wsqc_fig, scanqc_fig, angscat_fig, anghist_fig = vis.qcReport(
             self.outputData, self.inputData, self.qc_rws_range
         )
 
@@ -891,8 +891,8 @@ class Standardize:
                 self.save_filename.replace(".nc", ".probability." + filetype)
             )
             scanqc_fig.savefig(self.save_filename.replace(".nc", ".qcscan." + filetype))
-            az_fig.savefig(self.save_filename.replace(".nc", ".azScatter." + filetype))
-            azhist_fig.savefig(self.save_filename.replace(".nc", ".azHist." + filetype))
+            angscat_fig.savefig(self.save_filename.replace(".nc", ".angScatter." + filetype))
+            anghist_fig.savefig(self.save_filename.replace(".nc", ".angHist." + filetype))
 
 
 if __name__ == "__main__":
@@ -900,7 +900,12 @@ if __name__ == "__main__":
     Test block
     """
     import lidargo as lg
-    cd = os.path.dirname(__file__)
+    import matplotlib
+    from matplotlib import pyplot as plt
+    plt.close('all')
+    matplotlib.rcParams['font.family'] = 'serif'
+    matplotlib.rcParams['mathtext.fontset'] = 'cm' 
+    matplotlib.rcParams['font.size'] = 12
 
     source = "../data/lidargo/example1/sc1.lidar.z01.a0.20230830.064613.user4.nc"
     config_file = "../configs/lidargo/config_examples_stand.xlsx"

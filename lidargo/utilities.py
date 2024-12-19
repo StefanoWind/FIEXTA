@@ -108,6 +108,13 @@ def mid(x):
     return (x[:-1] + x[1:]) / 2
 
 
+def rev_mid(x):
+    '''
+    Given midpoint, build edges
+    '''
+    return np.concatenate([[x[0]-(x[1]-x[0])/2],(x[:-1]+x[1:])/2,[x[-1]+(x[-1]-x[-2])/2]])
+
+
 def gaussian(x, sigma):
     """
     Gaussian function

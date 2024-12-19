@@ -882,7 +882,7 @@ class Standardize:
         #TODO should the qc report have more flexibility?
         """
 
-        wsqc_fig, scanqc_fig, az_fig, azhist_fig = vis.qcReport(
+        wsqc_fig, scanqc_fig, angscat_fig, anghist_fig = vis.qcReport(
             self.outputData, self.inputData, self.qc_rws_range
         )
 
@@ -891,8 +891,8 @@ class Standardize:
                 self.save_filename.replace(".nc", ".probability." + filetype)
             )
             scanqc_fig.savefig(self.save_filename.replace(".nc", ".qcscan." + filetype))
-            az_fig.savefig(self.save_filename.replace(".nc", ".azScatter." + filetype))
-            azhist_fig.savefig(self.save_filename.replace(".nc", ".azHist." + filetype))
+            angscat_fig.savefig(self.save_filename.replace(".nc", ".angScatter." + filetype))
+            anghist_fig.savefig(self.save_filename.replace(".nc", ".angHist." + filetype))
 
 
 if __name__ == "__main__":

@@ -92,6 +92,28 @@ def probabilityVSrws(ds, qc_rws_range, ax=None, fig=None, **kwargs):
 
     return ax
 
+# def angscat(dsInput,dsStandardized, ax=None, fig=None, cax=None, **kwargs):
+#     """
+#     Plot the scan geometry as a scatter time series of angles.
+
+#     Parameters:
+#     -----------
+#     ds : xarray.Dataset
+#         Dataset containing the azimutha dn elevation data.
+#     """
+
+#     if dsStandardized.attrs["scan_mode"].lower() == "ppi":
+#         fig, ax, cbar = azimuthScatter(dsInput,dsStandardized, ax=ax, fig=fig, cax=cax)
+#     elif dsStandardized.attrs["scan_mode"].lower() == "rhi":
+#         fig, ax, cbar = elevationScatter(dsInput,dsStandardized, ax=ax, fig=fig, cax=cax)
+#     elif ds.attrs["scan_mode"].lower() == "volumetric":
+#         fig, ax, cbar = 3dScatter(dsInput,dsStandardized, ax=ax, fig=fig, cax=cax)
+#     elif ds.attrs["scan_mode"].lower() == "stare":
+#         fig, ax, cbar = stare(ds, ax=ax, fig=fig, cax=cax)
+#     else:
+#         raise ValueError(f"Unsupported scan type: {ds.attrs['scan_mode']}")
+
+#     return fig, ax, cbar
 
 def rws(ds, ax=None, fig=None, cax=None, **kwargs):
     """
@@ -159,74 +181,236 @@ def stare(ds):
     raise NotImplementedError("Stare plotting is not implemented yet.")
 
 
-@with_logging
-def azimuthScatter(dsInput, dsStandardized, ax=None, fig=None, **kwargs):
-    """scatter plot showing observed and standardized azimuth angles"""
-    if fig is None or ax is None:
-        fig, ax = plt.subplots(figsize=kwargs.get("figsize", (9, 8)))
+# @with_logging
+# def azimuthScatter(dsInput, dsStandardized, ax=None, fig=None, **kwargs):
+#     """scatter plot showing observed and standardized azimuth angles"""
+#     if fig is None or ax is None:
+#         fig, ax = plt.subplots(figsize=kwargs.get("figsize", (9, 8)))
 
-    ax.scatter(
+#     ax.scatter(
+#         dsInput.time,
+#         dsInput.azimuth,
+#         marker=".",
+#         c="C0",
+#         label="input data",
+#     )
+#     ax.scatter(
+#         dsStandardized.time,
+#         dsStandardized.azimuth,
+#         marker=".",
+#         c="C1",
+#         label="regularized data",
+#     )
+
+#     xformatter = mdates.DateFormatter("%H:%M")
+#     ax.xaxis.set_major_formatter(xformatter)
+#     ax.set_xlabel("Time (UTC)")
+#     ax.set_ylabel("Azimuth Angle [˚]")
+
+#     ax.set_title(
+#         titleGenerator(
+#             dsStandardized,
+#             "Beam angles",
+#             ["location", "date", "file"],
+#         )
+#     )
+
+#     return fig, ax
+
+# @with_logging
+# def elevationScatter(dsInput, dsStandardized, ax=None, fig=None, **kwargs):
+#     """scatter plot showing observed and standardized azimuth angles"""
+#     if fig is None or ax is None:
+#         fig, ax = plt.subplots(figsize=kwargs.get("figsize", (9, 8)))
+
+#     ax.scatter(
+#         dsInput.time,
+#         dsInput.elevation,
+#         marker=".",
+#         c="C0",
+#         label="input data",
+#     )
+#     ax.scatter(
+#         dsStandardized.time,
+#         dsStandardized.elevation,
+#         marker=".",
+#         c="C1",
+#         label="regularized data",
+#     )
+
+#     xformatter = mdates.DateFormatter("%H:%M")
+#     ax.xaxis.set_major_formatter(xformatter)
+#     ax.set_xlabel("Time (UTC)")
+#     ax.set_ylabel("Elevation Angle [˚]")
+
+#     ax.set_title(
+#         titleGenerator(
+#             dsStandardized,
+#             "Beam angles",
+#             ["location", "date", "file"],
+#         )
+#     )
+ 
+#     return fig, ax
+
+@with_logging
+def angScatter(dsInput, dsStandardized, ax=None, fig=None, **kwargs):
+    """Scatter plot showing observed and standardized azimuth and elevation angles"""
+    if fig is None or ax is None:
+        fig, ax = plt.subplots(2,1,figsize=kwargs.get("figsize", (18, 8)))
+
+    #azimuth time series
+    ax[0].scatter(
         dsInput.time,
         dsInput.azimuth,
         marker=".",
         c="C0",
-        label="input data",
+        label="Input data",
     )
-    ax.scatter(
+    ax[0].scatter(
         dsStandardized.time,
         dsStandardized.azimuth,
         marker=".",
-        c="C1",
+        edgecolor="C1",
+        facecolor='none',
+        label="Standardized data",
+    )
+ 
+    xformatter = mdates.DateFormatter("%H:%M")
+    ax[0].xaxis.set_major_formatter(xformatter)
+    ax[0].set_xlabel("Time (UTC)")
+    ax[0].set_ylabel("Azimuth Angle [˚]")
+ 
+    ax[0].set_title(
+        titleGenerator(
+            dsStandardized,
+            "Azimuth angles",
+            ["location", "date", "file"],
+        )
+    )
+    ax[0].legend()
+    ax[0].grid(True)
+    
+    #elevation time series
+    ax[1].scatter(
+        dsInput.time,
+        dsInput.elevation,
+        marker=".",
+        c="C0",
+        label="input data",
+    )
+    ax[1].scatter(
+        dsStandardized.time,
+        dsStandardized.elevation,
+        marker=".",
+        edgecolor="C1",
+        facecolor='none',
         label="regularized data",
     )
 
     xformatter = mdates.DateFormatter("%H:%M")
-    ax.xaxis.set_major_formatter(xformatter)
-    ax.set_xlabel("Time (UTC)")
-    ax.set_ylabel("Azimuth Angle [˚]")
+    ax[1].xaxis.set_major_formatter(xformatter)
+    ax[1].set_xlabel("Time (UTC)")
+    ax[1].set_ylabel("Elevation Angle [˚]")
 
-    ax.set_title(
+    ax[1].set_title(
         titleGenerator(
             dsStandardized,
-            "Beam angles",
+            "Elevation angles",
             ["location", "date", "file"],
         )
     )
-
+    ax[1].legend()
+    ax[1].grid(True)
+    
+    fig.tight_layout()
+    
     return fig, ax
 
 
-def azimuthhist(ds, ax=None, fig=None, rwidth=0.8, **kwargs):
-    """bar plot of occurrences of azimuth angles"""
+# def azimuthhist(ds, ax=None, fig=None, rwidth=0.8, **kwargs):
+#     """bar plot of occurrences of azimuth angles"""
+#     if fig is None or ax is None:
+#         fig, ax = plt.subplots(figsize=kwargs.get("figsize", (5, 3)))
+
+#     az=ds.azimuth.values.flatten()
+#     counts, bins = np.histogram(az, bins=utilities.rev_mid(np.unique(az)))
+    
+#     ax.bar(np.unique(az),counts, width=np.min(np.diff(az)), **kwargs)
+#     ax.set_xlabel("Azimuth Angle [˚]")
+#     ax.set_ylabel("Occurrence")
+
+#     return fig, ax
+
+
+# def azimuthDeltaHist(ds1, ds2, bins: int = 10, ax=None, fig=None, **kwargs):
+#     """plot a histogram of recorded vs standardized azimuth angles"""
+
+#     if fig is None or ax is None:
+#         fig, ax = plt.subplots(figsize=kwargs.get("figsize", (5, 3)))
+
+#     az = {}
+#     for ds in [ds1, ds2]:
+#         if len(ds.azimuth.coords) != 1:
+#             az["standardized"] = ds.azimuth.stack(time=["scanID", "beamID"]).values
+#         else:
+#             az["input"] = ds.azimuth.values
+
+#     deltaAzimuth = az["input"] - az["standardized"]
+
+#     ax.hist(deltaAzimuth, bins=bins, **kwargs)
+#     plt.xticks(rotation=30)
+#     ax.set_xlabel("Change in Azimuth Angle [˚]")
+#     ax.set_ylabel("Occurrence")
+
+#     return fig, ax
+
+def anghist_1D(dsInput,ds,which_angle='azimuth',ax=None, fig=None, rwidth=0.8, **kwargs):
+    """bar plot of occurrences of angles"""
+    
+    assert which_angle in ['azimuth','elevation'], f'{which_angle} is not a valid beam angle'
+        
     if fig is None or ax is None:
         fig, ax = plt.subplots(figsize=kwargs.get("figsize", (5, 3)))
+    
+    
+    ang=dsInput[which_angle].values.flatten()
+    counts, bins = np.histogram(ang, bins=utilities.rev_mid(np.unique(ang)))
+    ax.bar(np.unique(ang),counts, width=0.5,color='C0',alpha=0.75,label='Input data', **kwargs)
 
-    ax.hist(ds.azimuth.values.flatten(), bins=len(ds.beamID), rwidth=rwidth, **kwargs)
-    ax.set_xlabel("Azimuth Angle [˚]")
+    ang=ds[which_angle].values.flatten()
+    counts, bins = np.histogram(ang, bins=utilities.rev_mid(np.unique(ang)))
+    ax.bar(np.unique(ang),counts, width=0.5,alpha=1,edgecolor='C1',facecolor='none',label='Standardized data', **kwargs)
+    ax.set_xlabel(f"{which_angle.capitalize()} angle [˚]")
     ax.set_ylabel("Occurrence")
+    ax.legend()
+    ax.grid(True)
 
     return fig, ax
 
 
-def azimuthDeltaHist(ds1, ds2, bins: int = 10, ax=None, fig=None, **kwargs):
-    """plot a histogram of recorded vs standardized azimuth angles"""
-
+def angdiffhist_1D(dsInput, ds,which_angle='azimuth', bins: int = 10, ax=None, fig=None, **kwargs):
+    """plot a histogram of recorded vs standardized angles"""
+    
+    assert which_angle in ['azimuth','elevation'], f'{which_angle} is not a valid beam angle'
+    
     if fig is None or ax is None:
         fig, ax = plt.subplots(figsize=kwargs.get("figsize", (5, 3)))
 
-    az = {}
-    for ds in [ds1, ds2]:
-        if len(ds.azimuth.coords) != 1:
-            az["standardized"] = ds.azimuth.stack(time=["scanID", "beamID"]).values
+    ang = {}
+    for ds in [dsInput, ds]:
+        if len(ds[which_angle].coords) != 1:
+            ang["standardized"] = ds[which_angle].stack(time=["scanID", "beamID"]).values
         else:
-            az["input"] = ds.azimuth.values
+            ang["input"] = ds[which_angle].values
 
-    deltaAzimuth = az["input"] - az["standardized"]
+    delta_ang = ang["standardized"]-ang["input"] 
 
-    ax.hist(deltaAzimuth, bins=bins, **kwargs)
+    ax.hist(delta_ang, bins=bins, **kwargs)
     plt.xticks(rotation=30)
-    ax.set_xlabel("Change in Azimuth Angle [˚]")
+    ax.set_xlabel(f"Change in {which_angle} angle [˚]")
     ax.set_ylabel("Occurrence")
+    ax.grid()
 
     return fig, ax
 
@@ -431,7 +615,7 @@ def windSpeedQCfig(ds, qc_rws_range):
 @with_logging
 def scanFig(ds):
     """wrapper method to make scans pcolor figures"""
-    fig = plt.figure(figsize=(12, 3), layout="constrained")
+    fig = plt.figure(figsize=(18, 8), layout="constrained")
     gs = GridSpec(nrows=2, ncols=6, width_ratios=[6, 6, 6, 6, 6, 0.5], figure=fig)
 
     ax1 = fig.add_subplot(gs[0, 0])
@@ -448,29 +632,42 @@ def scanFig(ds):
     fig, axt, _ = rws(ds, fig=fig, ax=axt, cax=caxt)
 
     b1qc = ds.copy()
-    b1qc["wind_speed"] = b1qc["wind_speed"].where(
-        (b1qc.qc_wind_speed == 0.0)
-    )  # & (b1qc.range <= 1000.0)
+    b1qc["wind_speed"] = b1qc["wind_speed"].where(b1qc.qc_wind_speed == 0.0)
+
     fig, axb, _ = rws(b1qc, fig=fig, ax=axb, cax=caxb)
 
     return fig
 
 
+# @with_logging
+# def azHistFig(ds, dsInput):
+#     """wrapper method to make azimuth histograms"""
+#     fig, ax = plt.subplots(1, 2, figsize=(10, 3))
+#     fig, _ = azimuthhist(ds, ax=ax[0], fig=fig, rwidth=0.7, color=".25")
+#     fig, _ = azimuthDeltaHist(dsInput, ds, ax=ax[1], fig=fig, color="C2")
+
+#     return fig
+
 @with_logging
-def azHistFig(ds, dsInput):
-    """wrapper method to make azimuth histograms"""
-    fig, ax = plt.subplots(1, 2, figsize=(10, 3))
-    fig, _ = azimuthhist(ds, ax=ax[0], fig=fig, rwidth=0.7, color=".25")
-    fig, _ = azimuthDeltaHist(dsInput, ds, ax=ax[1], fig=fig, color="C2")
+def angHistFig(ds, dsInput):
+    """wrapper method to make angle histograms"""
+    
+    if ds.attrs['scan_mode'].lower()=='ppi':
+        fig, ax = plt.subplots(1, 2, figsize=(10, 3))
+        fig, _ = anghist_1D(dsInput,ds,'azimuth', ax=ax[0], fig=fig, rwidth=0.7)
+        fig, _ = angdiffhist_1D(dsInput, ds, 'azimuth',ax=ax[1], fig=fig,color='k')
+    elif  ds.attrs['scan_mode'].lower()=='rhi':
+        fig, ax = plt.subplots(2,1, figsize=(18, 8))
+        fig, _ = anghist_1D(dsInput,ds,'elevation', ax=ax[0], fig=fig, rwidth=0.7)
+        fig, _ = angdiffhist_1D(dsInput, ds,'elevation', ax=ax[1], fig=fig,color='k')
 
     return fig
-
 
 def qcReport(ds, dsInput, qc_rws_range):
     """wrapper method to make qc figures"""
     wsqc_fig = windSpeedQCfig(ds, qc_rws_range)
     scanqc_fig = scanFig(ds)
-    az_fig, _ = azimuthScatter(dsInput, ds, figsize=(10, 3))
-    azhist_fig = azHistFig(ds, dsInput)
-
-    return wsqc_fig, scanqc_fig, az_fig, azhist_fig
+    angscat_fig, _ = angScatter(dsInput, ds)
+    anghist_fig = angHistFig(ds, dsInput)
+    
+    return wsqc_fig, scanqc_fig, angscat_fig, anghist_fig
