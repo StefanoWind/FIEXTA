@@ -124,7 +124,7 @@ def probabilityVSrws(ds, qc_rws_range, ax=None, fig=None, **kwargs):
 
 #     return fig, ax, cbar
 
-def rws(ds, ax=None, fig=None, cax=None, cbar_label="", **kwargs):
+def rws(ds, ax=None, fig=None, cax=None, cbar_label="Radial wind \n"+r"speed [m s${-1}$]", **kwargs):
     """
     Plot radial wind speed (RWS) data in different projections based on scan type.
 
@@ -148,7 +148,7 @@ def rws(ds, ax=None, fig=None, cax=None, cbar_label="", **kwargs):
     return fig, ax, cbar
 
 
-def ppi(ds, n_subplots: int = 5, ax=None, fig=None, cax=None, cbar_label="", **kwargs):
+def ppi(ds, n_subplots: int = 5, ax=None, fig=None, cax=None, cbar_label="Radial wind \n"+r"speed [m s${-1}$]", **kwargs):
     """Plot plan position indicator (PPI) for radial wind speed data."""
 
     if fig is None or ax is None:
@@ -161,7 +161,7 @@ def ppi(ds, n_subplots: int = 5, ax=None, fig=None, cax=None, cbar_label="", **k
         )
 
     scans = np.linspace(
-        ds.scanID.values.min(), ds.scanID.values.max(), n_subplots, dtype=int
+        ds.scanID.values.min(), ds.scanID.values.max(), len(ax), dtype=int
     )
 
     for i, scan in enumerate(scans):
@@ -185,7 +185,7 @@ def ppi(ds, n_subplots: int = 5, ax=None, fig=None, cax=None, cbar_label="", **k
 
     return fig, ax, cbar
 
-def rhi(ds, n_subplots: int = 5, cbar_label="",ax=None, fig=None, cax=None, **kwargs):
+def rhi(ds, n_subplots: int = 5, cbar_label="Radial wind \n"+r"speed [m s${-1}$]",ax=None, fig=None, cax=None, **kwargs):
     """Plot range height indicator (RHI) for radial wind speed data."""
     
     if fig is None or ax is None:
@@ -198,7 +198,7 @@ def rhi(ds, n_subplots: int = 5, cbar_label="",ax=None, fig=None, cax=None, **kw
         )
 
     scans = np.linspace(
-        ds.scanID.values.min(), ds.scanID.values.max(), n_subplots, dtype=int
+        ds.scanID.values.min(), ds.scanID.values.max(),  len(ax), dtype=int
     )
 
     for i, scan in enumerate(scans):
@@ -230,7 +230,7 @@ def rhi(ds, n_subplots: int = 5, cbar_label="",ax=None, fig=None, cax=None, **kw
 
     return fig, ax, cbar
 
-def volumetric(ds, n_subplots: int = 5, cbar_label="",ax=None, fig=None, cax=None, **kwargs):
+def volumetric(ds, n_subplots: int = 5, cbar_label="Radial wind \n"+r"speed [m s${-1}$]",ax=None, fig=None, cax=None, **kwargs):
     """Plot 3D visualization of radial wind speed data."""
     
     if fig is None or ax is None:
@@ -243,7 +243,7 @@ def volumetric(ds, n_subplots: int = 5, cbar_label="",ax=None, fig=None, cax=Non
         )
 
     scans = np.linspace(
-        ds.scanID.values.min(), ds.scanID.values.max(), n_subplots, dtype=int
+        ds.scanID.values.min(), ds.scanID.values.max(), len(ax), dtype=int
     )
     
     for i, scan in enumerate(scans):
@@ -252,7 +252,7 @@ def volumetric(ds, n_subplots: int = 5, cbar_label="",ax=None, fig=None, cax=Non
         add_time_title(ax[i], subset.time)
             
         ax[i].set_xlabel(r"$x$ [m]")
-        if i == n_subplots-1:
+        if i ==  len(ax)-1:
             ax[i].set_ylabel(r"$y$ [m]")
             ax[i].set_zlabel(r"$z$ [m]")
         else:
@@ -272,62 +272,37 @@ def volumetric(ds, n_subplots: int = 5, cbar_label="",ax=None, fig=None, cax=Non
         
         cax.set_position(new_pos) 
 
-        
-
-    # for i in range(min(5, len(ds.scanID))):
-    #     time = (ds.time[:, i] - np.datetime64("1970-01-01T00:00:00")) / np.timedelta64(
-    #         1, "s"
-    #     )
-    #     x, y, z = [ds[coord][:, :, i].values for coord in ["x", "y", "z"]]
-
-    #     for subplot_idx, (data, label) in enumerate(
-    #         [(ds.rws, "Raw"), (ds.rws_qc, "Filtered")]
-    #     ):
-    #         f = data[:, :, i].values
-    #         real = ~np.isnan(x + y + z + f)
-
-    #         # Subsample if too many points
-    #         skip = int(np.sum(real) / 10000) if np.sum(real) > 10000 else 1
-
-    #         ax = plt.subplot(
-    #             2,
-    #             min(5, len(ds.scanID)),
-    #             ctr + subplot_idx * min(5, len(ds.scanID)),
-    #             projection="3d",
-    #         )
-    #         sc = rws3Dscatter(ax, x, y, z, f, real, skip)
-
-    #         if ctr == np.ceil(min(5, len(ds.scanID)) / 2) and subplot_idx == 0:
-    #             add_main_title(
-    #                 fig,
-    #                 time,
-    #                 ds.attrs["location_id"],
-    #                 os.path.basename(ds.attrs["datastream"]),
-    #             )
-    #         elif subplot_idx == 0:
-    #             add_time_title(ax, time)
-
-    #         if ctr == min(5, len(ds.scanID)):
-    #             add_colorbar(
-    #                 fig,
-    #                 ax,
-    #                 sc,
-    #                 f"{label} radial\n wind speed [m s$^{-1}$]",
-    #                 position_adjust=0.035,
-    #             )
-
-    #     ctr += 1
-
-    # plt.subplots_adjust(
-    #     left=0.05, bottom=0.1, right=0.9, top=0.9, wspace=0.4, hspace=0.25
-    # )
     return fig, ax, cbar
 
-def stare(ds):
+def stare(ds,cbar_label="Radial wind \n"+r"speed [m s${-1}$]",ax=None, fig=None, cax=None, **kwargs):
     """Plot stare visualization for radial wind speed data."""
-    # Implement stare plotting logic here
-    raise NotImplementedError("Stare plotting is not implemented yet.")
+    
+    if fig is None or ax is None:
+        fig, ax = plt.subplots(
+            1,
+            1,
+            sharex=True,
+            sharey=True,
+            figsize=kwargs.get("figsize", (9, 8)),
+        )
+    
+    im = ax.pcolormesh(
+        ds.time, ds.range, ds.wind_speed.squeeze(), cmap="RdBu_r", shading="auto"
+    )
+    ax.set_xlabel(r"Time (UTC)")
+    ax.set_ylabel(r"Range [m]")
+    ax.grid(True)
+    
+    xformatter = mdates.DateFormatter("%H:%M")
+    ax.xaxis.set_major_formatter(xformatter)
 
+    if cax is None:
+        fig.tight_layout()
+        cbar = add_colorbar(fig, ax, im, cbar_label)
+    else:
+        cbar = plt.colorbar(im, cax=cax, label=cbar_label)
+        
+    return fig, ax, cbar
 
 # @with_logging
 # def azimuthScatter(dsInput, dsStandardized, ax=None, fig=None, **kwargs):
@@ -405,7 +380,7 @@ def stare(ds):
 def angScatter(dsInput, dsStandardized, ax=None, fig=None, **kwargs):
     """Scatter plot showing observed and standardized azimuth and elevation angles"""
     if fig is None or ax is None:
-        fig, ax = plt.subplots(2,1,figsize=kwargs.get("figsize", (18, 8)))
+        fig, ax = plt.subplots(2,1,figsize=kwargs.get("figsize", (16, 8)))
 
     #azimuth time series
     ax[0].scatter(
@@ -544,7 +519,7 @@ def anghist_2D(dsInput,ds,which_angle='azimuth',ax=None, fig=None, **kwargs):
     
     azi=dsInput['azimuth'].values.flatten()
     ele=dsInput['elevation'].values.flatten()
-    ax.plot(azi,ele,'.',color='C0',markersize=10,alpha=0.5,label='Input data', **kwargs)
+    ax.plot(azi,ele,'.',color='C0',markersize=12,alpha=0.5,label='Input data', **kwargs)
     
     azi=ds['azimuth'].mean(dim='scanID').values.flatten()
     ele=ds['elevation'].mean(dim='scanID').values.flatten()
@@ -748,19 +723,27 @@ def windSpeedQCfig(ds, qc_rws_range):
 def scanFig(ds):
     """wrapper method to make scans pcolor figures"""
     fig = plt.figure(figsize=(18, 8))
-    gs = GridSpec(nrows=2, ncols=6, width_ratios=[6, 6, 6, 6, 6, 0.5], figure=fig)
+   
     
     if ds.attrs['scan_mode'].lower()=='3d':
         projection='3d'
     else:
         projection='rectilinear'
 
-    ax1 = fig.add_subplot(gs[0, 0],projection=projection)
-    ax2 = fig.add_subplot(gs[1, 0],projection=projection)
-    axt = [ax1] + [fig.add_subplot(gs[0, x], sharex=ax1, sharey=ax1,projection=projection) for x in range(1, 5)]
-    axb = [ax2] + [fig.add_subplot(gs[1, x], sharex=ax2, sharey=ax2,projection=projection) for x in range(1, 5)]
-    caxt = fig.add_subplot(gs[0, -1])
-    caxb = fig.add_subplot(gs[1, -1])
+    if ds.attrs['scan_mode'].lower()!='stare':
+        gs = GridSpec(nrows=2, ncols=6, width_ratios=[6, 6, 6, 6, 6, 0.5], figure=fig)
+        ax1 = fig.add_subplot(gs[0, 0],projection=projection)
+        ax2 = fig.add_subplot(gs[1, 0],projection=projection)
+        axt = [ax1] + [fig.add_subplot(gs[0, x], sharex=ax1, sharey=ax1,projection=projection) for x in range(1, 5)]
+        axb = [ax2] + [fig.add_subplot(gs[1, x], sharex=ax2, sharey=ax2,projection=projection) for x in range(1, 5)]
+        caxt = fig.add_subplot(gs[0, -1])
+        caxb = fig.add_subplot(gs[1, -1])
+    else:
+        gs = GridSpec(nrows=2, ncols=2, width_ratios=[30, 0.5], figure=fig)
+        axt = fig.add_subplot(gs[0, 0],projection=projection)
+        axb = fig.add_subplot(gs[1, 0],projection=projection)
+        caxt = fig.add_subplot(gs[0, -1])
+        caxb = fig.add_subplot(gs[1, -1])
 
     fig, axt, _ = rws(ds, fig=fig, ax=axt, cax=caxt, cbar_label="Radial wind \n"+r"speed [m s${-1}$]")
 
@@ -791,18 +774,20 @@ def angHistFig(ds, dsInput):
     """wrapper method to make angle histograms"""
     
     if ds.attrs['scan_mode'].lower()=='ppi':
-        fig, ax = plt.subplots(1,1, figsize=(12, 8))
+        fig, ax = plt.subplots(1,1, figsize=(10, 6))
         fig, _ = anghist_1D(dsInput,ds,'azimuth', ax=ax, fig=fig)
         # fig, _ = angdiffhist_1D(dsInput, ds, 'azimuth',ax=ax[1], fig=fig,color='k')
     elif  ds.attrs['scan_mode'].lower()=='rhi':
-        fig, ax = plt.subplots(1,1, figsize=(12, 8))
+        fig, ax = plt.subplots(1,1, figsize=(10, 6))
         fig, _ = anghist_1D(dsInput,ds,'elevation', ax=ax, fig=fig)
         # fig, _ = angdiffhist_1D(dsInput, ds,'elevation', ax=ax[1], fig=fig,color='k')
     elif  ds.attrs['scan_mode'].lower()=='3d':
-        fig, ax = plt.subplots(1,1, figsize=(12, 8))
+        fig, ax = plt.subplots(1,1, figsize=(10, 6))
         fig, _ = anghist_2D(dsInput,ds, ax=ax, fig=fig)
         # fig, _ = angdiffhist_1D(dsInput, ds,'azimuth', ax=ax[1], fig=fig,color='k')
         # fig, _ = angdiffhist_1D(dsInput, ds,'elevation', ax=ax[2], fig=fig,color='k')
+    elif ds.attrs['scan_mode'].lower()=='stare':
+        return
         
     fig.suptitle(
         titleGenerator(ds, "Geometry standardization", components=["location", "date", "file"])

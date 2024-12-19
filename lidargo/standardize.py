@@ -907,8 +907,11 @@ if __name__ == "__main__":
     matplotlib.rcParams['mathtext.fontset'] = 'cm' 
     matplotlib.rcParams['font.size'] = 12
 
-    source = "C:/Users/SLETIZIA/OneDrive - NREL/Desktop/PostDoc/AWAKEN/LIDARGO_samples/data/propietary/awaken/volumetric-raster-wake-csm/rt3.lidar.z02.a0.20230403.054004.user5.nc"
-    config_file = "C:/Users/SLETIZIA/OneDrive - NREL/Desktop/PostDoc/AWAKEN/LIDARGO_samples/config/config_awaken_b0_test.xlsx"
+    # source = "C:/Users/SLETIZIA/OneDrive - NREL/Desktop/PostDoc/AWAKEN/LIDARGO_samples/data/propietary/awaken/volumetric-raster-wake-csm/rt3.lidar.z02.a0.20230403.054004.user5.nc"
+    # config_file = "C:/Users/SLETIZIA/OneDrive - NREL/Desktop/PostDoc/AWAKEN/LIDARGO_samples/config/config_awaken_b0_test.xlsx"
+    
+    source='../data/lidargo/example4/sa5.lidar.z03.a0.20231009.205005.user5.nc'
+    config_file='../configs/lidargo/config_examples_stand.xlsx'
     
     config_stand=pd.read_excel(config_file).set_index('regex')
     
