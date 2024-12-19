@@ -124,7 +124,7 @@ def probabilityVSrws(ds, qc_rws_range, ax=None, fig=None, **kwargs):
 
 #     return fig, ax, cbar
 
-def rws(ds, ax=None, fig=None, cax=None, **kwargs):
+def rws(ds, ax=None, fig=None, cax=None, cbar_label="", **kwargs):
     """
     Plot radial wind speed (RWS) data in different projections based on scan type.
 
@@ -135,20 +135,20 @@ def rws(ds, ax=None, fig=None, cax=None, **kwargs):
     """
 
     if ds.attrs["scan_mode"].lower() == "ppi":
-        fig, ax, cbar = ppi(ds, ax=ax, fig=fig, cax=cax)
+        fig, ax, cbar = ppi(ds, ax=ax, fig=fig, cax=cax, cbar_label=cbar_label)
     elif ds.attrs["scan_mode"].lower() == "rhi":
-        fig, ax, cbar = rhi(ds, ax=ax, fig=fig, cax=cax)
+        fig, ax, cbar = rhi(ds, ax=ax, fig=fig, cax=cax ,cbar_label=cbar_label)
     elif ds.attrs["scan_mode"].lower() == "3d":
-        fig, ax, cbar = volumetric(ds, ax=ax, fig=fig, cax=cax)
+        fig, ax, cbar = volumetric(ds, ax=ax, fig=fig, cax=cax, cbar_label=cbar_label)
     elif ds.attrs["scan_mode"].lower() == "stare":
-        fig, ax, cbar = stare(ds, ax=ax, fig=fig, cax=cax)
+        fig, ax, cbar = stare(ds, ax=ax, fig=fig, cax=cax, cbar_label=cbar_label)
     else:
         raise ValueError(f"Unsupported scan type: {ds.attrs['scan_mode']}")
 
     return fig, ax, cbar
 
 
-def ppi(ds, n_subplots: int = 5, ax=None, fig=None, cax=None, **kwargs):
+def ppi(ds, n_subplots: int = 5, ax=None, fig=None, cax=None, cbar_label="", **kwargs):
     """Plot plan position indicator (PPI) for radial wind speed data."""
 
     if fig is None or ax is None:
@@ -179,13 +179,13 @@ def ppi(ds, n_subplots: int = 5, ax=None, fig=None, cax=None, **kwargs):
 
     if cax is None:
         fig.tight_layout()
-        cbar = add_colorbar(fig, ax[-1], im, "Radial Wind \n"+r"Speed [m s${-1}$]")
+        cbar = add_colorbar(fig, ax[-1], im, cbar_label)
     else:
         cbar = plt.colorbar(im, cax=cax, label="Radial Wind \n"+r"Speed [m s${-1}$]")
 
     return fig, ax, cbar
 
-def rhi(ds, n_subplots: int = 5, cbar_label="Radial wind \n"+r"speed [m s${-1}$]",ax=None, fig=None, cax=None, **kwargs):
+def rhi(ds, n_subplots: int = 5, cbar_label="",ax=None, fig=None, cax=None, **kwargs):
     """Plot range height indicator (RHI) for radial wind speed data."""
     
     if fig is None or ax is None:
@@ -230,7 +230,7 @@ def rhi(ds, n_subplots: int = 5, cbar_label="Radial wind \n"+r"speed [m s${-1}$]
 
     return fig, ax, cbar
 
-def volumetric(ds, n_subplots: int = 5, cbar_label="Radial wind \n"+r"speed [m s${-1}$]",ax=None, fig=None, cax=None, **kwargs):
+def volumetric(ds, n_subplots: int = 5, cbar_label="",ax=None, fig=None, cax=None, **kwargs):
     """Plot 3D visualization of radial wind speed data."""
     
     if fig is None or ax is None:
@@ -251,6 +251,7 @@ def volumetric(ds, n_subplots: int = 5, cbar_label="Radial wind \n"+r"speed [m s
         sc=rws3Dscatter(ax[i], subset.x.values, subset.y.values, subset.z.values, subset.wind_speed.values)
         add_time_title(ax[i], subset.time)
             
+        ax[i].set_xlabel(r"$x$ [m]")
         if i == n_subplots-1:
             ax[i].set_ylabel(r"$y$ [m]")
             ax[i].set_zlabel(r"$z$ [m]")
@@ -512,7 +513,7 @@ def angScatter(dsInput, dsStandardized, ax=None, fig=None, **kwargs):
 
 #     return fig, ax
 
-def anghist_1D(dsInput,ds,which_angle='azimuth',ax=None, fig=None, rwidth=0.8, **kwargs):
+def anghist_1D(dsInput,ds,which_angle='azimuth',ax=None, fig=None, **kwargs):
     """bar plot of occurrences of angles"""
     
     assert which_angle in ['azimuth','elevation'], f'{which_angle} is not a valid beam angle'
@@ -535,31 +536,52 @@ def anghist_1D(dsInput,ds,which_angle='azimuth',ax=None, fig=None, rwidth=0.8, *
 
     return fig, ax
 
-
-def angdiffhist_1D(dsInput, ds,which_angle='azimuth', bins: int = 30, ax=None, fig=None, **kwargs):
-    """plot a histogram of recorded vs standardized angles"""
-    
-    assert which_angle in ['azimuth','elevation'], f'{which_angle} is not a valid beam angle'
-    
+def anghist_2D(dsInput,ds,which_angle='azimuth',ax=None, fig=None, **kwargs):
+    """2D trajectory of scans colored by occurrence"""
+        
     if fig is None or ax is None:
         fig, ax = plt.subplots(figsize=kwargs.get("figsize", (5, 3)))
-
-    ang = {}
-    for ds in [dsInput, ds]:
-        if len(ds[which_angle].coords) != 1:
-            ang["standardized"] = ds[which_angle].stack(time=["scanID", "beamID"]).values
-        else:
-            ang["input"] = ds[which_angle].values
-
-    delta_ang = ang["standardized"]-ang["input"] 
-
-    ax.hist(delta_ang, bins=bins, **kwargs)
-    plt.xticks(rotation=30)
-    ax.set_xlabel(f"Change in {which_angle} angle [˚]")
-    ax.set_ylabel("Occurrence")
-    ax.grid()
+    
+    azi=dsInput['azimuth'].values.flatten()
+    ele=dsInput['elevation'].values.flatten()
+    ax.plot(azi,ele,'.',color='C0',markersize=10,alpha=0.5,label='Input data', **kwargs)
+    
+    azi=ds['azimuth'].mean(dim='scanID').values.flatten()
+    ele=ds['elevation'].mean(dim='scanID').values.flatten()
+    
+    ax.plot(azi,ele,'--.',color='C1',markersize=10,label='Standardized data', **kwargs)
+    ax.set_xlabel(r'Azimuth [$^\circ$]')
+    ax.set_ylabel(r'Elevation [$^\circ$]')
+    ax.legend()
+    ax.grid(True)
 
     return fig, ax
+
+
+# def angdiffhist_1D(dsInput, ds,which_angle='azimuth', bins: int = 30, ax=None, fig=None, **kwargs):
+#     """plot a histogram of recorded vs standardized angles"""
+    
+#     assert which_angle in ['azimuth','elevation'], f'{which_angle} is not a valid beam angle'
+    
+#     if fig is None or ax is None:
+#         fig, ax = plt.subplots(figsize=kwargs.get("figsize", (5, 3)))
+
+#     ang = {}
+#     for ds in [dsInput, ds]:
+#         if len(ds[which_angle].coords) != 1:
+#             ang["standardized"] = ds[which_angle].stack(time=["scanID", "beamID"]).values
+#         else:
+#             ang["input"] = ds[which_angle].values
+
+#     delta_ang = ang["standardized"]-ang["input"] 
+
+#     ax.hist(delta_ang, bins=bins, **kwargs)
+#     plt.xticks(rotation=30)
+#     ax.set_xlabel(f"Change in {which_angle} angle [˚]")
+#     ax.set_ylabel("Occurrence")
+#     ax.grid()
+
+#     return fig, ax
 
 
 def rws3Dscatter(ax, x, y, z, f,n_max=10000):
@@ -769,14 +791,22 @@ def angHistFig(ds, dsInput):
     """wrapper method to make angle histograms"""
     
     if ds.attrs['scan_mode'].lower()=='ppi':
-        fig, ax = plt.subplots(1, 2, figsize=(10, 3))
-        fig, _ = anghist_1D(dsInput,ds,'azimuth', ax=ax[0], fig=fig, rwidth=0.7)
-        fig, _ = angdiffhist_1D(dsInput, ds, 'azimuth',ax=ax[1], fig=fig,color='k')
+        fig, ax = plt.subplots(1,1, figsize=(12, 8))
+        fig, _ = anghist_1D(dsInput,ds,'azimuth', ax=ax, fig=fig)
+        # fig, _ = angdiffhist_1D(dsInput, ds, 'azimuth',ax=ax[1], fig=fig,color='k')
     elif  ds.attrs['scan_mode'].lower()=='rhi':
-        fig, ax = plt.subplots(2,1, figsize=(18, 8))
-        fig, _ = anghist_1D(dsInput,ds,'elevation', ax=ax[0], fig=fig, rwidth=0.7)
-        fig, _ = angdiffhist_1D(dsInput, ds,'elevation', ax=ax[1], fig=fig,color='k')
-
+        fig, ax = plt.subplots(1,1, figsize=(12, 8))
+        fig, _ = anghist_1D(dsInput,ds,'elevation', ax=ax, fig=fig)
+        # fig, _ = angdiffhist_1D(dsInput, ds,'elevation', ax=ax[1], fig=fig,color='k')
+    elif  ds.attrs['scan_mode'].lower()=='3d':
+        fig, ax = plt.subplots(1,1, figsize=(12, 8))
+        fig, _ = anghist_2D(dsInput,ds, ax=ax, fig=fig)
+        # fig, _ = angdiffhist_1D(dsInput, ds,'azimuth', ax=ax[1], fig=fig,color='k')
+        # fig, _ = angdiffhist_1D(dsInput, ds,'elevation', ax=ax[2], fig=fig,color='k')
+        
+    fig.suptitle(
+        titleGenerator(ds, "Geometry standardization", components=["location", "date", "file"])
+    )
     return fig
 
 def qcReport(ds, dsInput, qc_rws_range):
