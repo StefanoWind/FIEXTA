@@ -163,6 +163,8 @@ def ppi(ds, n_subplots: int = 5, ax=None, fig=None, cax=None, **kwargs):
         ax[i].set_xlabel(r"$x$ [m]")
         if i == 0:
             ax[i].set_ylabel(r"$y$ [m]")
+        else:
+            ax[i].set_yticklabels([])
         ax[i].set_aspect("equal")
         add_time_title(ax[i], ds.time.sel(scanID=scan))
 
@@ -174,6 +176,50 @@ def ppi(ds, n_subplots: int = 5, ax=None, fig=None, cax=None, **kwargs):
 
     return fig, ax, cbar
 
+def rhi(ds, n_subplots: int = 5, ax=None, fig=None, cax=None, **kwargs):
+    """Plot range height indicator (RHI) for radial wind speed data."""
+    
+    if fig is None or ax is None:
+        fig, ax = plt.subplots(
+            1,
+            n_subplots,
+            sharex=True,
+            sharey=True,
+            figsize=kwargs.get("figsize", (9, 8)),
+        )
+
+    scans = np.linspace(
+        ds.scanID.values.min(), ds.scanID.values.max(), n_subplots, dtype=int
+    )
+
+    for i, scan in enumerate(scans):
+        subset = ds.isel(scanID=scan)
+        im = ax[i].pcolormesh(
+            subset.x, subset.z, subset.wind_speed, cmap="RdBu_r", shading="auto"
+        )
+        ax[i].set_xlabel(r"$x$ [m]")
+        if i == 0:
+            ax[i].set_ylabel(r"$z$ [m]")
+        else:
+            ax[i].set_yticklabels([])
+        ax[i].set_aspect("equal")
+        add_time_title(ax[i], ds.time.sel(scanID=scan))
+        ax[i].grid(True)
+
+    if cax is None:
+        fig.tight_layout()
+        cbar = add_colorbar(fig, ax[-1], im, "Radial wind \n"+r"speed [m s${-1}$]")
+    else:
+        
+        cbar = plt.colorbar(im, cax=cax, label="Radial wind \n"+r"speed [m s${-1}$]")
+        new_pos=[cax.get_position().x0,
+                          ax[-1].get_position().y0,
+                          cax.get_position().width,
+                          ax[-1].get_position().height]
+
+        cax.set_position(new_pos) 
+
+    return fig, ax, cbar
 
 def stare(ds):
     """Plot stare visualization for radial wind speed data."""
@@ -297,7 +343,7 @@ def angScatter(dsInput, dsStandardized, ax=None, fig=None, **kwargs):
         dsInput.elevation,
         marker=".",
         c="C0",
-        label="input data",
+        label="Input data",
     )
     ax[1].scatter(
         dsStandardized.time,
@@ -305,7 +351,7 @@ def angScatter(dsInput, dsStandardized, ax=None, fig=None, **kwargs):
         marker=".",
         edgecolor="C1",
         facecolor='none',
-        label="regularized data",
+        label="Regularized data",
     )
 
     xformatter = mdates.DateFormatter("%H:%M")
@@ -493,44 +539,6 @@ def add_time_title(ax, time):
     )
 
 
-def rhi(ds, n_subplots: int = 5, ax=None, fig=None, cax=None, **kwargs):
-    """Plot range height indicator (RHI) for radial wind speed data."""
-    
-    if fig is None or ax is None:
-        fig, ax = plt.subplots(
-            1,
-            n_subplots,
-            sharex=True,
-            sharey=True,
-            figsize=kwargs.get("figsize", (9, 8)),
-        )
-
-    scans = np.linspace(
-        ds.scanID.values.min(), ds.scanID.values.max(), n_subplots, dtype=int
-    )
-
-    for i, scan in enumerate(scans):
-        subset = ds.isel(scanID=scan)
-        im = ax[i].pcolormesh(
-            subset.x, subset.z, subset.wind_speed, cmap="RdBu_r", shading="auto"
-        )
-        ax[i].set_xlabel(r"$x$ [m]")
-        if i == 0:
-            ax[i].set_ylabel(r"$z$ [m]")
-        ax[i].set_aspect("equal")
-        add_time_title(ax[i], ds.time.sel(scanID=scan))
-
-    if cax is None:
-        fig.tight_layout()
-        cbar = add_colorbar(fig, ax[-1], im, "Radial Wind \n"+r"Speed [m s${-1}$]")
-    else:
-        cbar = plt.colorbar(im, cax=cax, label="Radial Wind \n"+r"Speed [m s${-1}$]")
-
-    return fig, ax, cbar
-
-    # raise NotImplementedError("RHI plotting is not implemented yet.")
-
-
 def plot_volumetric(ds):
     """Plot volumetric visualization for radial wind speed data."""
     # Implement volumetric plotting logic here
@@ -615,17 +623,13 @@ def windSpeedQCfig(ds, qc_rws_range):
 @with_logging
 def scanFig(ds):
     """wrapper method to make scans pcolor figures"""
-    fig = plt.figure(figsize=(18, 8), layout="constrained")
+    fig = plt.figure(figsize=(18, 8))
     gs = GridSpec(nrows=2, ncols=6, width_ratios=[6, 6, 6, 6, 6, 0.5], figure=fig)
 
     ax1 = fig.add_subplot(gs[0, 0])
     ax2 = fig.add_subplot(gs[1, 0])
-    axt = [ax1] + [
-        fig.add_subplot(gs[0, x], sharex=ax1, sharey=ax1) for x in range(1, 5)
-    ]
-    axb = [ax2] + [
-        fig.add_subplot(gs[1, x], sharex=ax2, sharey=ax2) for x in range(1, 5)
-    ]
+    axt = [ax1] + [fig.add_subplot(gs[0, x], sharex=ax1, sharey=ax1) for x in range(1, 5)]
+    axb = [ax2] + [fig.add_subplot(gs[1, x], sharex=ax2, sharey=ax2) for x in range(1, 5)]
     caxt = fig.add_subplot(gs[0, -1])
     caxb = fig.add_subplot(gs[1, -1])
 
