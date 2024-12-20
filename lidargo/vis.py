@@ -32,7 +32,7 @@ def probabilityScatter(ds, ax=None, cax=None, fig=None, **kwargs):
         vmin=prob_arange[0],
         vmax=prob_arange[-1],
     )
-    ax.set_xlabel("Normalized radial wind speed [m s$^{-1}$]")
+    ax.set_xlabel(r"Normalized radial wind speed [m s$^{-1}$]")
     ax.set_ylabel("Normalized SNR [dB]")
     ax.grid(True)
 
@@ -94,7 +94,7 @@ def probabilityVSrws(ds, qc_rws_range, ax=None, fig=None, **kwargs):
     )
 
     ax.set_xlabel("Probability")
-    ax.set_ylabel("Normalized radial wind speed [m s$^{-1}$]")
+    ax.set_ylabel(r"Normalized radial wind speed [m s$^{-1}$]")
     ax.yaxis.set_label_position("right")
     ax.legend()
     ax.grid(True)
@@ -124,7 +124,7 @@ def probabilityVSrws(ds, qc_rws_range, ax=None, fig=None, **kwargs):
 
 #     return fig, ax, cbar
 
-def rws(ds, ax=None, fig=None, cax=None, cbar_label="Radial wind \n"+r"speed [m s${-1}$]", **kwargs):
+def rws(ds, ax=None, fig=None, cax=None, cbar_label="Radial wind \n"+r"speed [m s$^{-1}$]", **kwargs):
     """
     Plot radial wind speed (RWS) data in different projections based on scan type.
 
@@ -148,7 +148,7 @@ def rws(ds, ax=None, fig=None, cax=None, cbar_label="Radial wind \n"+r"speed [m 
     return fig, ax, cbar
 
 
-def ppi(ds, n_subplots: int = 5, ax=None, fig=None, cax=None, cbar_label="Radial wind \n"+r"speed [m s${-1}$]", **kwargs):
+def ppi(ds, n_subplots: int = 5, ax=None, fig=None, cax=None, cbar_label="Radial wind \n"+r"speed [m s$^{-1}$]", **kwargs):
     """Plot plan position indicator (PPI) for radial wind speed data."""
 
     if fig is None or ax is None:
@@ -191,7 +191,7 @@ def ppi(ds, n_subplots: int = 5, ax=None, fig=None, cax=None, cbar_label="Radial
 
     return fig, ax, cbar
 
-def rhi(ds, n_subplots: int = 5, cbar_label="Radial wind \n"+r"speed [m s${-1}$]",ax=None, fig=None, cax=None, **kwargs):
+def rhi(ds, n_subplots: int = 5, cbar_label="Radial wind \n"+r"speed [m s$^{-1}$]",ax=None, fig=None, cax=None, **kwargs):
     """Plot range height indicator (RHI) for radial wind speed data."""
     
     if fig is None or ax is None:
@@ -236,7 +236,7 @@ def rhi(ds, n_subplots: int = 5, cbar_label="Radial wind \n"+r"speed [m s${-1}$]
 
     return fig, ax, cbar
 
-def volumetric(ds, n_subplots: int = 5, cbar_label="Radial wind \n"+r"speed [m s${-1}$]",ax=None, fig=None, cax=None, **kwargs):
+def volumetric(ds, n_subplots: int = 5, cbar_label="Radial wind \n"+r"speed [m s$^{-1}$]",ax=None, fig=None, cax=None, **kwargs):
     """Plot 3D visualization of radial wind speed data."""
     
     if fig is None or ax is None:
@@ -280,7 +280,7 @@ def volumetric(ds, n_subplots: int = 5, cbar_label="Radial wind \n"+r"speed [m s
 
     return fig, ax, cbar
 
-def stare(ds,cbar_label="Radial wind \n"+r"speed [m s${-1}$]",ax=None, fig=None, cax=None, **kwargs):
+def stare(ds,cbar_label="Radial wind \n"+r"speed [m s$^{-1}$]",ax=None, fig=None, cax=None, **kwargs):
     """Plot stare visualization for radial wind speed data."""
     
     if fig is None or ax is None:
@@ -332,7 +332,7 @@ def stare(ds,cbar_label="Radial wind \n"+r"speed [m s${-1}$]",ax=None, fig=None,
 #     xformatter = mdates.DateFormatter("%H:%M")
 #     ax.xaxis.set_major_formatter(xformatter)
 #     ax.set_xlabel("Time (UTC)")
-#     ax.set_ylabel("Azimuth Angle [˚]")
+#     ax.set_ylabel("Azimuth angle [˚]")
 
 #     ax.set_title(
 #         titleGenerator(
@@ -368,7 +368,7 @@ def stare(ds,cbar_label="Radial wind \n"+r"speed [m s${-1}$]",ax=None, fig=None,
 #     xformatter = mdates.DateFormatter("%H:%M")
 #     ax.xaxis.set_major_formatter(xformatter)
 #     ax.set_xlabel("Time (UTC)")
-#     ax.set_ylabel("Elevation Angle [˚]")
+#     ax.set_ylabel("Elevation angle [˚]")
 
 #     ax.set_title(
 #         titleGenerator(
@@ -406,7 +406,7 @@ def angScatter(dsInput, dsStandardized, ax=None, fig=None, **kwargs):
     xformatter = mdates.DateFormatter("%H:%M")
     ax[0].xaxis.set_major_formatter(xformatter)
     ax[0].set_xlabel("Time (UTC)")
-    ax[0].set_ylabel("Azimuth Angle [˚]")
+    ax[0].set_ylabel("Azimuth angle [˚]")
  
     ax[0].set_title(
         titleGenerator(
@@ -438,7 +438,7 @@ def angScatter(dsInput, dsStandardized, ax=None, fig=None, **kwargs):
     xformatter = mdates.DateFormatter("%H:%M")
     ax[1].xaxis.set_major_formatter(xformatter)
     ax[1].set_xlabel("Time (UTC)")
-    ax[1].set_ylabel("Elevation Angle [˚]")
+    ax[1].set_ylabel("Elevation angle [˚]")
 
     ax[1].set_title(
         titleGenerator(
@@ -464,7 +464,7 @@ def angScatter(dsInput, dsStandardized, ax=None, fig=None, **kwargs):
 #     counts, bins = np.histogram(az, bins=utilities.rev_mid(np.unique(az)))
     
 #     ax.bar(np.unique(az),counts, width=np.min(np.diff(az)), **kwargs)
-#     ax.set_xlabel("Azimuth Angle [˚]")
+#     ax.set_xlabel("Azimuth angle [˚]")
 #     ax.set_ylabel("Occurrence")
 
 #     return fig, ax
@@ -487,7 +487,7 @@ def angScatter(dsInput, dsStandardized, ax=None, fig=None, **kwargs):
 
 #     ax.hist(deltaAzimuth, bins=bins, **kwargs)
 #     plt.xticks(rotation=30)
-#     ax.set_xlabel("Change in Azimuth Angle [˚]")
+#     ax.set_xlabel("Change in Azimuth angle [˚]")
 #     ax.set_ylabel("Occurrence")
 
 #     return fig, ax
@@ -749,12 +749,12 @@ def scanFig(ds):
         caxt = fig.add_subplot(gs[0, -1])
         caxb = fig.add_subplot(gs[1, -1])
 
-    fig, axt, _ = rws(ds, fig=fig, ax=axt, cax=caxt, cbar_label="Radial wind \n"+r"speed [m s${-1}$]")
+    fig, axt, _ = rws(ds, fig=fig, ax=axt, cax=caxt, cbar_label="Radial wind \n"+r"speed [m s$^{-1}$]")
 
     b1qc = ds.copy()
     b1qc["wind_speed"] = b1qc["wind_speed"].where(b1qc.qc_wind_speed == 0.0)
 
-    fig, axb, _ = rws(b1qc, fig=fig, ax=axb, cax=caxb, cbar_label="QC radial wind \n"+r"speed [m s${-1}$]")
+    fig, axb, _ = rws(b1qc, fig=fig, ax=axb, cax=caxb, cbar_label="QC radial wind \n"+r"speed [m s$^{-1}$]")
     
     fig.suptitle(
         titleGenerator(ds, "QC of data", components=["location", "date", "file"])

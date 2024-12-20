@@ -171,15 +171,13 @@ class Standardize:
 
     @with_logging
     def process_scan(
-        self, make_figures=True, save_file=True, save_path=None, replace=True
+        self,  save_file=True, save_path=None, replace=True,make_figures=True,save_figures=True
     ):
         """
         Run all the processing.
 
         Inputs:
         -------
-        make_figures: bool
-            Whether or not generate QC figures
         save_file: bool
             Whether or not save the final processed file
         save_path: str
@@ -188,6 +186,10 @@ class Standardize:
             data. Creates the necessary intermediate directories
         replace: bool
             Whether or not to replace processed scan if one already exists
+        make_figures: bool
+            Whether or not generate QC figures
+        save_figures: bool
+            Whether or not save QC figures
         """
 
         # Check if file has been processed yet and whether is to be replaced
@@ -241,7 +243,7 @@ class Standardize:
         self.add_attributes()
 
         if make_figures:
-            self.qc_report()
+            self.qc_report(save_figures)
 
         if save_file:
             self.outputData.to_netcdf(save_filename)
@@ -876,7 +878,7 @@ class Standardize:
         self.outputData = utilities.add_qc_attrs(self.outputData, qcAttrDict)
 
     @with_logging
-    def qc_report(self, saveFigs: bool = False, filetype: str = "png"):
+    def qc_report(self, save_figures: bool = False, filetype: str = "png"):
         """
         Make figures.
         #TODO should the qc report have more flexibility?
@@ -886,13 +888,11 @@ class Standardize:
             self.outputData, self.inputData, self.qc_rws_range
         )
 
-        if saveFigs:
-            wsqc_fig.savefig(
-                self.save_filename.replace(".nc", ".probability." + filetype)
-            )
-            scanqc_fig.savefig(self.save_filename.replace(".nc", ".qcscan." + filetype))
-            angscat_fig.savefig(self.save_filename.replace(".nc", ".angScatter." + filetype))
-            anghist_fig.savefig(self.save_filename.replace(".nc", ".angHist." + filetype))
+        if save_figures:
+            if wsqc_fig is not None: wsqc_fig.savefig(self.save_filename.replace(".nc", ".probability." + filetype))
+            if scanqc_fig is not None: scanqc_fig.savefig(self.save_filename.replace(".nc", ".qcscan." + filetype))
+            if angscat_fig is not None: angscat_fig.savefig(self.save_filename.replace(".nc", ".angScatter." + filetype))
+            if anghist_fig is not None: anghist_fig.savefig(self.save_filename.replace(".nc", ".angHist." + filetype))
 
 if __name__ == "__main__":
     """
@@ -906,14 +906,17 @@ if __name__ == "__main__":
     matplotlib.rcParams['mathtext.fontset'] = 'cm' 
     matplotlib.rcParams['font.size'] = 12
 
-    # source = "C:/Users/SLETIZIA/OneDrive - NREL/Desktop/PostDoc/AWAKEN/LIDARGO_samples/data/propietary/awaken/volumetric-raster-wake-csm/rt3.lidar.z02.a0.20230403.054004.user5.nc"
-    # source='../data/lidargo/example4/sa5.lidar.z03.a0.20231009.205005.user5.nc'
-    # source='../data/lidargo/example1/sc1.lidar.z01.a0.20230830.064613.user4.nc'
-    source = 'C:/Users/SLETIZIA/OneDrive - NREL/Desktop/PostDoc/AWAKEN/LIDARGO_samples/data/propietary/awaken/ppi-wake-csm/rt1.lidar.z02.a0.20240304.023004.user5.nc'
-    config_file = "C:/Users/SLETIZIA/OneDrive - NREL/Desktop/PostDoc/AWAKEN/LIDARGO_samples/config/config_awaken_b0_test.xlsx"
     
-   
-    # config_file='../configs/lidargo/config_examples_stand.xlsx'
+    # source='../data/lidargo/example4/sa5.lidar.z03.a0.20231009.205005.user5.nc'
+    source='../data/lidargo/example3/sa1.lidar.z05.vad.a0.20240824.085030.user5.nc'
+    # source='../data/lidargo/example1/sc1.lidar.z01.a0.20230830.064613.user4.nc'
+    
+    # source = "C:/Users/SLETIZIA/OneDrive - NREL/Desktop/PostDoc/AWAKEN/LIDARGO_samples/data/propietary/awaken/volumetric-raster-wake-csm/rt3.lidar.z02.a0.20230403.054004.user5.nc"
+    # source = 'C:/Users/SLETIZIA/OneDrive - NREL/Desktop/PostDoc/AWAKEN/LIDARGO_samples/data/propietary/awaken/ppi-wake-csm/rt1.lidar.z02.a0.20240304.023004.user5.nc'
+    
+    config_file='../configs/lidargo/config_examples_stand.xlsx'
+    
+    # config_file = "C:/Users/SLETIZIA/OneDrive - NREL/Desktop/PostDoc/AWAKEN/LIDARGO_samples/config/config_awaken_b0_test.xlsx"
 
     config_stand=pd.read_excel(config_file).set_index('regex')
     
