@@ -894,7 +894,6 @@ class Standardize:
             angscat_fig.savefig(self.save_filename.replace(".nc", ".angScatter." + filetype))
             anghist_fig.savefig(self.save_filename.replace(".nc", ".angHist." + filetype))
 
-
 if __name__ == "__main__":
     """
     Test block
@@ -908,12 +907,18 @@ if __name__ == "__main__":
     matplotlib.rcParams['font.size'] = 12
 
     # source = "C:/Users/SLETIZIA/OneDrive - NREL/Desktop/PostDoc/AWAKEN/LIDARGO_samples/data/propietary/awaken/volumetric-raster-wake-csm/rt3.lidar.z02.a0.20230403.054004.user5.nc"
-    # config_file = "C:/Users/SLETIZIA/OneDrive - NREL/Desktop/PostDoc/AWAKEN/LIDARGO_samples/config/config_awaken_b0_test.xlsx"
+    # source='../data/lidargo/example4/sa5.lidar.z03.a0.20231009.205005.user5.nc'
+    # source='../data/lidargo/example1/sc1.lidar.z01.a0.20230830.064613.user4.nc'
+    source = 'C:/Users/SLETIZIA/OneDrive - NREL/Desktop/PostDoc/AWAKEN/LIDARGO_samples/data/propietary/awaken/ppi-wake-csm/rt1.lidar.z02.a0.20240304.023004.user5.nc'
+    config_file = "C:/Users/SLETIZIA/OneDrive - NREL/Desktop/PostDoc/AWAKEN/LIDARGO_samples/config/config_awaken_b0_test.xlsx"
     
-    source='../data/lidargo/example4/sa5.lidar.z03.a0.20231009.205005.user5.nc'
-    config_file='../configs/lidargo/config_examples_stand.xlsx'
-    
+   
+    # config_file='../configs/lidargo/config_examples_stand.xlsx'
+
     config_stand=pd.read_excel(config_file).set_index('regex')
+    
+    
+    
     
     #match standardized config
     date_source=np.int64(re.search(r'\d{8}.\d{6}',source).group(0)[:8])

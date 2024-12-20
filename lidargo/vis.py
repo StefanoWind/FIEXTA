@@ -155,8 +155,6 @@ def ppi(ds, n_subplots: int = 5, ax=None, fig=None, cax=None, cbar_label="Radial
         fig, ax = plt.subplots(
             1,
             n_subplots,
-            sharex=True,
-            sharey=True,
             figsize=kwargs.get("figsize", (9, 8)),
         )
 
@@ -176,12 +174,20 @@ def ppi(ds, n_subplots: int = 5, ax=None, fig=None, cax=None, cbar_label="Radial
             ax[i].set_yticklabels([])
         ax[i].set_aspect("equal")
         add_time_title(ax[i], ds.time.sel(scanID=scan))
-
+        ax[i].grid(True)
+        
+    utilities.same_axis(ax)
+    
     if cax is None:
         fig.tight_layout()
         cbar = add_colorbar(fig, ax[-1], im, cbar_label)
     else:
-        cbar = plt.colorbar(im, cax=cax, label="Radial Wind \n"+r"Speed [m s${-1}$]")
+        cbar = plt.colorbar(im, cax=cax, label=cbar_label)
+        new_pos=[cax.get_position().x0,
+                          ax[-1].get_position().y0,
+                          cax.get_position().width,
+                          ax[-1].get_position().height]
+        cax.set_position(new_pos) 
 
     return fig, ax, cbar
 
@@ -192,8 +198,6 @@ def rhi(ds, n_subplots: int = 5, cbar_label="Radial wind \n"+r"speed [m s${-1}$]
         fig, ax = plt.subplots(
             1,
             n_subplots,
-            sharex=True,
-            sharey=True,
             figsize=kwargs.get("figsize", (9, 8)),
         )
 
@@ -214,6 +218,8 @@ def rhi(ds, n_subplots: int = 5, cbar_label="Radial wind \n"+r"speed [m s${-1}$]
         ax[i].set_aspect("equal")
         add_time_title(ax[i], ds.time.sel(scanID=scan))
         ax[i].grid(True)
+        
+    utilities.same_axis(ax)
 
     if cax is None:
         fig.tight_layout()
@@ -237,8 +243,6 @@ def volumetric(ds, n_subplots: int = 5, cbar_label="Radial wind \n"+r"speed [m s
         fig, ax = plt.subplots(
             1,
             n_subplots,
-            sharex=True,
-            sharey=True,
             figsize=kwargs.get("figsize", (9, 8)),
         )
 
@@ -258,7 +262,9 @@ def volumetric(ds, n_subplots: int = 5, cbar_label="Radial wind \n"+r"speed [m s
         else:
             ax[i].set_yticklabels([])
             ax[i].set_zticklabels([])
-            
+    
+    utilities.same_axis(ax)
+    
     if cax is None:
         fig.tight_layout()
         cbar = add_colorbar(fig, ax[-1], sc,label=cbar_label)
@@ -281,8 +287,6 @@ def stare(ds,cbar_label="Radial wind \n"+r"speed [m s${-1}$]",ax=None, fig=None,
         fig, ax = plt.subplots(
             1,
             1,
-            sharex=True,
-            sharey=True,
             figsize=kwargs.get("figsize", (9, 8)),
         )
     
@@ -734,8 +738,8 @@ def scanFig(ds):
         gs = GridSpec(nrows=2, ncols=6, width_ratios=[6, 6, 6, 6, 6, 0.5], figure=fig)
         ax1 = fig.add_subplot(gs[0, 0],projection=projection)
         ax2 = fig.add_subplot(gs[1, 0],projection=projection)
-        axt = [ax1] + [fig.add_subplot(gs[0, x], sharex=ax1, sharey=ax1,projection=projection) for x in range(1, 5)]
-        axb = [ax2] + [fig.add_subplot(gs[1, x], sharex=ax2, sharey=ax2,projection=projection) for x in range(1, 5)]
+        axt = [ax1] + [fig.add_subplot(gs[0, x], projection=projection) for x in range(1, 5)]
+        axb = [ax2] + [fig.add_subplot(gs[1, x], projection=projection) for x in range(1, 5)]
         caxt = fig.add_subplot(gs[0, -1])
         caxb = fig.add_subplot(gs[1, -1])
     else:

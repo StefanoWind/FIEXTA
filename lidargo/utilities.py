@@ -180,6 +180,19 @@ def remove_labels(fig):
                 ax.set_ylabel("")
         except:
             pass
+        
+def same_axis(axs):
+    # Get the global limits for all subplots
+    all_x_limits = [ax.get_xlim() for ax in axs]
+    all_y_limits = [ax.get_ylim() for ax in axs]
+    
+    global_xlim = (min(l[0] for l in all_x_limits), max(l[1] for l in all_x_limits))
+    global_ylim = (min(l[0] for l in all_y_limits), max(l[1] for l in all_y_limits))
+    
+    # Set the same limits for all subplots
+    for ax in axs:
+        ax.set_xlim(global_xlim)
+        ax.set_ylim(global_ylim)
 
 
 def add_attributes(ds):
