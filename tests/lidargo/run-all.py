@@ -5,7 +5,7 @@ Run all examples
 import os
 import pandas as pd
 cd = os.getcwd()
-pwd = os.path.dirname(cd)
+pwd = os.path.dirname(os.path.dirname(cd))
 
 import lidargo as lg
 import xarray as xr
@@ -26,13 +26,13 @@ matplotlib.rcParams["font.size"] = 14
 # %% Inputs
 
 # paths
-source = os.path.join(pwd, "data/**/*nc")
-source_config_stand = os.path.join(pwd, "config/config_examples_stand.xlsx")
-source_config_stats = os.path.join(pwd, "config/config_examples_stats.xlsx")
+source = os.path.join(pwd, "data/lidargo/**/*nc")
+source_config_stand = os.path.join(pwd, "configs/lidargo/config_examples_stand.xlsx")
+source_config_stats = os.path.join(pwd, "configs/lidargo/config_examples_stats.xlsx")
 
 #%% Initialization
 files=glob.glob(source,recursive=True)
-config_stand=pd.read_excel(source_config_stand).set_index('PARAMETER')
+config_stand=pd.read_excel(source_config_stand).set_index('regex')
 
 #%% Main
 files_stand=[]

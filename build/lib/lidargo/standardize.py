@@ -10,8 +10,8 @@ from dataclasses import asdict
 from lidargo import utilities
 from lidargo.utilities import get_logger, with_logging
 from lidargo import vis
-from .statistics import local_probability
-from .config import LidarConfig
+from lidargo.statistics import local_probability
+from lidargo.config import LidarConfig
 
 
 pd.set_option("future.no_silent_downcasting", True)
@@ -882,7 +882,7 @@ class Standardize:
         #TODO should the qc report have more flexibility?
         """
 
-        wsqc_fig, scanqc_fig, az_fig, azhist_fig = vis.qcReport(
+        wsqc_fig, scanqc_fig, angscat_fig, anghist_fig = vis.qcReport(
             self.outputData, self.inputData, self.qc_rws_range
         )
 
@@ -891,21 +891,37 @@ class Standardize:
                 self.save_filename.replace(".nc", ".probability." + filetype)
             )
             scanqc_fig.savefig(self.save_filename.replace(".nc", ".qcscan." + filetype))
-            az_fig.savefig(self.save_filename.replace(".nc", ".azScatter." + filetype))
-            azhist_fig.savefig(self.save_filename.replace(".nc", ".azHist." + filetype))
+            angscat_fig.savefig(self.save_filename.replace(".nc", ".angScatter." + filetype))
+            anghist_fig.savefig(self.save_filename.replace(".nc", ".angHist." + filetype))
 
 
 if __name__ == "__main__":
     """
     Test block
     """
+    import lidargo as lg
     cd = os.path.dirname(__file__)
 
-    source = "data/360ppi-csm/rt5.lidar.z02.a0.20230711.173203.user1.nc"
-    config_file = "config/configs_standardize.xlsx"
+    source = "../data/lidargo/example1/sc1.lidar.z01.a0.20230830.064613.user4.nc"
+    config_file = "../configs/lidargo/config_examples_stand.xlsx"
+    
+    config_stand=pd.read_excel(config_file).set_index('regex')
+    
+    #match standardized config
+    date_source=np.int64(re.search(r'\d{8}.\d{6}',source).group(0)[:8])
+    
+    matches=[]
+    for regex in config_stand.columns:
+        match = re.findall(regex, source)
+        sdate=config_stand[regex]['start_date']
+        edate=config_stand[regex]['end_date']
+        if len(match)>0 and date_source>=sdate and date_source<=edate:
+            matches.append(regex)
 
-    # Create an instance of LIDARGO
-    lproc = Standardize(source, config_file, verbose=True)
+    if len(matches)==1:
+        config = lg.LidarConfig(**config_stand[matches[0]].to_dict())
+    
+        # Run processing
+        lproc = lg.Standardize(source, config=config, verbose=True)
+        lproc.process_scan(replace=True, save_file=True, make_figures=True)
 
-    # Run processing
-    lproc.process_scan(make_figures=True, replace=True, save_file=True)

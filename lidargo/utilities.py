@@ -108,6 +108,13 @@ def mid(x):
     return (x[:-1] + x[1:]) / 2
 
 
+def rev_mid(x):
+    '''
+    Given midpoint, build edges
+    '''
+    return np.concatenate([[x[0]-(x[1]-x[0])/2],(x[:-1]+x[1:])/2,[x[-1]+(x[-1]-x[-2])/2]])
+
+
 def gaussian(x, sigma):
     """
     Gaussian function
@@ -146,6 +153,14 @@ def ceil(value, step):
     """
     return np.ceil(value / step) * step
 
+def nanmin_time(value,_format='%Y-%m-%d %H:%M:%S'):
+    min_time=np.min(value[value>np.datetime64('1970-01-01T00:00:00')])
+    return min_time.dt.strftime(_format).values
+
+
+def nanmax_time(value,_format):
+    max_time=np.max(value[value>np.datetime64('1970-01-01T00:00:00')])
+    return max_time.dt.strftime(_format).values
 
 def remove_labels(fig):
     """
@@ -165,6 +180,19 @@ def remove_labels(fig):
                 ax.set_ylabel("")
         except:
             pass
+        
+def same_axis(axs):
+    # Get the global limits for all subplots
+    all_x_limits = [ax.get_xlim() for ax in axs]
+    all_y_limits = [ax.get_ylim() for ax in axs]
+    
+    global_xlim = (min(l[0] for l in all_x_limits), max(l[1] for l in all_x_limits))
+    global_ylim = (min(l[0] for l in all_y_limits), max(l[1] for l in all_y_limits))
+    
+    # Set the same limits for all subplots
+    for ax in axs:
+        ax.set_xlim(global_xlim)
+        ax.set_ylim(global_ylim)
 
 
 def add_attributes(ds):

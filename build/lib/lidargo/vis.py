@@ -92,6 +92,28 @@ def probabilityVSrws(ds, qc_rws_range, ax=None, fig=None, **kwargs):
 
     return ax
 
+# def angscat(dsInput,dsStandardized, ax=None, fig=None, cax=None, **kwargs):
+#     """
+#     Plot the scan geometry as a scatter time series of angles.
+
+#     Parameters:
+#     -----------
+#     ds : xarray.Dataset
+#         Dataset containing the azimutha dn elevation data.
+#     """
+
+#     if dsStandardized.attrs["scan_mode"].lower() == "ppi":
+#         fig, ax, cbar = azimuthScatter(dsInput,dsStandardized, ax=ax, fig=fig, cax=cax)
+#     elif dsStandardized.attrs["scan_mode"].lower() == "rhi":
+#         fig, ax, cbar = elevationScatter(dsInput,dsStandardized, ax=ax, fig=fig, cax=cax)
+#     elif ds.attrs["scan_mode"].lower() == "volumetric":
+#         fig, ax, cbar = 3dScatter(dsInput,dsStandardized, ax=ax, fig=fig, cax=cax)
+#     elif ds.attrs["scan_mode"].lower() == "stare":
+#         fig, ax, cbar = stare(ds, ax=ax, fig=fig, cax=cax)
+#     else:
+#         raise ValueError(f"Unsupported scan type: {ds.attrs['scan_mode']}")
+
+#     return fig, ax, cbar
 
 def rws(ds, ax=None, fig=None, cax=None, **kwargs):
     """
@@ -146,9 +168,9 @@ def ppi(ds, n_subplots: int = 5, ax=None, fig=None, cax=None, **kwargs):
 
     if cax is None:
         fig.tight_layout()
-        cbar = add_colorbar(fig, ax[-1], im, "Radial Wind \n Speed [m/s]")
+        cbar = add_colorbar(fig, ax[-1], im, "Radial Wind \n"+r"Speed [m s${-1}$]")
     else:
-        cbar = plt.colorbar(im, cax=cax, label="Radial Wind \n Speed [m/s]")
+        cbar = plt.colorbar(im, cax=cax, label="Radial Wind \n"+r"Speed [m s${-1}$]")
 
     return fig, ax, cbar
 
@@ -159,41 +181,148 @@ def stare(ds):
     raise NotImplementedError("Stare plotting is not implemented yet.")
 
 
-@with_logging
-def azimuthScatter(dsInput, dsStandardized, ax=None, fig=None, **kwargs):
-    """scatter plot showing observed and standardized azimuth angles"""
-    if fig is None or ax is None:
-        fig, ax = plt.subplots(figsize=kwargs.get("figsize", (9, 8)))
+# @with_logging
+# def azimuthScatter(dsInput, dsStandardized, ax=None, fig=None, **kwargs):
+#     """scatter plot showing observed and standardized azimuth angles"""
+#     if fig is None or ax is None:
+#         fig, ax = plt.subplots(figsize=kwargs.get("figsize", (9, 8)))
 
-    ax.scatter(
+#     ax.scatter(
+#         dsInput.time,
+#         dsInput.azimuth,
+#         marker=".",
+#         c="C0",
+#         label="input data",
+#     )
+#     ax.scatter(
+#         dsStandardized.time,
+#         dsStandardized.azimuth,
+#         marker=".",
+#         c="C1",
+#         label="regularized data",
+#     )
+
+#     xformatter = mdates.DateFormatter("%H:%M")
+#     ax.xaxis.set_major_formatter(xformatter)
+#     ax.set_xlabel("Time (UTC)")
+#     ax.set_ylabel("Azimuth Angle [˚]")
+
+#     ax.set_title(
+#         titleGenerator(
+#             dsStandardized,
+#             "Beam angles",
+#             ["location", "date", "file"],
+#         )
+#     )
+
+#     return fig, ax
+
+# @with_logging
+# def elevationScatter(dsInput, dsStandardized, ax=None, fig=None, **kwargs):
+#     """scatter plot showing observed and standardized azimuth angles"""
+#     if fig is None or ax is None:
+#         fig, ax = plt.subplots(figsize=kwargs.get("figsize", (9, 8)))
+
+#     ax.scatter(
+#         dsInput.time,
+#         dsInput.elevation,
+#         marker=".",
+#         c="C0",
+#         label="input data",
+#     )
+#     ax.scatter(
+#         dsStandardized.time,
+#         dsStandardized.elevation,
+#         marker=".",
+#         c="C1",
+#         label="regularized data",
+#     )
+
+#     xformatter = mdates.DateFormatter("%H:%M")
+#     ax.xaxis.set_major_formatter(xformatter)
+#     ax.set_xlabel("Time (UTC)")
+#     ax.set_ylabel("Elevation Angle [˚]")
+
+#     ax.set_title(
+#         titleGenerator(
+#             dsStandardized,
+#             "Beam angles",
+#             ["location", "date", "file"],
+#         )
+#     )
+ 
+#     return fig, ax
+
+@with_logging
+def angScatter(dsInput, dsStandardized, ax=None, fig=None, **kwargs):
+    """Scatter plot showing observed and standardized azimuth and elevation angles"""
+    if fig is None or ax is None:
+        fig, ax = plt.subplots(2,1,figsize=kwargs.get("figsize", (9, 8)))
+
+    #azimuth time series
+    ax[0].scatter(
         dsInput.time,
         dsInput.azimuth,
         marker=".",
         c="C0",
         label="input data",
     )
-    ax.scatter(
+    ax[0].scatter(
         dsStandardized.time,
         dsStandardized.azimuth,
         marker=".",
         c="C1",
         label="regularized data",
     )
-
+ 
     xformatter = mdates.DateFormatter("%H:%M")
-    ax.xaxis.set_major_formatter(xformatter)
-    ax.set_xlabel(f"Time (UTC)")
-    ax.set_ylabel(f"Azimuth Angle [˚]")
-
-    ax.set_title(
+    ax[0].xaxis.set_major_formatter(xformatter)
+    ax[0].set_xlabel("Time (UTC)")
+    ax[0].set_ylabel("Azimuth Angle [˚]")
+ 
+    ax[0].set_title(
         titleGenerator(
             dsStandardized,
-            "Beam angles",
+            "Azimuth angles",
             ["location", "date", "file"],
         )
     )
+    ax[0].legend()
+    ax[0].grid()
+    
+    #elevation time series
+    ax[1].scatter(
+        dsInput.time,
+        dsInput.elevation,
+        marker=".",
+        c="C0",
+        label="input data",
+    )
+    ax[1].scatter(
+        dsStandardized.time,
+        dsStandardized.elevation,
+        marker=".",
+        c="C1",
+        label="regularized data",
+    )
+
+    xformatter = mdates.DateFormatter("%H:%M")
+    ax[1].xaxis.set_major_formatter(xformatter)
+    ax[1].set_xlabel("Time (UTC)")
+    ax[1].set_ylabel("Elevation Angle [˚]")
+
+    ax[1].set_title(
+        titleGenerator(
+            dsStandardized,
+            "Elevation angles",
+            ["location", "date", "file"],
+        )
+    )
+    ax[1].legend()
+    ax[1].grid()
 
     return fig, ax
+
 
 
 def azimuthhist(ds, ax=None, fig=None, rwidth=0.8, **kwargs):
@@ -309,10 +438,42 @@ def add_time_title(ax, time):
     )
 
 
-def rhi(ds):
+def rhi(ds, n_subplots: int = 5, ax=None, fig=None, cax=None, **kwargs):
     """Plot range height indicator (RHI) for radial wind speed data."""
-    # Implement RHI plotting logic here
-    raise NotImplementedError("RHI plotting is not implemented yet.")
+    
+    if fig is None or ax is None:
+        fig, ax = plt.subplots(
+            1,
+            n_subplots,
+            sharex=True,
+            sharey=True,
+            figsize=kwargs.get("figsize", (9, 8)),
+        )
+
+    scans = np.linspace(
+        ds.scanID.values.min(), ds.scanID.values.max(), n_subplots, dtype=int
+    )
+
+    for i, scan in enumerate(scans):
+        subset = ds.isel(scanID=scan)
+        im = ax[i].pcolormesh(
+            subset.x, subset.z, subset.wind_speed, cmap="RdBu_r", shading="auto"
+        )
+        ax[i].set_xlabel(r"$x$ [m]")
+        if i == 0:
+            ax[i].set_ylabel(r"$z$ [m]")
+        ax[i].set_aspect("equal")
+        add_time_title(ax[i], ds.time.sel(scanID=scan))
+
+    if cax is None:
+        fig.tight_layout()
+        cbar = add_colorbar(fig, ax[-1], im, "Radial Wind \n"+r"Speed [m s${-1}$]")
+    else:
+        cbar = plt.colorbar(im, cax=cax, label="Radial Wind \n"+r"Speed [m s${-1}$]")
+
+    return fig, ax, cbar
+
+    # raise NotImplementedError("RHI plotting is not implemented yet.")
 
 
 def plot_volumetric(ds):
@@ -438,7 +599,7 @@ def qcReport(ds, dsInput, qc_rws_range):
     """wrapper method to make qc figures"""
     wsqc_fig = windSpeedQCfig(ds, qc_rws_range)
     scanqc_fig = scanFig(ds)
-    az_fig, _ = azimuthScatter(dsInput, ds, figsize=(10, 3))
-    azhist_fig = azHistFig(ds, dsInput)
-
-    return wsqc_fig, scanqc_fig, az_fig, azhist_fig
+    angscat_fig, _ = angScatter(dsInput, ds, figsize=(10, 3))
+    anghist_fig = azHistFig(ds, dsInput)
+    
+    return wsqc_fig, scanqc_fig, angscat_fig, anghist_fig

@@ -10,8 +10,8 @@ from dataclasses import asdict
 from lidargo import utilities
 from lidargo.utilities import get_logger, with_logging
 from lidargo import vis
-from .statistics import local_probability
-from .config import LidarConfig
+from lidargo.statistics import local_probability
+from lidargo.config import LidarConfig
 
 
 pd.set_option("future.no_silent_downcasting", True)
@@ -171,15 +171,13 @@ class Standardize:
 
     @with_logging
     def process_scan(
-        self, make_figures=True, save_file=True, save_path=None, replace=True
+        self,  save_file=True, save_path=None, replace=True,make_figures=True,save_figures=True
     ):
         """
         Run all the processing.
 
         Inputs:
         -------
-        make_figures: bool
-            Whether or not generate QC figures
         save_file: bool
             Whether or not save the final processed file
         save_path: str
@@ -188,6 +186,10 @@ class Standardize:
             data. Creates the necessary intermediate directories
         replace: bool
             Whether or not to replace processed scan if one already exists
+        make_figures: bool
+            Whether or not generate QC figures
+        save_figures: bool
+            Whether or not save QC figures
         """
 
         # Check if file has been processed yet and whether is to be replaced
@@ -241,7 +243,7 @@ class Standardize:
         self.add_attributes()
 
         if make_figures:
-            self.qc_report()
+            self.qc_report(save_figures)
 
         if save_file:
             self.outputData.to_netcdf(save_filename)
@@ -308,8 +310,8 @@ class Standardize:
         forward_swipe_condition[(first_forward == True) * (first == False)] = False
 
         self.outputData = self.inputData.where(forward_swipe_condition)
-        self.azimuth_selected = self.outputData["azimuth"].copy()
-        self.elevation_selected = self.outputData["elevation"].copy()
+        # self.azimuth_selected = self.outputData["azimuth"].copy()
+        # self.elevation_selected = self.outputData["elevation"].copy()
 
         self.logger.log(
             f"Back-swipe removal: {np.round(np.sum(forward_swipe_condition).values/len(self.inputData.azimuth)*100,2)}% retained"
@@ -578,7 +580,7 @@ class Standardize:
 
     def detect_resonance(self, df):
         """
-        Detect presence of resonance of bad data around 0 (some lidars have outliers clusterees aroun 0 m/s instead of uniformly spread acorss the bandwidth)
+        Detect presence of resonance of bad data around 0 (some lidars have outliers clustered around 0 m/s instead of uniformly spread across the bandwidth)
 
         Inputs:
         -----
@@ -876,36 +878,66 @@ class Standardize:
         self.outputData = utilities.add_qc_attrs(self.outputData, qcAttrDict)
 
     @with_logging
-    def qc_report(self, saveFigs: bool = False, filetype: str = "png"):
+    def qc_report(self, save_figures: bool = False, filetype: str = "png"):
         """
         Make figures.
         #TODO should the qc report have more flexibility?
         """
 
-        wsqc_fig, scanqc_fig, az_fig, azhist_fig = vis.qcReport(
+        wsqc_fig, scanqc_fig, angscat_fig, anghist_fig = vis.qcReport(
             self.outputData, self.inputData, self.qc_rws_range
         )
 
-        if saveFigs:
-            wsqc_fig.savefig(
-                self.save_filename.replace(".nc", ".probability." + filetype)
-            )
-            scanqc_fig.savefig(self.save_filename.replace(".nc", ".qcscan." + filetype))
-            az_fig.savefig(self.save_filename.replace(".nc", ".azScatter." + filetype))
-            azhist_fig.savefig(self.save_filename.replace(".nc", ".azHist." + filetype))
-
+        if save_figures:
+            if wsqc_fig is not None: wsqc_fig.savefig(self.save_filename.replace(".nc", ".probability." + filetype))
+            if scanqc_fig is not None: scanqc_fig.savefig(self.save_filename.replace(".nc", ".qcscan." + filetype))
+            if angscat_fig is not None: angscat_fig.savefig(self.save_filename.replace(".nc", ".angScatter." + filetype))
+            if anghist_fig is not None: anghist_fig.savefig(self.save_filename.replace(".nc", ".angHist." + filetype))
 
 if __name__ == "__main__":
     """
     Test block
     """
-    cd = os.path.dirname(__file__)
+    import lidargo as lg
+    import matplotlib
+    from matplotlib import pyplot as plt
+    plt.close('all')
+    matplotlib.rcParams['font.family'] = 'serif'
+    matplotlib.rcParams['mathtext.fontset'] = 'cm' 
+    matplotlib.rcParams['font.size'] = 12
 
-    source = "data/360ppi-csm/rt5.lidar.z02.a0.20230711.173203.user1.nc"
-    config_file = "config/configs_standardize.xlsx"
+    
+    # source='../data/lidargo/example4/sa5.lidar.z03.a0.20231009.205005.user5.nc'
+    source='../data/lidargo/example3/sa1.lidar.z05.vad.a0.20240824.085030.user5.nc'
+    # source='../data/lidargo/example1/sc1.lidar.z01.a0.20230830.064613.user4.nc'
+    
+    # source = "C:/Users/SLETIZIA/OneDrive - NREL/Desktop/PostDoc/AWAKEN/LIDARGO_samples/data/propietary/awaken/volumetric-raster-wake-csm/rt3.lidar.z02.a0.20230403.054004.user5.nc"
+    # source = 'C:/Users/SLETIZIA/OneDrive - NREL/Desktop/PostDoc/AWAKEN/LIDARGO_samples/data/propietary/awaken/ppi-wake-csm/rt1.lidar.z02.a0.20240304.023004.user5.nc'
+    
+    config_file='../configs/lidargo/config_examples_stand.xlsx'
+    
+    # config_file = "C:/Users/SLETIZIA/OneDrive - NREL/Desktop/PostDoc/AWAKEN/LIDARGO_samples/config/config_awaken_b0_test.xlsx"
 
-    # Create an instance of LIDARGO
-    lproc = Standardize(source, config_file, verbose=True)
+    config_stand=pd.read_excel(config_file).set_index('regex')
+    
+    
+    
+    
+    #match standardized config
+    date_source=np.int64(re.search(r'\d{8}.\d{6}',source).group(0)[:8])
+    
+    matches=[]
+    for regex in config_stand.columns:
+        match = re.findall(regex, source)
+        sdate=config_stand[regex]['start_date']
+        edate=config_stand[regex]['end_date']
+        if len(match)>0 and date_source>=sdate and date_source<=edate:
+            matches.append(regex)
 
-    # Run processing
-    lproc.process_scan(make_figures=True, replace=True, save_file=True)
+    if len(matches)==1:
+        config = lg.LidarConfig(**config_stand[matches[0]].to_dict())
+    
+        # Run processing
+        lproc = lg.Standardize(source, config=config, verbose=True)
+        lproc.process_scan(replace=True, save_file=False, make_figures=True)
+
