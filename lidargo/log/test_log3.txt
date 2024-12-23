@@ -1,0 +1,23 @@
+2024-12-22 17:49:41 - INFO - Initializing standardization of sa1.lidar.z05.vad.a0.20240824.085030.user5.nc
+2024-12-22 17:49:41 - INFO - Calling Standardize._load_configuration
+2024-12-22 17:49:41 - INFO - Calling Standardize.process_scan
+2024-12-22 17:49:41 - INFO - Generating standardized file sa1.lidar.z05.vad.b0.20240824.085030.user5.awaken.vad.nc
+2024-12-22 17:49:41 - INFO - Calling Standardize.check_data
+2024-12-22 17:49:41 - INFO - Calling Standardize.remove_back_swipe
+2024-12-22 17:49:41 - INFO - Back-swipe removal: 100.0% retained
+2024-12-22 17:49:41 - INFO - Calling Standardize.update_angles_to_nominal
+2024-12-22 17:49:41 - INFO - Relevant angles detection: 100.0% retained
+2024-12-22 17:49:41 - INFO - Calling Standardize.pre_filter
+2024-12-22 17:49:41 - INFO - range_limit filter: 55.0% retained
+2024-12-22 17:49:41 - INFO - ground_limit filter: 100.0% retained
+2024-12-22 17:49:41 - INFO - snr_limit filter: 76.07% retained
+2024-12-22 17:49:41 - INFO - rws_max filter: 77.96% retained
+2024-12-22 17:49:42 - INFO - rws_min filter: 100.0% retained
+2024-12-22 17:49:42 - INFO - Calling Standardize.dynamic_filter
+2024-12-22 17:49:45 - INFO - rws_norm_limit filter: 39.08% retained
+2024-12-22 17:49:45 - INFO - local_population_min_limit filter: 25.04% retained
+2024-12-22 17:49:46 - INFO - rws_standard_error_limit filter: 29.52% retained
+2024-12-22 17:49:47 - INFO - snr_standard_error_limit filter: 41.21% retained
+2024-12-22 17:49:49 - INFO - probability_limit filter: 20.79% retained
+2024-12-22 17:49:51 - INFO - local_scattering_min_limit filter: 22.34% retained
+2024-12-22 17:49:51 - INFO - Retained 20.26% of data after QC
