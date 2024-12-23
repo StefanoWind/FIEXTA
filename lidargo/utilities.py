@@ -7,7 +7,6 @@ import socket
 import getpass
 from .logger import SingletonLogger
 from functools import wraps
-import logging
 from dataclasses import is_dataclass, fields, asdict
 from typing import Optional
 
@@ -18,9 +17,9 @@ def get_logger(
     """Utility function to get or create a logger instance."""
     
     #get logger only if it exists, otherwise create one
-    if name is not None:
-        logger = logging.getLogger(name)
-    return SingletonLogger(logger=logger, verbose=verbose,filename=filename)
+    if logger is None:
+        logger = SingletonLogger(logger=logger, verbose=verbose,filename=filename)
+    return logger
 
 
 def with_logging(func):
@@ -28,7 +27,7 @@ def with_logging(func):
 
     @wraps(func)
     def wrapper(self, *args, **kwargs):
-        logger = get_logger()
+        logger = self.logger
 
         if logger.verbose:
             class_name = self.__class__.__name__

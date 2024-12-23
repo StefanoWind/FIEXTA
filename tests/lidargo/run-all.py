@@ -60,8 +60,10 @@ for f,c in zip(files_stand,configs_stand):
     
     ## Instantiate a configuration object
     config = lg.LidarConfig(**c)
+    
+    logfile=os.path.join(cd,'log',os.path.basename(f).replace('nc','log'))
 
     # standardization
-    lproc = lg.Standardize(f, config=config, verbose=True)
+    lproc = lg.Standardize(f, config=config, verbose=True,logfile=logfile)
     lproc.process_scan(replace=True, save_file=True, make_figures=False)
 
