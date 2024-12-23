@@ -13,11 +13,14 @@ from typing import Optional
 
 
 def get_logger(
-    name: str = "default", verbose: bool = True, logger: Optional[object] = None
-) -> SingletonLogger:
+        name: str = None, verbose: bool = True, logger: Optional[object] = None, filename=None
+               ) -> SingletonLogger:
     """Utility function to get or create a logger instance."""
-    logger = logging.getLogger(name)
-    return SingletonLogger(logger=logger, verbose=verbose)
+    
+    #get logger only if it exists, otherwise create one
+    if name is not None:
+        logger = logging.getLogger(name)
+    return SingletonLogger(logger=logger, verbose=verbose,filename=filename)
 
 
 def with_logging(func):
