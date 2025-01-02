@@ -14,5 +14,6 @@ trash/*
 *.hpl
 *.html
 *.log
+*/build/*
 */docs/_build/*
 >>>>>>> main
