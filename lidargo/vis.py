@@ -498,29 +498,32 @@ def rws3Dscatter(ax, x, y, z, f,n_max=10000):
     #exclude nans
     real = ~np.isnan(x+y+z+f)
     
-    #subsample if too many points
-    skip = int(np.sum(real) / n_max) if np.sum(real) > n_max else 1
+    if np.sum(real)>0:
+        #subsample if too many points
+        skip = int(np.sum(real) / n_max) if np.sum(real) > n_max else 1
+        
+        #plot
+        sc = ax.scatter(
+            x[real][::skip],
+            y[real][::skip],
+            z[real][::skip],
+            s=2,
+            c=f[real][::skip],
+            cmap="coolwarm",
+            vmin=np.nanpercentile(f, 5) - 1,
+            vmax=np.nanpercentile(f, 95) + 1,
+        )
     
-    #plot
-    sc = ax.scatter(
-        x[real][::skip],
-        y[real][::skip],
-        z[real][::skip],
-        s=2,
-        c=f[real][::skip],
-        cmap="coolwarm",
-        vmin=np.nanpercentile(f, 5) - 1,
-        vmax=np.nanpercentile(f, 95) + 1,
-    )
-
-    xlim = [np.min(x), np.max(x)]
-    ylim = [np.min(y), np.max(y)]
-    zlim = [np.min(z), np.max(z)]
-    
-    ax.set_box_aspect((np.diff(xlim)[0], np.diff(ylim)[0], np.diff(zlim)[0]))
-    ax.set_xlim(xlim)
-    ax.set_ylim(ylim)
-    ax.set_zlim(zlim)
+        xlim = [np.nanmin(x), np.nanmax(x)]
+        ylim = [np.nanmin(y), np.nanmax(y)]
+        zlim = [np.nanmin(z), np.nanmax(z)]
+        
+        ax.set_box_aspect((np.diff(xlim)[0], np.diff(ylim)[0], np.diff(zlim)[0]))
+        ax.set_xlim(xlim)
+        ax.set_ylim(ylim)
+        ax.set_zlim(zlim)
+    else:
+        sc=None
     
     return sc
 
