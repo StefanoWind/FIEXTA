@@ -15,5 +15,5 @@ trash/
 *.html
 *.log
 build/
-docs/_build/
+lidargo/docs/_build/
 >>>>>>> main
