@@ -10,10 +10,10 @@ trash/*
 *.egg-info/
 *.hpl
 =======
-*/trash/*
+trash/
 *.hpl
 *.html
 *.log
-*/build/*
-*/docs/_build/*
+build/
+docs/_build/
 >>>>>>> main
