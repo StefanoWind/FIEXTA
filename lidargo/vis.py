@@ -4,7 +4,6 @@ from matplotlib.gridspec import GridSpec
 import numpy as np
 from lidargo import utilities
 import warnings
-from lidargo.utilities import with_logging
 
 # Suppress all graphical UserWarnings
 warnings.filterwarnings(
@@ -26,7 +25,6 @@ def qcReport(ds, dsInput, qc_rws_range):
     
     return wsqc_fig, scanqc_fig, angscat_fig, anghist_fig
 
-@with_logging
 def windSpeedQCfig(ds, qc_rws_range):
     """wrapper method to make qc and probability scatter plots"""
     fig = plt.figure(figsize=(10, 4), layout="constrained")
@@ -45,7 +43,6 @@ def windSpeedQCfig(ds, qc_rws_range):
 
     return fig
 
-@with_logging
 def scanFig(ds):
     """wrapper method to make scans pcolor figures"""
     fig = plt.figure(figsize=(18, 8))
@@ -83,7 +80,6 @@ def scanFig(ds):
     )
     return fig
 
-@with_logging
 def angHistFig(ds, dsInput):
     """wrapper method to make angle histograms"""
     
@@ -379,7 +375,6 @@ def stare(ds,cbar_label="Radial wind \n"+r"speed [m s$^{-1}$]",ax=None, fig=None
         
     return fig, ax, cbar
 
-@with_logging
 def angScatter(dsInput, dsStandardized, ax=None, fig=None, **kwargs):
     """Scatter plot showing observed and standardized azimuth and elevation angles"""
     if fig is None or ax is None:
