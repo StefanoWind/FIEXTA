@@ -12,10 +12,6 @@ parts:
   chapters:
   - file: format
   - file: standardize
-    sections: 
-    - file: standardize_prec
-    - file: standardize_qc
-    - file: standardize_restr
   - file: statistics
 - caption: Examples
   chapters:
