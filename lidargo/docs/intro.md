@@ -1,4 +1,4 @@
-# LiDAR General Operation (LIDARGO)
+# Introduction to LiDAR General Operation (LIDARGO)
 
 LIDARGO is a general processor for raw lidar data that allows to reformat, standardize, quality-control and carry out objective statistics analysis.
 

@@ -3,11 +3,11 @@
 
 format: jb-book
 root: intro
-chapters:
-- file: format
-- file: standardize
-  sections: 
-  - file: standardize_prec
-  # - file: LiDARGO_standardize_restr
-  # - file: LiDARGO_standardize_qc
-- file: statistics
+
+parts:
+- caption: Getting started
+  chapters:
+  - file: gettingStarted
+- caption: Methods
+  chapters:
+  - file: standardize

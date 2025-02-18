@@ -3,6 +3,7 @@ import xarray as xr
 import numpy as np
 import pandas as pd
 import re
+import json
 from scipy.optimize import curve_fit
 from typing import Union, Optional
 from dataclasses import asdict
@@ -224,6 +225,10 @@ class Standardize:
                 f"Generating standardized file {os.path.basename(save_filename)}"
             )
 
+        #rename variables
+        if len(self.config.rename_vars)>0:
+            self.inputData=self.inputData.rename(json.loads(self.config.rename_vars))
+            
         # Check data
         if not self.check_data():
             return
