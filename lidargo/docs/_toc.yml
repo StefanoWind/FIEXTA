@@ -10,9 +10,4 @@ parts:
   - file: gettingStarted
 - caption: Methods
   chapters:
-  - file: format
   - file: standardize
-  - file: statistics
-- caption: Examples
-  chapters:
-  - file: example1

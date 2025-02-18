@@ -1,7 +1,7 @@
 from dataclasses import dataclass
 from datetime import datetime
 import re
-
+import json
 
 @dataclass
 class LidarConfig:
@@ -44,6 +44,7 @@ class LidarConfig:
     data_level_out: str = "b1"
     ground_level: float = -120.0
     rws_min: float = 0.0
+    rename_vars: str = ""
 
     def _validate_date_format(self, date: int, field_name: str) -> None:
         """Validate date format (YYYYMMDD)."""
@@ -158,3 +159,5 @@ class LidarConfig:
             self.local_scattering_min_limit, 0, 1, "local_scattering_min_limit"
         )
         self._validate_positive(self.max_resonance_rmse, "max_resonance_rmse")
+        
+                
