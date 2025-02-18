@@ -1,0 +1,587 @@
+
+<!DOCTYPE html>
+
+
+<html lang="en" data-content_root="./" >
+
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" /><meta name="viewport" content="width=device-width, initial-scale=1" />
+
+    <title>LIDARGO Standardize &#8212; LIDARGO User&#39;s Manual</title>
+  
+  
+  
+  <script data-cfasync="false">
+    document.documentElement.dataset.mode = localStorage.getItem("mode") || "";
+    document.documentElement.dataset.theme = localStorage.getItem("theme") || "";
+  </script>
+  <!-- 
+    this give us a css class that will be invisible only if js is disabled 
+  -->
+  <noscript>
+    <style>
+      .pst-js-only { display: none !important; }
+
+    </style>
+  </noscript>
+  
+  <!-- Loaded before other Sphinx assets -->
+  <link href="_static/styles/theme.css?digest=26a4bc78f4c0ddb94549" rel="stylesheet" />
+<link href="_static/styles/pydata-sphinx-theme.css?digest=26a4bc78f4c0ddb94549" rel="stylesheet" />
+
+    <link rel="stylesheet" type="text/css" href="_static/pygments.css?v=fa44fd50" />
+    <link rel="stylesheet" type="text/css" href="_static/styles/sphinx-book-theme.css?v=a3416100" />
+    <link rel="stylesheet" type="text/css" href="_static/togglebutton.css?v=13237357" />
+    <link rel="stylesheet" type="text/css" href="_static/copybutton.css?v=76b2166b" />
+    <link rel="stylesheet" type="text/css" href="_static/mystnb.4510f1fc1dee50b3e5859aac5469c37c29e427902b24a333a5f9fcb2f0b3ac41.css?v=be8a1c11" />
+    <link rel="stylesheet" type="text/css" href="_static/sphinx-thebe.css?v=4fa983c6" />
+    <link rel="stylesheet" type="text/css" href="_static/sphinx-design.min.css?v=95c83b7e" />
+    <link rel="stylesheet" type="text/css" href="_static/custom.css?v=3437f865" />
+  
+  <!-- So that users can add custom icons -->
+  <script src="_static/scripts/fontawesome.js?digest=26a4bc78f4c0ddb94549"></script>
+  <!-- Pre-loaded scripts that we'll load fully later -->
+  <link rel="preload" as="script" href="_static/scripts/bootstrap.js?digest=26a4bc78f4c0ddb94549" />
+<link rel="preload" as="script" href="_static/scripts/pydata-sphinx-theme.js?digest=26a4bc78f4c0ddb94549" />
+
+    <script src="_static/documentation_options.js?v=9eb32ce0"></script>
+    <script src="_static/doctools.js?v=9a2dae69"></script>
+    <script src="_static/sphinx_highlight.js?v=dc90522c"></script>
+    <script src="_static/clipboard.min.js?v=a7894cd8"></script>
+    <script src="_static/copybutton.js?v=f281be69"></script>
+    <script src="_static/scripts/sphinx-book-theme.js?v=887ef09a"></script>
+    <script>let toggleHintShow = 'Click to show';</script>
+    <script>let toggleHintHide = 'Click to hide';</script>
+    <script>let toggleOpenOnPrint = 'true';</script>
+    <script src="_static/togglebutton.js?v=4a39c7ea"></script>
+    <script>var togglebuttonSelector = '.toggle, .admonition.dropdown';</script>
+    <script src="_static/design-tabs.js?v=f930bc37"></script>
+    <script>const THEBE_JS_URL = "https://unpkg.com/thebe@0.8.2/lib/index.js"; const thebe_selector = ".thebe,.cell"; const thebe_selector_input = "pre"; const thebe_selector_output = ".output, .cell_output"</script>
+    <script async="async" src="_static/sphinx-thebe.js?v=c100c467"></script>
+    <script>var togglebuttonSelector = '.toggle, .admonition.dropdown';</script>
+    <script>const THEBE_JS_URL = "https://unpkg.com/thebe@0.8.2/lib/index.js"; const thebe_selector = ".thebe,.cell"; const thebe_selector_input = "pre"; const thebe_selector_output = ".output, .cell_output"</script>
+    <script>window.MathJax = {"options": {"processHtmlClass": "tex2jax_process|mathjax_process|math|output_area"}}</script>
+    <script defer="defer" src="https://cdn.jsdelivr.net/npm/mathjax@3/es5/tex-mml-chtml.js"></script>
+    <script>DOCUMENTATION_OPTIONS.pagename = 'standardize';</script>
+    <link rel="index" title="Index" href="genindex.html" />
+    <link rel="search" title="Search" href="search.html" />
+    <link rel="prev" title="Introduction to LiDAR General Operation (LIDARGO)" href="intro.html" />
+  <meta name="viewport" content="width=device-width, initial-scale=1"/>
+  <meta name="docsearch:language" content="en"/>
+  <meta name="docsearch:version" content="" />
+  </head>
+  
+  
+  <body data-bs-spy="scroll" data-bs-target=".bd-toc-nav" data-offset="180" data-bs-root-margin="0px 0px -60%" data-default-mode="">
+
+  
+  
+  <div id="pst-skip-link" class="skip-link d-print-none"><a href="#main-content">Skip to main content</a></div>
+  
+  <div id="pst-scroll-pixel-helper"></div>
+  
+  <button type="button" class="btn rounded-pill" id="pst-back-to-top">
+    <i class="fa-solid fa-arrow-up"></i>Back to top</button>
+
+  
+  <dialog id="pst-search-dialog">
+    
+<form class="bd-search d-flex align-items-center"
+      action="search.html"
+      method="get">
+  <i class="fa-solid fa-magnifying-glass"></i>
+  <input type="search"
+         class="form-control"
+         name="q"
+         placeholder="Search this book..."
+         aria-label="Search this book..."
+         autocomplete="off"
+         autocorrect="off"
+         autocapitalize="off"
+         spellcheck="false"/>
+  <span class="search-button__kbd-shortcut"><kbd class="kbd-shortcut__modifier">Ctrl</kbd>+<kbd>K</kbd></span>
+</form>
+  </dialog>
+
+  <div class="pst-async-banner-revealer d-none">
+  <aside id="bd-header-version-warning" class="d-none d-print-none" aria-label="Version warning"></aside>
+</div>
+
+  
+    <header class="bd-header navbar navbar-expand-lg bd-navbar d-print-none">
+    </header>
+  
+
+  <div class="bd-container">
+    <div class="bd-container__inner bd-page-width">
+      
+      
+      
+      <dialog id="pst-primary-sidebar-modal"></dialog>
+      <div id="pst-primary-sidebar" class="bd-sidebar-primary bd-sidebar">
+        
+
+  
+  <div class="sidebar-header-items sidebar-primary__section">
+    
+    
+    
+    
+  </div>
+  
+    <div class="sidebar-primary-items__start sidebar-primary__section">
+        <div class="sidebar-primary-item">
+
+  
+    
+  
+
+<a class="navbar-brand logo" href="intro.html">
+  
+  
+  
+  
+  
+  
+    <p class="title logo__title">LIDARGO User's Manual</p>
+  
+</a></div>
+        <div class="sidebar-primary-item">
+
+<button class="btn search-button-field search-button__button pst-js-only" title="Search" aria-label="Search" data-bs-placement="bottom" data-bs-toggle="tooltip">
+ <i class="fa-solid fa-magnifying-glass"></i>
+ <span class="search-button__default-text">Search</span>
+ <span class="search-button__kbd-shortcut"><kbd class="kbd-shortcut__modifier">Ctrl</kbd>+<kbd class="kbd-shortcut__modifier">K</kbd></span>
+</button></div>
+        <div class="sidebar-primary-item"><nav class="bd-links bd-docs-nav" aria-label="Main">
+    <div class="bd-toc-item navbar-nav active">
+        
+        <ul class="nav bd-sidenav bd-sidenav__home-link">
+            <li class="toctree-l1">
+                <a class="reference internal" href="intro.html">
+                    Introduction to LiDAR General Operation (LIDARGO)
+                </a>
+            </li>
+        </ul>
+        <p aria-level="2" class="caption" role="heading"><span class="caption-text">Methods</span></p>
+<ul class="current nav bd-sidenav">
+<li class="toctree-l1 current active"><a class="current reference internal" href="#">LIDARGO Standardize</a></li>
+</ul>
+
+    </div>
+</nav></div>
+    </div>
+  
+  
+  <div class="sidebar-primary-items__end sidebar-primary__section">
+  </div>
+  
+  <div id="rtd-footer-container"></div>
+
+
+      </div>
+      
+      <main id="main-content" class="bd-main" role="main">
+        
+        
+
+<div class="sbt-scroll-pixel-helper"></div>
+
+          <div class="bd-content">
+            <div class="bd-article-container">
+              
+              <div class="bd-header-article d-print-none">
+<div class="header-article-items header-article__inner">
+  
+    <div class="header-article-items__start">
+      
+        <div class="header-article-item"><button class="sidebar-toggle primary-toggle btn btn-sm" title="Toggle primary sidebar" data-bs-placement="bottom" data-bs-toggle="tooltip">
+  <span class="fa-solid fa-bars"></span>
+</button></div>
+      
+    </div>
+  
+  
+    <div class="header-article-items__end">
+      
+        <div class="header-article-item">
+
+<div class="article-header-buttons">
+
+
+
+
+
+<div class="dropdown dropdown-source-buttons">
+  <button class="btn dropdown-toggle" type="button" data-bs-toggle="dropdown" aria-expanded="false" aria-label="Source repositories">
+    <i class="fab fa-github"></i>
+  </button>
+  <ul class="dropdown-menu">
+      
+      
+      
+      <li><a href="https://github.com/executablebooks/jupyter-book" target="_blank"
+   class="btn btn-sm btn-source-repository-button dropdown-item"
+   title="Source repository"
+   data-bs-placement="left" data-bs-toggle="tooltip"
+>
+  
+
+<span class="btn__icon-container">
+  <i class="fab fa-github"></i>
+  </span>
+<span class="btn__text-container">Repository</span>
+</a>
+</li>
+      
+      
+      
+      
+      <li><a href="https://github.com/executablebooks/jupyter-book/issues/new?title=Issue%20on%20page%20%2Fstandardize.html&body=Your%20issue%20content%20here." target="_blank"
+   class="btn btn-sm btn-source-issues-button dropdown-item"
+   title="Open an issue"
+   data-bs-placement="left" data-bs-toggle="tooltip"
+>
+  
+
+<span class="btn__icon-container">
+  <i class="fas fa-lightbulb"></i>
+  </span>
+<span class="btn__text-container">Open issue</span>
+</a>
+</li>
+      
+  </ul>
+</div>
+
+
+
+
+
+
+<div class="dropdown dropdown-download-buttons">
+  <button class="btn dropdown-toggle" type="button" data-bs-toggle="dropdown" aria-expanded="false" aria-label="Download this page">
+    <i class="fas fa-download"></i>
+  </button>
+  <ul class="dropdown-menu">
+      
+      
+      
+      <li><a href="_sources/standardize.md" target="_blank"
+   class="btn btn-sm btn-download-source-button dropdown-item"
+   title="Download source file"
+   data-bs-placement="left" data-bs-toggle="tooltip"
+>
+  
+
+<span class="btn__icon-container">
+  <i class="fas fa-file"></i>
+  </span>
+<span class="btn__text-container">.md</span>
+</a>
+</li>
+      
+      
+      
+      
+      <li>
+<button onclick="window.print()"
+  class="btn btn-sm btn-download-pdf-button dropdown-item"
+  title="Print to PDF"
+  data-bs-placement="left" data-bs-toggle="tooltip"
+>
+  
+
+<span class="btn__icon-container">
+  <i class="fas fa-file-pdf"></i>
+  </span>
+<span class="btn__text-container">.pdf</span>
+</button>
+</li>
+      
+  </ul>
+</div>
+
+
+
+
+<button onclick="toggleFullScreen()"
+  class="btn btn-sm btn-fullscreen-button"
+  title="Fullscreen mode"
+  data-bs-placement="bottom" data-bs-toggle="tooltip"
+>
+  
+
+<span class="btn__icon-container">
+  <i class="fas fa-expand"></i>
+  </span>
+
+</button>
+
+
+
+<button class="btn btn-sm nav-link pst-navbar-icon theme-switch-button pst-js-only" aria-label="Color mode" data-bs-title="Color mode"  data-bs-placement="bottom" data-bs-toggle="tooltip">
+  <i class="theme-switch fa-solid fa-sun                fa-lg" data-mode="light" title="Light"></i>
+  <i class="theme-switch fa-solid fa-moon               fa-lg" data-mode="dark"  title="Dark"></i>
+  <i class="theme-switch fa-solid fa-circle-half-stroke fa-lg" data-mode="auto"  title="System Settings"></i>
+</button>
+
+
+<button class="btn btn-sm pst-navbar-icon search-button search-button__button pst-js-only" title="Search" aria-label="Search" data-bs-placement="bottom" data-bs-toggle="tooltip">
+    <i class="fa-solid fa-magnifying-glass fa-lg"></i>
+</button>
+<button class="sidebar-toggle secondary-toggle btn btn-sm" title="Toggle secondary sidebar" data-bs-placement="bottom" data-bs-toggle="tooltip">
+    <span class="fa-solid fa-list"></span>
+</button>
+</div></div>
+      
+    </div>
+  
+</div>
+</div>
+              
+              
+
+<div id="jb-print-docs-body" class="onlyprint">
+    <h1>LIDARGO Standardize</h1>
+    <!-- Table of contents -->
+    <div id="print-main-content">
+        <div id="jb-print-toc">
+            
+            <div>
+                <h2> Contents </h2>
+            </div>
+            <nav aria-label="Page">
+                <ul class="visible nav section-nav flex-column">
+<li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#pre-conditioning">Pre-conditioning</a></li>
+<li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#quality-control">Quality control</a></li>
+</ul>
+            </nav>
+        </div>
+    </div>
+</div>
+
+              
+                
+<div id="searchbox"></div>
+                <article class="bd-article">
+                  
+  <section id="lidargo-standardize">
+<h1>LIDARGO Standardize<a class="headerlink" href="#lidargo-standardize" title="Link to this heading">#</a></h1>
+<p>The LIDARGO <a class="reference external" href="https://github.com/StefanoWind/FIEXTA/blob/main/lidargo/standardize.py">standardize.py</a> is a class that converts previously formatted lidar data files into standardized and quality-controlled (QC) netCDF datasets. The process of standardization restructures the lidar data into an array with coordinates that facilitate the data analysis compared to the native coordinates. Formatted lidar wind speed and SNR data are stored as 2-D arrays with dimensions time and range gate index. This native structures is inconvenient for more advanced processing, so the standardization process recasts the data into a 3-D array with dimensions range, beam index, and scan repetition index. The QC process flags suspicious data points using a generalized outlier detection method based on the dynamic lidar filtering approach <span id="id1">[<a class="reference internal" href="#id4" title="Hauke Beck and Martin Kühn. Dynamic data filtering of long-range doppler LiDAR wind speed measurements. Remote Sensing, 2017. doi:10.3390/rs9060561.">Beck and Kühn, 2017</a>]</span>.</p>
+<p>The general workflow of LIDARGO Standardize is outlined in <a class="reference internal" href="#fig-standardize-workflow"><span class="std std-numref">Fig. 1</span></a>. The detailed steps are described next.</p>
+<figure class="align-center" id="fig-standardize-workflow">
+<a class="bg-primary mb-1 reference internal image-reference" href="_images/standardize_workflow.png"><img alt="fishy" class="bg-primary mb-1" src="_images/standardize_workflow.png" style="width: 800px;" /></a>
+<figcaption>
+<p><span class="caption-number">Fig. 1 </span><span class="caption-text">Workflow of the LIDARGO Standardize class.</span><a class="headerlink" href="#fig-standardize-workflow" title="Link to this image">#</a></p>
+</figcaption>
+</figure>
+<section id="pre-conditioning">
+<h2>Pre-conditioning<a class="headerlink" href="#pre-conditioning" title="Link to this heading">#</a></h2>
+<p>The geometry of raw lidar data is expressed in spherical coordinates as a function of range gate index (which is easily converted to physical distance, <span class="math notranslate nohighlight">\(r\)</span>), azimuth, <span class="math notranslate nohighlight">\(\alpha\)</span>, and elevation, <span class="math notranslate nohighlight">\(\beta\)</span> (<a class="reference internal" href="#fig-spherical"><span class="std std-numref">Fig. 2</span></a>, left). Azimuth and elevation do not exactly match the nominal values provided by the lidar user due to imperfect pointing, which makes different scans inconsistent. On top of that, one data file is generally a collection of the data measured through the same scan patterns repeated several times with undesired data points in between that are acquired as the scanning head moves to home position at the beginning of each scan cycle.</p>
+<figure class="align-center" id="fig-spherical">
+<a class="bg-primary mb-1 reference internal image-reference" href="_images/spherical.png"><img alt="fishy" class="bg-primary mb-1" src="_images/spherical.png" style="width: 800px;" /></a>
+<figcaption>
+<p><span class="caption-number">Fig. 2 </span><span class="caption-text">Spherical and Cartesian coordinates as defined in LIDARGO.</span><a class="headerlink" href="#fig-spherical" title="Link to this image">#</a></p>
+</figcaption>
+</figure>
+<p>The pre-conditioning process acts at the start of the standardization and goes through the following steps:</p>
+<ol class="arabic simple">
+<li><p><strong>Back-swipe removal</strong>: data points acquired during unwanted movement of the scanning head are removed to keep only data collected through the nominal scan pattern. The off-design points to exclude are identified based on thresholds on the azimuth and elevation steps provided in the configuration file. Specifically, beams with azimuth outside the interval <code class="docutils literal notranslate"><span class="pre">[min_azi_step,</span> <span class="pre">max_azi_step]</span></code> or elevation outside the interval <code class="docutils literal notranslate"><span class="pre">[min_ele_step,</span> <span class="pre">max_ele_step]</span></code> are excluded.</p></li>
+<li><p><strong>Nominal angles search</strong>: since actual lidar angles meander around the prescribed scan geometry, nominal azimuth and elevation are identified as the most likely location within the give scan file. This is done by building a 2-D histogram of the lidar beam positions, <span class="math notranslate nohighlight">\(H(\alpha,\beta)\)</span>, in the azimuth and elevation space based on small bins of width <code class="docutils literal notranslate"><span class="pre">ang_tol</span></code>. Bins centers of bins with a normalized number of occurrences, that exceed the threshold <code class="docutils literal notranslate"><span class="pre">count_threshold</span></code> (i.e., <span class="math notranslate nohighlight">\(H(\alpha,\beta)/\text{max}(H(\alpha,\beta))\geq\)</span><code class="docutils literal notranslate"><span class="pre">count_threshold</span></code>) are defined as the nominal angles.</p></li>
+<li><p><strong>Angles gridding</strong>: after nominal angles are identified, the whole scan geometry is adjusted by slighlty shifting the raw azimuths and elevations to their closest nominal value. Beams falling more than <code class="docutils literal notranslate"><span class="pre">ang_tol</span></code> away from the closest nominal angle are flagged as off-design and discarded.</p></li>
+</ol>
+<p><a class="reference internal" href="#fig-histogram-1d"><span class="std std-numref">Fig. 3</span></a> shows the process of nominal angles search and gridding for a PPI scan run using the continuous scan mode on a Halo XR. The blue bars represent the occurrence of the raw azimuth angles which are clearly scattered around their nominal values. After the pre-conditioning, the angles fall in the more coarse grid indicated by the orange histogram, which simplifies the data analysis.</p>
+<figure class="align-center" id="fig-histogram-1d">
+<a class="bg-primary mb-1 reference internal image-reference" href="_images/rt1.lidar.z02.b0.20230830.063004.user5.awaken.meand.angHist.png"><img alt="fishy" class="bg-primary mb-1" src="_images/rt1.lidar.z02.b0.20230830.063004.user5.awaken.meand.angHist.png" style="width: 800px;" /></a>
+<figcaption>
+<p><span class="caption-number">Fig. 3 </span><span class="caption-text">Histogram of the azimuth for a PPI scan before and after the pre-processing.</span><a class="headerlink" href="#fig-histogram-1d" title="Link to this image">#</a></p>
+</figcaption>
+</figure>
+<p><a class="reference internal" href="#fig-ang-scatter"><span class="std std-numref">Fig. 4</span></a> shows the time history of the angles before (blue) and after (orange) the pre-conditioning. This represent a successful case because most of the angle are retained and azimuths are just slighlty moved form their raw position by the gridding step. All these figures can be automatically generated by LIDARGO as a part of the <code class="docutils literal notranslate"><span class="pre">qc_report</span></code>.</p>
+<figure class="align-center" id="fig-ang-scatter">
+<a class="bg-primary mb-1 reference internal image-reference" href="_images/rt1.lidar.z02.b0.20230830.063004.user5.awaken.meand.angScatter.png"><img alt="fishy" class="bg-primary mb-1" src="_images/rt1.lidar.z02.b0.20230830.063004.user5.awaken.meand.angScatter.png" style="width: 800px;" /></a>
+<figcaption>
+<p><span class="caption-number">Fig. 4 </span><span class="caption-text">Time history of the azimuth (top) and elevation (bottom) for a PPI scan before and after the pre-processing.</span><a class="headerlink" href="#fig-ang-scatter" title="Link to this image">#</a></p>
+</figcaption>
+</figure>
+</section>
+<section id="quality-control">
+<h2>Quality control<a class="headerlink" href="#quality-control" title="Link to this heading">#</a></h2>
+<p>The QC in LIDARGO combines static and dynamic quality flags to identify outliers in the radial wind speed (RWS) data due to low-signal-to-noise ratio (SNR), which typically happen in the far range, echo from hard target, or signal saturation (first <span class="math notranslate nohighlight">\(\sim\)</span> 100 m). The outcome is the <code class="docutils literal notranslate"><span class="pre">qc_wind_speed</span></code> structure which stores QC flags, where 0 indicates good data and other values bad data based on several criteria. The QC process includes the following steps:</p>
+<ol class="arabic simple">
+<li><p><strong>Dataframe conversion</strong>: the xarray structure is converted into a pandas dataframe to facilitate the subsequent processing. At this stage LIDARGO also defines Cartesian coordinates for all points, as shown in <a class="reference internal" href="#fig-spherical"><span class="std std-numref">Fig. 2</span></a> and according to the follwing relationship:</p></li>
+</ol>
+<div class="math notranslate nohighlight" id="equation-eq-cartesian">
+<span class="eqno">(1)<a class="headerlink" href="#equation-eq-cartesian" title="Link to this equation">#</a></span>\[\begin{split}\begin{cases}
+x=r ~ \cos(\pi/2-(\alpha+\alpha_0)) ~ \cos(\beta)\\
+y=r ~ \sin(\pi/2-(\alpha+\alpha_0)) ~ \cos(\beta)\\
+z=r ~ \sin(\beta)\\
+\end{cases}\end{split}\]</div>
+<p>where <span class="math notranslate nohighlight">\(\alpha_0\)</span> is the <code class="docutils literal notranslate"><span class="pre">azimuth_offset</span></code>, which is added to the raw azimuth and can be used to align the Cartesian coordinate system to the desired direction (e.g., true north, turbine axis, etc.).</p>
+<ol class="arabic simple" start="2">
+<li><p><strong>Prefilter</strong>: it applies static criteria to flag data that are easily identifiable as outliers. In particular, are flagged as bad data points with:</p></li>
+<li><p>Ranges outside the interval <code class="docutils literal notranslate"><span class="pre">[min_range,max_range]</span></code>.</p></li>
+<li><p>Heights below the ground level with respect to the lidar defined by <code class="docutils literal notranslate"><span class="pre">ground_level</span></code>.</p></li>
+<li><p>SNR lower than <code class="docutils literal notranslate"><span class="pre">snr_min</span></code>, which can be kept quite low (e.g., -25 dB) at this stage.</p></li>
+<li><p>RWS magnitude larger than <code class="docutils literal notranslate"><span class="pre">rws_max</span></code>, which can be kept quite high (e.g., 30 m/s) at this stage.</p></li>
+<li><p>RWS magnitude smaller than a threshold which is identified in the resonance detection step. Resonance refers to the clustering of outliers around 0 m/s that can happen in some lidars. The resonance detection analyzes the histogram of the RWS data flagged as bad to this point. If the histogram is not flat but can be fit with a Gaussian, the <span class="math notranslate nohighlight">\(2\sigma\)</span> value of such fitting Gaussian function is taken as the minimum allowable value for the RWS magnitude to exclude the core of outliers close of 0 m/s. The user can control the number of bins in the histogram through <code class="docutils literal notranslate"><span class="pre">N_resonance_bins</span></code>, and the maximum Root Mean Square Error of the fit to consider the histogram a Guassian or <code class="docutils literal notranslate"><span class="pre">max_resonance_rmse</span></code>.</p></li>
+<li><p><strong>Dynamic filter</strong>: the concept of dynamic lidar filtering is introduced by <span id="id2">[<a class="reference internal" href="#id4" title="Hauke Beck and Martin Kühn. Dynamic data filtering of long-range doppler LiDAR wind speed measurements. Remote Sensing, 2017. doi:10.3390/rs9060561.">Beck and Kühn, 2017</a>]</span>, and it is based on the evidence that points with low probability in the 2-D histogram in the plane RWS-SNR are typically outliers. Before applying this criterion RWS and SNR are “normalized”, meaning that the local median calculated over spatio-temporal bins is subtracted to isolate only the fluctuations on top of the mean field. The resulting histogram after the normalization is typically resemblant of a 2-D Gaussian, thus making this approach quite general regardless of the type of flow or scan geometry. The gist of the dynamic filter is illustrated in  <a class="reference internal" href="#fig-dynamic-filter"><span class="std std-numref">Fig. 5</span></a>. LIDARGO offers the users full control over the dynamic filter parameters, such as the bins sizes in space (<code class="docutils literal notranslate"><span class="pre">dx</span></code>, <code class="docutils literal notranslate"><span class="pre">dy</span></code>, <code class="docutils literal notranslate"><span class="pre">dz</span></code>) and time (<code class="docutils literal notranslate"><span class="pre">dtime</span></code>). Robustness of the bin-median is checked by imposing a minimum number of samples per bin (<code class="docutils literal notranslate"><span class="pre">local_population_min_limit</span></code>) and a maximum standard error on RWS and SNR (<code class="docutils literal notranslate"><span class="pre">rws_standard_error_limit</span></code>,<code class="docutils literal notranslate"><span class="pre">snr_standard_error_limit</span></code>). An intermediate static threshold on the maximum magnitude of the normalized RWS can be also imposed as <code class="docutils literal notranslate"><span class="pre">rws_norm_limit</span></code>.</p></li>
+</ol>
+<div class="admonition warning">
+<p class="admonition-title">Warning</p>
+<p>The use of the word “normalized” in the context of dynamic filter is a bit misleading. Normalized RWS and SNR are still dimensional quantities in m/s and dB, respectively, since just their local median has been removed but they are not actually divided by any reference value.</p>
+</div>
+<figure class="align-center" id="fig-dynamic-filter">
+<a class="bg-primary mb-1 reference internal image-reference" href="_images/dynamic_filter.png"><img alt="fishy" class="bg-primary mb-1" src="_images/dynamic_filter.png" style="width: 800px;" /></a>
+<figcaption>
+<p><span class="caption-number">Fig. 5 </span><span class="caption-text">How the dynamic filter works. The <span class="math notranslate nohighlight">\(\langle \rangle\)</span> indicates the median operator.</span><a class="headerlink" href="#fig-dynamic-filter" title="Link to this image">#</a></p>
+</figcaption>
+</figure>
+<div class="admonition note">
+<p class="admonition-title">Note</p>
+<p>The choice of the size of the spatio-temproeral bins is the main and often only part of the dynamic filter that needs the user’s input. These bins are supposed to remove the physical real variability present in the lidar data so a rule of thumbs is to choose their size close to the estimated spatial and temporal scales of the flow. For example, if you are scanning the wake of a turbine with diameter equal to 100 m and the <span class="math notranslate nohighlight">\(x\)</span> axis is aligned with the rotor axis, a good choise is <code class="docutils literal notranslate"><span class="pre">dx=</span></code>200 m (roughly the length of the near wake region), <code class="docutils literal notranslate"><span class="pre">dy=dz=</span></code>100 m (<span class="math notranslate nohighlight">\(\sim\)</span>the wake width), and <code class="docutils literal notranslate"><span class="pre">dtime</span></code>=600 s (typical averaging time for atmospheric flows).</p>
+</div>
+<p>The original dynamic filter does not provide a universal method to define the minimum probability thrshold to distinguis bad from good data. LIDARGO then adopts an innovative data-drive approach based on the evidence that good bins with high probability are also characterized by normalized RWS tightly confined around 0 m/s, while bad data with low probability are instead more dispersed around 0 m/s due to the high random noise (see  <a class="reference internal" href="#fig-dynamic-filter-prob"><span class="std std-numref">Fig. 6</span></a>, right). LIDARGO then identifies the probability threshold by calculating the normalized RWS range as a function of probability. The normalized RWS range is defined as a custom quantile range between <code class="docutils literal notranslate"><span class="pre">min_percentile</span></code> (e.g., 1%) and <code class="docutils literal notranslate"><span class="pre">max_percentile</span></code> (e.g., 99%), and calculated over <code class="docutils literal notranslate"><span class="pre">N_probability_bins</span></code> non-overlapping bins. The normalized RWS range as a function of probability generally shows a monotonic and often stepwise decrease with the probability iteslf ( <a class="reference internal" href="#fig-dynamic-filter-prob"><span class="std std-numref">Fig. 6</span></a>, right panel, orange line). The minimum probability threshold is then defined as the probability where the normalized RWS range, made non-dimensional by its maximum and minimum values, exceed a threshold named <code class="docutils literal notranslate"><span class="pre">rws_norm_increase_limit</span></code> ( <a class="reference internal" href="#fig-dynamic-filter-prob"><span class="std std-numref">Fig. 6</span></a>, right panel, green line).</p>
+<div class="admonition note">
+<p class="admonition-title">Note</p>
+<p>Let’s say that for a scan, the normalized RWS range averaged as a function probability goes from 1 m/s to 21 m/s and we impose <code class="docutils literal notranslate"><span class="pre">rws_norm_increase_limit=0.25</span></code>. Then the probability threshold is corresponds to the bin where the normalized RWS range exceeds:
+1 + 0.25 (21-1) = 6 m/s</p>
+</div>
+<p>This data-driven approach for the selection of the probability threshold works fairly well for a wide range of scans without need to change the default parameters. The probability theshold is however constrained in the interval <code class="docutils literal notranslate"><span class="pre">[min_probability_range,</span> <span class="pre">max_probability_range]</span></code> to enhance robustness. As final step of the QC, LIDARGO cleans up isolated good points by flagging as bad all data points belonging to spatio-temporal bins in <span class="math notranslate nohighlight">\(x\)</span>,<span class="math notranslate nohighlight">\(y\)</span>,<span class="math notranslate nohighlight">\(y\)</span>,<span class="math notranslate nohighlight">\(t\)</span> that are populated by a fraction of bad points more than <code class="docutils literal notranslate"><span class="pre">local_scattering_min_limit</span></code>.</p>
+<div class="admonition warning">
+<p class="admonition-title">Warning</p>
+<p>How do you troubleshoot an unsatisfactory LIDARGO QC? First step is to check why a certain good (bad) data point has been wrongfully flagged as bad (good) by looking inside the <code class="docutils literal notranslate"><span class="pre">qc_wind_speed</span></code> flag. Then, the fix generally comes down to changing one of the configuration parameters, most likely the bin sizes <code class="docutils literal notranslate"><span class="pre">dx,dy,dz,dtime</span></code>. E.g., is a whole turbine wake in a large scan flagged as bad? Try decreasing <code class="docutils literal notranslate"><span class="pre">dx,dy,dz</span></code> to prevent physcial variability in the wake to be interpreted as noise in the normalized RWS.</p>
+</div>
+<figure class="align-center" id="fig-dynamic-filter-prob">
+<a class="bg-primary mb-1 reference internal image-reference" href="_images/rt1.lidar.z02.b0.20230830.063004.user5.awaken.meand.probability.png"><img alt="fishy" class="bg-primary mb-1" src="_images/rt1.lidar.z02.b0.20230830.063004.user5.awaken.meand.probability.png" style="width: 800px;" /></a>
+<figcaption>
+<p><span class="caption-number">Fig. 6 </span><span class="caption-text">Example of dynamic filter for a PPI scan.</span><a class="headerlink" href="#fig-dynamic-filter-prob" title="Link to this image">#</a></p>
+</figcaption>
+</figure>
+<div class="docutils container" id="id3">
+<div role="list" class="citation-list">
+<div class="citation" id="id4" role="doc-biblioentry">
+<span class="label"><span class="fn-bracket">[</span>1<span class="fn-bracket">]</span></span>
+<span class="backrefs">(<a role="doc-backlink" href="#id1">1</a>,<a role="doc-backlink" href="#id2">2</a>)</span>
+<p>Hauke Beck and Martin Kühn. Dynamic data filtering of long-range doppler LiDAR wind speed measurements. <em>Remote Sensing</em>, 2017. <a class="reference external" href="https://doi.org/10.3390/rs9060561">doi:10.3390/rs9060561</a>.</p>
+</div>
+</div>
+</div>
+</section>
+</section>
+
+    <script type="text/x-thebe-config">
+    {
+        requestKernel: true,
+        binderOptions: {
+            repo: "binder-examples/jupyter-stacks-datascience",
+            ref: "master",
+        },
+        codeMirrorConfig: {
+            theme: "abcdef",
+            mode: "python"
+        },
+        kernelOptions: {
+            name: "python3",
+            path: "./."
+        },
+        predefinedOutput: true
+    }
+    </script>
+    <script>kernelName = 'python3'</script>
+
+                </article>
+              
+
+              
+              
+              
+              
+                <footer class="prev-next-footer d-print-none">
+                  
+<div class="prev-next-area">
+    <a class="left-prev"
+       href="intro.html"
+       title="previous page">
+      <i class="fa-solid fa-angle-left"></i>
+      <div class="prev-next-info">
+        <p class="prev-next-subtitle">previous</p>
+        <p class="prev-next-title">Introduction to LiDAR General Operation (LIDARGO)</p>
+      </div>
+    </a>
+</div>
+                </footer>
+              
+            </div>
+            
+            
+              
+                <dialog id="pst-secondary-sidebar-modal"></dialog>
+                <div id="pst-secondary-sidebar" class="bd-sidebar-secondary bd-toc"><div class="sidebar-secondary-items sidebar-secondary__inner">
+
+
+  <div class="sidebar-secondary-item">
+  <div class="page-toc tocsection onthispage">
+    <i class="fa-solid fa-list"></i> Contents
+  </div>
+  <nav class="bd-toc-nav page-toc">
+    <ul class="visible nav section-nav flex-column">
+<li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#pre-conditioning">Pre-conditioning</a></li>
+<li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#quality-control">Quality control</a></li>
+</ul>
+  </nav></div>
+
+</div></div>
+              
+            
+          </div>
+          <footer class="bd-footer-content">
+            
+<div class="bd-footer-content__inner container">
+  
+  <div class="footer-item">
+    
+<p class="component-author">
+By Stefano Letizia, Nicholas Hamilton, Regis Thedin
+</p>
+
+  </div>
+  
+  <div class="footer-item">
+    
+
+  <p class="copyright">
+    
+      © Copyright 2023.
+      <br/>
+    
+  </p>
+
+  </div>
+  
+  <div class="footer-item">
+    
+  </div>
+  
+  <div class="footer-item">
+    
+  </div>
+  
+</div>
+          </footer>
+        
+
+      </main>
+    </div>
+  </div>
+  
+  <!-- Scripts loaded after <body> so the DOM is not blocked -->
+  <script defer src="_static/scripts/bootstrap.js?digest=26a4bc78f4c0ddb94549"></script>
+<script defer src="_static/scripts/pydata-sphinx-theme.js?digest=26a4bc78f4c0ddb94549"></script>
+
+  <footer class="bd-footer">
+  </footer>
+  </body>
+</html>
