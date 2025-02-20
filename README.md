@@ -1,4 +1,4 @@
-# FIEXTA (Field Experiment Tools Arsenal)
+# FIEXTA (Field EXperiment Tool Arsenal)
 *This package is registered as an NREL Software Record with identification number SWR-24-129.*
 
 Suite of codes to assist the planning and execution of exprimental field campaigns. 
