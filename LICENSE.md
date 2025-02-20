@@ -18,6 +18,7 @@ along with this program.
 If not, see <https://www.gnu.org/licenses/>.
 
 Contacts:
-stefano.letizia@nrel.gov
 nicholas.hamilton@nrel.gov
+stefano.letizia@nrel.gov
+regis.thedin@nrel.gov
 
