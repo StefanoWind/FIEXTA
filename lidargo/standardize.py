@@ -12,7 +12,7 @@ from lidargo import utilities
 from lidargo.utilities import get_logger, with_logging
 from lidargo import vis
 from lidargo.statistics import local_probability
-from lidargo.config import LidarConfig
+from lidargo.config import LidarConfigStand
 
 
 pd.set_option("future.no_silent_downcasting", True)
@@ -22,7 +22,7 @@ class Standardize:
     def __init__(
         self,
         source: str,
-        config: Union[str, dict, LidarConfig],
+        config: Union[str, dict, LidarConfigStand],
         verbose: bool = True,
         logger: Optional[object] = None,
         logfile=None,
@@ -47,6 +47,8 @@ class Standardize:
         self.config = self._load_configuration(config)
         if self.config is None:
             return
+        else:
+            LidarConfigStand.validate(self.config)
 
         # Load input data
         try:
@@ -57,8 +59,8 @@ class Standardize:
 
     @with_logging
     def _load_configuration(
-        self, config: Union[str, dict, LidarConfig]
-    ) -> Optional[LidarConfig]:
+        self, config: Union[str, dict, LidarConfigStand]
+    ) -> Optional[LidarConfigStand]:
         """
         Load configuration from either a file path, dictionary, or LidarConfig object.
 
@@ -69,12 +71,12 @@ class Standardize:
             LidarConfig or None: Configuration parameters or None if loading fails
         """
         try:
-            if isinstance(config, LidarConfig):
+            if isinstance(config, LidarConfigStand):
                 return config
             elif isinstance(config, str):
                 return self._load_config_from_file(config)
             elif isinstance(config, dict):
-                return LidarConfig(**config)
+                return LidarConfigStand(**config)
             else:
                 self.logger.log(
                     f"Invalid config type. Expected str, dict, or LidarConfig, got {type(config)}"
@@ -85,7 +87,7 @@ class Standardize:
             return None
 
     @with_logging
-    def _load_config_from_file(self, config_file: str) -> Optional[LidarConfig]:
+    def _load_config_from_file(self, config_file: str) -> Optional[LidarConfigStand]:
         """
         Load configuration from an Excel file.
 
@@ -95,7 +97,7 @@ class Standardize:
         Returns:
             LidarConfig or None: Configuration parameters or None if loading fails
         """
-        configs = pd.read_excel(config_file).set_index("PARAMETER")
+        configs = pd.read_excel(config_file).set_index("regex")
         date_source = np.int64(re.search(r"\d{8}.\d{6}", self.source).group(0)[:8])
 
         matches = []
@@ -115,7 +117,7 @@ class Standardize:
 
         config_dict = configs[matches[0]].to_dict()
         try:
-            return LidarConfig(**config_dict)
+            return LidarConfigStand(**config_dict)
         except Exception as e:
             self.logger.log(f"Error validating configuration: {str(e)}")
             return None

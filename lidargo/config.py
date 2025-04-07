@@ -1,11 +1,41 @@
 from dataclasses import dataclass
 from datetime import datetime
 import re
-import json
 
 @dataclass
-class LidarConfig:
-    """Configuration parameters for LIDAR processing."""
+class LidarConfigFormat:
+    """Configuration parameters for LIDAR formatting."""
+
+    model: str = 'halo'
+    site: str = 'sc1'
+    instrument_id: int = 1
+    data_level_out: str='a0'
+
+    def _validate_model(self, model: str, field_name: str) -> None:
+        """Validate lidal model."""
+        if model != 'halo' and model !='windcube':
+            raise ValueError(f"Lidar model {model} not supported")
+            
+    def _validate_z_id(self, instrument_id: str, field_name: str) -> None:
+        """Validate instrument ID."""
+        if instrument_id<0 or instrument_id>99:
+            raise ValueError("Instrument ID must be within 0 and 99")
+        
+    #Validate data levels
+    valid_data_levels = ["a"+str(i) for i in range(10)]
+    if data_level_out not in valid_data_levels:
+        raise ValueError(f"data_level_out must be one of {valid_data_levels}")
+
+    def validate(self) -> None:
+        """Validate all configuration parameters."""
+        # Validate dates
+        self._validate_model(self.model, "start_date")
+        self._validate_z_id(self.instrument_id, "end_date")
+        self.z_id=f"z{self.instrument_id:02}"
+
+@dataclass
+class LidarConfigStand:
+    """Configuration parameters for LIDAR standardization."""
 
     project: str = "raaw"
     name: str = "wake.turb"
@@ -139,7 +169,7 @@ class LidarConfig:
         )
 
         # Validate data levels
-        valid_data_levels = ["b0", "b1", "b2", "c0", "c1", "c2"]
+        valid_data_levels =["a"+str(i) for i in range(10)]+ ["b"+str(i) for i in range(10)]+["c"+str(i) for i in range(10)]
         if self.data_level_in not in valid_data_levels:
             raise ValueError(f"data_level_in must be one of {valid_data_levels}")
         if self.data_level_out not in valid_data_levels:

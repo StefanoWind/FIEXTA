@@ -5,7 +5,7 @@ Example of application of LiDARGO to AWAKEN RHI data from sc1.lidar.z01 data cha
 import os
 import pandas as pd
 cd = os.getcwd()
-pwd = os.path.dirname(os.path.dirname(cd))
+pwd = os.path.dirname(cd)
 
 import lidargo as lg
 import xarray as xr
@@ -24,11 +24,13 @@ matplotlib.rcParams["font.size"] = 14
 # %% Inputs
 
 # paths
-filename0 = os.path.join(pwd, "data/Example1/sc1.lidar.z01.00.20230830.064606.user4.hpl")
-filename1 = os.path.join(pwd, "data/Example1/sc1.lidar.z01.a0.20230830.064613.user4.nc")
-filename2 = os.path.join(pwd, "data/Example1/sc1.lidar.z01.b0.20230830.064613.user4.awaken.rhi.nc")
-source_config_stand = os.path.join(pwd, "config/config_examples_stand.xlsx")
-source_config_stats = os.path.join(pwd, "config/config_examples_stats.xlsx")
+filename0 = os.path.join(pwd, "data/example1/User4_137_20230830_064606.hpl")
+filename1 = os.path.join(pwd, "data/example1/sc1.lidar.z01.a0.20230830.064606.user4.nc")
+filename2 = os.path.join(pwd, "data/example1/sc1.lidar.z01.b0.20230830.064606.user4.awaken.rhi.nc")
+
+source_config_format= os.path.join(pwd, "configs/config_examples_format.xlsx")
+source_config_stand = os.path.join(pwd, "configs/config_examples_stand.xlsx")
+source_config_stats = os.path.join(pwd, "configs/config_examples_stats.xlsx")
 
 # graphics
 xlim = [-3000, 3000]  # [m]
@@ -37,19 +39,15 @@ max_ele = 34  # [deg]
 
 #%% Initialization
 
-# config = pd.read_excel(source_config_stand)
-# config = config.set_index("PARAMETER").T
-# config.index = config.name
-# config = config.T["rhi"].to_dict()
-
-# ### Instantiate a configuration object
-# config = lg.LidarConfig(**config)
-
 # %% Main
 
-# standardization
+#formatting
+lproc = lg.Format(filename0, config=source_config_format, verbose=True)
+lproc.process_scan(replace=True, save_file=True)
+
+#standardization
 lproc = lg.Standardize(filename1, config=source_config_stand, verbose=True)
-lproc.process_scan(replace=True, save_file=True, make_figures=False)
+lproc.process_scan(replace=True, save_file=True, make_figures=True)
 
 # # average
 # lproc = stats.LIDARGO(filename2, source_config_stats, verbose=True)
