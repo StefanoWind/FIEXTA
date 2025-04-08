@@ -3,13 +3,10 @@ Example of application of LiDARGO to AWAKEN RHI data from sc1.lidar.z01 data cha
 """
 
 import os
-import pandas as pd
 cd = os.getcwd()
 pwd = os.path.dirname(cd)
 
 import lidargo as lg
-import xarray as xr
-import numpy as np
 from matplotlib import pyplot as plt
 import warnings
 import matplotlib
@@ -43,11 +40,11 @@ max_ele = 34  # [deg]
 
 #formatting
 lproc = lg.Format(filename0, config=source_config_format, verbose=True)
-lproc.process_scan(replace=True, save_file=True)
+lproc.process_scan(replace=True, save_file=True,make_figures=True)
 
-#standardization
-lproc = lg.Standardize(filename1, config=source_config_stand, verbose=True)
-lproc.process_scan(replace=True, save_file=True, make_figures=True)
+# #standardization
+# lproc = lg.Standardize(filename1, config=source_config_stand, verbose=True)
+# lproc.process_scan(replace=True, save_file=True, make_figures=True)
 
 # # average
 # lproc = stats.LIDARGO(filename2, source_config_stats, verbose=True)

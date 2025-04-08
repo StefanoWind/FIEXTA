@@ -4,12 +4,13 @@ import numpy as np
 import pandas as pd
 from datetime import datetime
 import socket
+import matplotlib as mpl
 import getpass
 from .logger import SingletonLogger
 from functools import wraps
 from dataclasses import is_dataclass, fields, asdict
 from typing import Optional
-
+import matplotlib.pyplot as plt
 
 def get_logger(
         name: str = None, verbose: bool = True, logger: Optional[object] = None, filename=None
@@ -341,3 +342,31 @@ def add_qc_attrs(ds, qcAttrDict: dict):
     #     del ds.attrs["code_version"]
 
     return ds
+
+def format_time_xticks(
+    ax: plt.Axes,
+    start: int = 4,
+    stop: int = 21,
+    step: int = 4,
+    date_format: str = "%H:%M",
+):
+    """----------------------------------------------------------------------------
+    Formats the ticks on the x-axis of the provided `plt.Axes` nicely. Requires the
+    provided `plt.Axis` to already have a plot attached to it and for the x-axis of
+    the plotted data to be a datetime object (numpy / pandas / xarray OK). Sets
+    major tick locations by hour according to the provided `start`, `stop`, and
+    `step` parameters, and labels ticks according to the provided `date_format`.
+    Has nice defaults for a plot spanning a 24-hour period.
+
+    Args:
+        ax (plt.Axes): The handle for the axes object on which to format the ticks.
+        start (int, optional): Hour in which to start the xticks. Defaults to 4.
+        stop (int, optional): Hour in which to stop the xticks. Defaults to 21.
+        step (int, optional): The step in between major xticks. Defaults to 4.
+        date_format (str, optional): The format to use for xtick labels. Defaults
+        to "%H:%M".
+
+    ----------------------------------------------------------------------------"""
+    ax.xaxis.set_major_locator(mpl.dates.HourLocator(byhour=range(start, stop, step)))  # type: ignore
+    ax.xaxis.set_major_formatter(mpl.dates.DateFormatter(date_format))  # type: ignore
+    plt.setp(ax.xaxis.get_majorticklabels(), rotation=0, ha="center")

@@ -7,14 +7,10 @@ import numpy as np
 import pandas as pd
 import re
 from typing import Union, Optional
-from dataclasses import asdict
+import matplotlib.pyplot as plt
 from datetime import datetime
 import shutil
-
-from lidargo import utilities
-from lidargo.utilities import get_logger, with_logging
-from lidargo import vis
-from lidargo.statistics import local_probability
+from lidargo.utilities import get_logger, with_logging, format_time_xticks
 from lidargo.config import LidarConfigFormat
 
 class Format:
@@ -110,7 +106,7 @@ class Format:
             return None
 
     @with_logging
-    def process_scan(self, save_file=True, save_path=None, replace=True):
+    def process_scan(self, save_file=True, save_path=None, replace=True,make_figures=True,save_figures=True):
         
         '''
         Format the raw scan file into WDH-compatible netCDF file
@@ -144,7 +140,9 @@ class Format:
         if save_path is not None:
             save_filename=os.path.join(save_path.replace('.00','.'+self.config.data_level_out),os.path.basename(save_filename))
             os.makedirs(save_path.replace('.00','.'+self.config.data_level_out),exist_ok=True)
-            
+        
+        self.save_filename=save_filename
+        
         if save_file and not replace and os.path.isfile(save_filename):
             self.logger.log(f'Processed file {save_filename} already exists, skipping it')
             return
@@ -162,6 +160,9 @@ class Format:
             if save_file:
                 outputData.to_netcdf(save_filename)
                 self.logger.log(f'Formatted file saved as {save_filename}')
+                
+            if make_figures:
+                self.plot_raw_data(outputData,save_figures)
         
     @with_logging
     def rename_halo_xr(self,source,site,z_id,save_path=None,replace=False):
@@ -423,11 +424,58 @@ class Format:
 
         return outputData
 
-    def print_and_log(self,message):
-        if self.verbose:
-            print(message)
-        if self.logger is not None:
-            self.logger.info(message)
+    def plot_raw_data(self,data,save_figures=True):
+        
+        # make colormap of range gate vs time colored with wind speed
+        fig1, ax1 = plt.subplots(figsize=(18, 8))
+        data.wind_speed.plot(
+            ax=ax1,
+            x="time",
+            cmap="coolwarm",
+            vmin=-15,
+            vmax=15,
+            cbar_kwargs={'label': r"Wind Speed [m s$^{-1}$]"}
+        )
+        
+        date=str(data.time.values[0])[:10].replace('-','')
+
+        fig1.suptitle(
+            f"Wind Speed at {self.config.site} on {date} \n File: "
+            + os.path.basename(self.source)
+        )
+
+        format_time_xticks(ax1)
+        ax1.set_xlabel("Time (UTC)")
+        ax1.set_ylabel("Range Gate")
+
+        if save_figures:
+            fig1.savefig(self.save_filename.replace('nc','wind_speed_v_dist_time.png'))
+            plt.close(fig1)
+
+        # make colormap of range gate vs time colored with SNR
+        fig2, ax2 = plt.subplots(figsize=(18, 8))
+
+        data.SNR.plot(
+            ax=ax2,
+            x="time",
+            cmap="coolwarm",
+            vmin=-30,
+            vmax=0,
+            cbar_kwargs={'label': "SNR [dB]"}
+        )
+
+        fig2.suptitle(
+            f"Signal to Noise Ratio at {self.config.site} on {date} \n File: "
+            + os.path.basename(self.source)
+        )
+
+        format_time_xticks(ax2)
+        ax2.set_xlabel("Time (UTC)")
+        ax2.set_ylabel("Range Gate")
+
+        if save_figures:
+            fig2.savefig(self.save_filename.replace('nc','snr_v_dist_time.png'))
+            plt.close(fig2)
 
 
     
