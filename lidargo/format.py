@@ -140,11 +140,11 @@ class Format:
             return
             
         #format renamed raw file
-        
         save_filename = ('.'+self.config.data_level_out+'.').join(source00.split('.00.')).replace('.hpl','.nc')
         if save_path is not None:
-            save_filename=os.path.join(save_path,os.path.basename(save_filename))
-        
+            save_filename=os.path.join(save_path.replace('.00','.'+self.config.data_level_out),os.path.basename(save_filename))
+            os.makedirs(save_path.replace('.00','.'+self.config.data_level_out),exist_ok=True)
+            
         if save_file and not replace and os.path.isfile(save_filename):
             self.logger.log(f'Processed file {save_filename} already exists, skipping it')
             return
@@ -175,7 +175,7 @@ class Format:
             scan_type='stare'
         elif 'User' in os.path.basename(source):
             pattern = r"User\d{1}_\d+_(\d{8})_(\d{6})\.hpl"
-            scan_type='user'+os.path.basename(source)[source.find('User')+1]
+            scan_type='user'+os.path.basename(source)[os.path.basename(source).find('User')+4]
         else:
             self.logger.log(f"Scan type of {source} not supported.")
             return
