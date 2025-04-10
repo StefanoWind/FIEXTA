@@ -9,7 +9,7 @@ from typing import Union, Optional
 from dataclasses import asdict
 import matplotlib.pyplot as plt
 from lidargo import utilities
-from lidargo.utilities import get_logger, with_logging
+from lidargo.utilities import get_logger, with_logging, _load_configuration
 from lidargo import vis
 from lidargo.statistics import local_probability
 from lidargo.config import LidarConfigStand
@@ -44,7 +44,8 @@ class Standardize:
         )
 
         # Load configuration based on input type
-        self.config = self._load_configuration(config)
+        self.config,exit_flag = _load_configuration(config,self.source,'standardize')
+        self.logger.log(exit_flag)
         if self.config is None:
             return
         else:
@@ -56,71 +57,6 @@ class Standardize:
         except Exception as e:
             self.logger.log(f"Error loading input data: {str(e)}")
             return
-
-    @with_logging
-    def _load_configuration(
-        self, config: Union[str, dict, LidarConfigStand]
-    ) -> Optional[LidarConfigStand]:
-        """
-        Load configuration from either a file path, dictionary, or LidarConfig object.
-
-        Args:
-            config (str, dict, or LidarConfig): Configuration source
-
-        Returns:
-            LidarConfig or None: Configuration parameters or None if loading fails
-        """
-        try:
-            if isinstance(config, LidarConfigStand):
-                return config
-            elif isinstance(config, str):
-                return self._load_config_from_file(config)
-            elif isinstance(config, dict):
-                return LidarConfigStand(**config)
-            else:
-                self.logger.log(
-                    f"Invalid config type. Expected str, dict, or LidarConfig, got {type(config)}"
-                )
-                return None
-        except Exception as e:
-            self.logger.log(f"Error loading configuration: {str(e)}")
-            return None
-
-    @with_logging
-    def _load_config_from_file(self, config_file: str) -> Optional[LidarConfigStand]:
-        """
-        Load configuration from an Excel file.
-
-        Args:
-            config_file (str): Path to Excel configuration file
-
-        Returns:
-            LidarConfig or None: Configuration parameters or None if loading fails
-        """
-        configs = pd.read_excel(config_file).set_index("regex")
-        date_source = np.int64(re.search(r"\d{8}.\d{6}", self.source).group(0)[:8])
-
-        matches = []
-        for regex in configs.columns:
-            match = re.findall(regex, self.source)
-            sdate = configs[regex]["start_date"]
-            edate = configs[regex]["end_date"]
-            if len(match) > 0 and sdate <= date_source <= edate:
-                matches.append(regex)
-
-        if not matches:
-            self.logger.log("No regular expression matching the file name")
-            return None
-        elif len(matches) > 1:
-            self.logger.log("Multiple regular expressions matching the file name")
-            return None
-
-        config_dict = configs[matches[0]].to_dict()
-        try:
-            return LidarConfigStand(**config_dict)
-        except Exception as e:
-            self.logger.log(f"Error validating configuration: {str(e)}")
-            return None
 
     @with_logging
     def check_data(self):

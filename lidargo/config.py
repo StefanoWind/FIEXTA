@@ -5,7 +5,7 @@ import re
 @dataclass
 class LidarConfigFormat:
     """Configuration parameters for LIDAR formatting."""
-
+    regex: str=''
     model: str = 'halo'
     site: str = 'sc1'
     instrument_id: int = 1
@@ -36,7 +36,7 @@ class LidarConfigFormat:
 @dataclass
 class LidarConfigStand:
     """Configuration parameters for LIDAR standardization."""
-
+    regex: str=''
     project: str = "raaw"
     name: str = "wake.turb"
     start_date: int = 20220101
