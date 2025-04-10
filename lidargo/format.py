@@ -35,7 +35,7 @@ class Format:
         self.source = source
 
         self.logger.log(
-            f"Initializing standardization of {os.path.basename(self.source)}"
+            f"Initializing formatting of {os.path.basename(self.source)}"
         )
 
         # Load configuration based on input type

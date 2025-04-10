@@ -7,7 +7,7 @@ import json
 from scipy.optimize import curve_fit
 from typing import Union, Optional
 from dataclasses import asdict
-
+import matplotlib.pyplot as plt
 from lidargo import utilities
 from lidargo.utilities import get_logger, with_logging
 from lidargo import vis
@@ -130,10 +130,16 @@ class Standardize:
 
         # Check distance (range) array.
         if "range_gate" in self.inputData.coords:
-            if "overlapping" in self.inputData.attrs["Scan type"]:
+            if " - overlapping" in self.inputData.attrs["Scan type"]:
                 distance = np.unique(self.inputData["distance_overlapped"])
-            else:
+            elif " - stepped" in self.inputData.attrs["Scan type"]:
                 distance = np.unique(self.inputData["distance"])
+            else:
+                self.logger.log(
+                    "Gate mode not recognized."
+                )
+                return False
+            
             distance = distance[~np.isnan(distance)]
             if len(distance) == 0:
                 self.logger.log(
@@ -263,6 +269,10 @@ class Standardize:
         Reject fast scanning head repositioning, identified based on the azimuth and elevation step thresholds.
 
         """
+        
+        #wrap to 360
+        self.inputData["azimuth"]=self.inputData["azimuth"]%360
+        self.inputData["elevation"]=self.inputData["elevation"]%360
 
         # Angular difference (forward difference)
         diff_azi_fw = self.inputData["azimuth"].diff(dim="time", label="lower")
@@ -482,9 +492,9 @@ class Standardize:
         self.outputData["deltaTime"] = tnum - tnum.min()
 
         # Swap range index with physical range
-        if "overlapping" in self.inputData.attrs["Scan type"]:
+        if "- overlapping" in self.inputData.attrs["Scan type"]:
             distance = np.unique(self.outputData.distance_overlapped)
-        else:
+        elif "- stepped" in self.inputData.attrs["Scan type"]:
             distance = np.unique(self.outputData.distance)
         distance = distance[~np.isnan(distance)]
         self.outputData = self.outputData.rename({"range_gate": "range"})
@@ -897,11 +907,19 @@ class Standardize:
         )
 
         if save_figures:
-            if wsqc_fig is not None: wsqc_fig.savefig(self.save_filename.replace(".nc", ".probability." + filetype))
-            if scanqc_fig is not None: scanqc_fig.savefig(self.save_filename.replace(".nc", ".qcscan." + filetype))
-            if angscat_fig is not None: angscat_fig.savefig(self.save_filename.replace(".nc", ".angScatter." + filetype))
-            if anghist_fig is not None: anghist_fig.savefig(self.save_filename.replace(".nc", ".angHist." + filetype))
-
+            if wsqc_fig is not None: 
+                wsqc_fig.savefig(self.save_filename.replace(".nc", ".probability." + filetype))
+                plt.close(wsqc_fig)
+            if scanqc_fig is not None: 
+                scanqc_fig.savefig(self.save_filename.replace(".nc", ".qcscan." + filetype))
+                plt.close(scanqc_fig)
+            if angscat_fig is not None:
+                angscat_fig.savefig(self.save_filename.replace(".nc", ".angScatter." + filetype))
+                plt.close(angscat_fig)
+            if anghist_fig is not None:
+                anghist_fig.savefig(self.save_filename.replace(".nc", ".angHist." + filetype))
+                plt.close(anghist_fig)
+                
 if __name__ == "__main__":
     """
     Test block
