@@ -43,10 +43,10 @@ def windSpeedQCfig(ds, qc_rws_range):
 
     return fig
 
-def scanFig(ds):
+def scanFig(ds,n_subplots: int = 5):
     """wrapper method to make scans pcolor figures"""
     fig = plt.figure(figsize=(18, 8))
-   
+    n_subplots=np.min([n_subplots,len(ds.scanID)])
     
     if ds.attrs['scan_mode'].lower()=='3d':
         projection='3d'
@@ -54,11 +54,11 @@ def scanFig(ds):
         projection='rectilinear'
 
     if ds.attrs['scan_mode'].lower()!='stare':
-        gs = GridSpec(nrows=2, ncols=6, width_ratios=[6, 6, 6, 6, 6, 0.5], figure=fig)
+        gs = GridSpec(nrows=2, ncols=n_subplots+1, width_ratios=[6]*n_subplots+[0.5], figure=fig)
         ax1 = fig.add_subplot(gs[0, 0],projection=projection)
         ax2 = fig.add_subplot(gs[1, 0],projection=projection)
-        axt = [ax1] + [fig.add_subplot(gs[0, x], projection=projection) for x in range(1, 5)]
-        axb = [ax2] + [fig.add_subplot(gs[1, x], projection=projection) for x in range(1, 5)]
+        axt = [ax1] + [fig.add_subplot(gs[0, x], projection=projection) for x in range(1, n_subplots)]
+        axb = [ax2] + [fig.add_subplot(gs[1, x], projection=projection) for x in range(1, n_subplots)]
         caxt = fig.add_subplot(gs[0, -1])
         caxb = fig.add_subplot(gs[1, -1])
     else:
@@ -218,6 +218,7 @@ def rws(ds, ax=None, fig=None, cax=None, cbar_label="Radial wind \n"+r"speed [m 
 def ppi(ds, n_subplots: int = 5, ax=None, fig=None, cax=None, cbar_label="Radial wind \n"+r"speed [m s$^{-1}$]", **kwargs):
     """Plot plan position indicator (PPI) for radial wind speed data."""
 
+    n_subplots=np.min([n_subplots,len(ds.scanID)])
     if fig is None or ax is None:
         fig, ax = plt.subplots(
             1,
@@ -261,6 +262,7 @@ def ppi(ds, n_subplots: int = 5, ax=None, fig=None, cax=None, cbar_label="Radial
 def rhi(ds, n_subplots: int = 5, cbar_label="Radial wind \n"+r"speed [m s$^{-1}$]",ax=None, fig=None, cax=None, **kwargs):
     """Plot range height indicator (RHI) for radial wind speed data."""
     
+    n_subplots=np.min([n_subplots,len(ds.scanID)])
     if fig is None or ax is None:
         fig, ax = plt.subplots(
             1,
@@ -306,6 +308,7 @@ def rhi(ds, n_subplots: int = 5, cbar_label="Radial wind \n"+r"speed [m s$^{-1}$
 def volumetric(ds, n_subplots: int = 5, cbar_label="Radial wind \n"+r"speed [m s$^{-1}$]",ax=None, fig=None, cax=None, **kwargs):
     """Plot 3D visualization of radial wind speed data."""
     
+    n_subplots=np.min([n_subplots,len(ds.scanID)])
     if fig is None or ax is None:
         fig, ax = plt.subplots(
             1,

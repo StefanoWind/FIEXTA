@@ -7,12 +7,12 @@ import json
 from scipy.optimize import curve_fit
 from typing import Union, Optional
 from dataclasses import asdict
-
+import matplotlib.pyplot as plt
 from lidargo import utilities
-from lidargo.utilities import get_logger, with_logging
+from lidargo.utilities import get_logger, with_logging, _load_configuration
 from lidargo import vis
 from lidargo.statistics import local_probability
-from lidargo.config import LidarConfig
+from lidargo.config import LidarConfigStand
 
 
 pd.set_option("future.no_silent_downcasting", True)
@@ -22,7 +22,7 @@ class Standardize:
     def __init__(
         self,
         source: str,
-        config: Union[str, dict, LidarConfig],
+        config: Union[str, dict, LidarConfigStand],
         verbose: bool = True,
         logger: Optional[object] = None,
         logfile=None,
@@ -44,9 +44,12 @@ class Standardize:
         )
 
         # Load configuration based on input type
-        self.config = self._load_configuration(config)
+        self.config,exit_flag = _load_configuration(config,self.source,'standardize')
+        self.logger.log(exit_flag)
         if self.config is None:
             return
+        else:
+            LidarConfigStand.validate(self.config)
 
         # Load input data
         try:
@@ -56,71 +59,6 @@ class Standardize:
             return
 
     @with_logging
-    def _load_configuration(
-        self, config: Union[str, dict, LidarConfig]
-    ) -> Optional[LidarConfig]:
-        """
-        Load configuration from either a file path, dictionary, or LidarConfig object.
-
-        Args:
-            config (str, dict, or LidarConfig): Configuration source
-
-        Returns:
-            LidarConfig or None: Configuration parameters or None if loading fails
-        """
-        try:
-            if isinstance(config, LidarConfig):
-                return config
-            elif isinstance(config, str):
-                return self._load_config_from_file(config)
-            elif isinstance(config, dict):
-                return LidarConfig(**config)
-            else:
-                self.logger.log(
-                    f"Invalid config type. Expected str, dict, or LidarConfig, got {type(config)}"
-                )
-                return None
-        except Exception as e:
-            self.logger.log(f"Error loading configuration: {str(e)}")
-            return None
-
-    @with_logging
-    def _load_config_from_file(self, config_file: str) -> Optional[LidarConfig]:
-        """
-        Load configuration from an Excel file.
-
-        Args:
-            config_file (str): Path to Excel configuration file
-
-        Returns:
-            LidarConfig or None: Configuration parameters or None if loading fails
-        """
-        configs = pd.read_excel(config_file).set_index("PARAMETER")
-        date_source = np.int64(re.search(r"\d{8}.\d{6}", self.source).group(0)[:8])
-
-        matches = []
-        for regex in configs.columns:
-            match = re.findall(regex, self.source)
-            sdate = configs[regex]["start_date"]
-            edate = configs[regex]["end_date"]
-            if len(match) > 0 and sdate <= date_source <= edate:
-                matches.append(regex)
-
-        if not matches:
-            self.logger.log("No regular expression matching the file name")
-            return None
-        elif len(matches) > 1:
-            self.logger.log("Multiple regular expressions matching the file name")
-            return None
-
-        config_dict = configs[matches[0]].to_dict()
-        try:
-            return LidarConfig(**config_dict)
-        except Exception as e:
-            self.logger.log(f"Error validating configuration: {str(e)}")
-            return None
-
-    @with_logging
     def check_data(self):
         """
         Check input data for consistency
@@ -128,10 +66,16 @@ class Standardize:
 
         # Check distance (range) array.
         if "range_gate" in self.inputData.coords:
-            if "overlapping" in self.inputData.attrs["Scan type"]:
+            if " - overlapping" in self.inputData.attrs["Scan type"]:
                 distance = np.unique(self.inputData["distance_overlapped"])
-            else:
+            elif " - stepped" in self.inputData.attrs["Scan type"]:
                 distance = np.unique(self.inputData["distance"])
+            else:
+                self.logger.log(
+                    "Gate mode not recognized."
+                )
+                return False
+            
             distance = distance[~np.isnan(distance)]
             if len(distance) == 0:
                 self.logger.log(
@@ -261,6 +205,10 @@ class Standardize:
         Reject fast scanning head repositioning, identified based on the azimuth and elevation step thresholds.
 
         """
+        
+        #wrap to 360
+        self.inputData["azimuth"]=np.round(self.inputData["azimuth"]/(self.config.ang_tol/10))*self.config.ang_tol/10%360
+        self.inputData["elevation"]=self.inputData["elevation"]%360
 
         # Angular difference (forward difference)
         diff_azi_fw = self.inputData["azimuth"].diff(dim="time", label="lower")
@@ -392,8 +340,8 @@ class Standardize:
             mindiff[mindiff > self.config.ang_tol] = np.nan
             minind = np.argmin(diff_ang, axis=1)
 
-            self.outputData["azimuth"].values = azimuth_bin_centers[minind]
-            self.outputData["elevation"].values = elevation_bin_centers[minind]
+            self.outputData["azimuth"].values = azimuth_bin_centers[minind]%360
+            self.outputData["elevation"].values = elevation_bin_centers[minind]%360
 
             self.outputData = self.outputData.where(~np.isnan(mindiff))
             self.azimuth_regularized = self.outputData["azimuth"].copy()
@@ -480,9 +428,9 @@ class Standardize:
         self.outputData["deltaTime"] = tnum - tnum.min()
 
         # Swap range index with physical range
-        if "overlapping" in self.inputData.attrs["Scan type"]:
+        if "- overlapping" in self.inputData.attrs["Scan type"]:
             distance = np.unique(self.outputData.distance_overlapped)
-        else:
+        elif "- stepped" in self.inputData.attrs["Scan type"]:
             distance = np.unique(self.outputData.distance)
         distance = distance[~np.isnan(distance)]
         self.outputData = self.outputData.rename({"range_gate": "range"})
@@ -895,11 +843,19 @@ class Standardize:
         )
 
         if save_figures:
-            if wsqc_fig is not None: wsqc_fig.savefig(self.save_filename.replace(".nc", ".probability." + filetype))
-            if scanqc_fig is not None: scanqc_fig.savefig(self.save_filename.replace(".nc", ".qcscan." + filetype))
-            if angscat_fig is not None: angscat_fig.savefig(self.save_filename.replace(".nc", ".angScatter." + filetype))
-            if anghist_fig is not None: anghist_fig.savefig(self.save_filename.replace(".nc", ".angHist." + filetype))
-
+            if wsqc_fig is not None: 
+                wsqc_fig.savefig(self.save_filename.replace(".nc", ".probability." + filetype))
+                plt.close(wsqc_fig)
+            if scanqc_fig is not None: 
+                scanqc_fig.savefig(self.save_filename.replace(".nc", ".qcscan." + filetype))
+                plt.close(scanqc_fig)
+            if angscat_fig is not None:
+                angscat_fig.savefig(self.save_filename.replace(".nc", ".angScatter." + filetype))
+                plt.close(angscat_fig)
+            if anghist_fig is not None:
+                anghist_fig.savefig(self.save_filename.replace(".nc", ".angHist." + filetype))
+                plt.close(anghist_fig)
+                
 if __name__ == "__main__":
     """
     Test block

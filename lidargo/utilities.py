@@ -4,12 +4,15 @@ import numpy as np
 import pandas as pd
 from datetime import datetime
 import socket
+from typing import Union, Optional
+import matplotlib as mpl
 import getpass
 from .logger import SingletonLogger
 from functools import wraps
 from dataclasses import is_dataclass, fields, asdict
-from typing import Optional
-
+import matplotlib.pyplot as plt
+from lidargo.config import LidarConfigFormat,LidarConfigStand
+import re
 
 def get_logger(
         name: str = None, verbose: bool = True, logger: Optional[object] = None, filename=None
@@ -341,3 +344,109 @@ def add_qc_attrs(ds, qcAttrDict: dict):
     #     del ds.attrs["code_version"]
 
     return ds
+
+def format_time_xticks(
+    ax: plt.Axes,
+    start: int = 4,
+    stop: int = 21,
+    step: int = 4,
+    date_format: str = "%H:%M",
+):
+    """----------------------------------------------------------------------------
+    Formats the ticks on the x-axis of the provided `plt.Axes` nicely. Requires the
+    provided `plt.Axis` to already have a plot attached to it and for the x-axis of
+    the plotted data to be a datetime object (numpy / pandas / xarray OK). Sets
+    major tick locations by hour according to the provided `start`, `stop`, and
+    `step` parameters, and labels ticks according to the provided `date_format`.
+    Has nice defaults for a plot spanning a 24-hour period.
+
+    Args:
+        ax (plt.Axes): The handle for the axes object on which to format the ticks.
+        start (int, optional): Hour in which to start the xticks. Defaults to 4.
+        stop (int, optional): Hour in which to stop the xticks. Defaults to 21.
+        step (int, optional): The step in between major xticks. Defaults to 4.
+        date_format (str, optional): The format to use for xtick labels. Defaults
+        to "%H:%M".
+
+    ----------------------------------------------------------------------------"""
+    ax.xaxis.set_major_locator(mpl.dates.HourLocator(byhour=range(start, stop, step)))  # type: ignore
+    ax.xaxis.set_major_formatter(mpl.dates.DateFormatter(date_format))  # type: ignore
+    plt.setp(ax.xaxis.get_majorticklabels(), rotation=0, ha="center")
+    
+
+def _load_configuration(config: Union[str, dict, LidarConfigFormat, LidarConfigStand],source=None, level:str='standardize'):
+    """
+    Load configuration from either a file path, dictionary, or LidarConfig object.
+
+    Args:
+        config (str, dict, or LidarConfig): Configuration source
+
+    Returns:
+        LidarConfig or None: Configuration parameters or None if loading fails
+    """
+    try:
+        if isinstance(config, LidarConfigFormat) and level=='format':
+            return config, "Configuration successfully loaded"
+        if isinstance(config, LidarConfigStand) and level=='standardize':
+            return config, "Configuration successfully loaded"
+        elif isinstance(config, str):
+            return _load_config_from_file(config,source,level)
+        elif isinstance(config, dict):
+            if level=='standardize':
+                return LidarConfigStand(**config), "Configuration successfully loaded"
+            elif level=='format':
+                return LidarConfigFormat(**config), "Configuration successfully loaded"
+            else:
+                return None, f"{level} is an invalid configuration level (must be standardize or format)"
+        else:
+            return None, f"Invalid config type. Expected str, dict, or LidarConfig, got {type(config)}"
+            
+    except Exception as e:
+        return None, f"Error loading configuration: {str(e)}"
+
+
+def _load_config_from_file(config_file: str, source: str, level: str):
+    """
+    Load configuration from an Excel file.
+
+    Args:
+        config_file (str): Path to Excel configuration file
+
+    Returns:
+        LidarConfig or None: Configuration parameters or None if loading fails
+    """
+    configs = pd.read_excel(config_file,header=None).set_index(0)
+    date_source = np.int64(re.search(r"\d{8}.\d{6}", source).group(0)[:8])
+
+    matches = []
+    for c in configs.columns:
+        regex=configs[c]['regex']
+        if "start_date" not in  configs[c]:
+            sdate=19700101
+        else:
+            sdate = configs[c]["start_date"]
+        if "end_date" not in  configs[c]:
+            edate=30000101
+        else:
+            edate = configs[c]["end_date"]
+        
+        match = re.findall(regex, source)
+        if len(match) > 0 and sdate <= date_source <= edate:
+            matches.append(c)
+
+    if not matches:
+        return None,"No regular expression/date range matching the file name"
+        
+    elif len(matches) > 1:
+        return None, "Multiple regular expressions/date ranges matching the file name"
+
+    config_dict = configs[matches[0]].to_dict()
+    try:
+        if level=='standardize':
+            return LidarConfigStand(**config_dict), "Configuration successfully loaded"
+        elif level=='format':
+            return LidarConfigFormat(**config_dict), "Configuration successfully loaded"
+        else:
+            return None, f"{level} is an invalid configuration level (must be standardize or format)"
+    except Exception as e:
+        return None, f"Error validating configuration: {str(e)}"
