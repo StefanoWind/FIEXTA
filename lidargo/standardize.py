@@ -271,7 +271,7 @@ class Standardize:
         """
         
         #wrap to 360
-        self.inputData["azimuth"]=self.inputData["azimuth"]%360
+        self.inputData["azimuth"]=np.round(self.inputData["azimuth"]/(self.config.ang_tol/10))*self.config.ang_tol/10%360
         self.inputData["elevation"]=self.inputData["elevation"]%360
 
         # Angular difference (forward difference)
@@ -404,8 +404,8 @@ class Standardize:
             mindiff[mindiff > self.config.ang_tol] = np.nan
             minind = np.argmin(diff_ang, axis=1)
 
-            self.outputData["azimuth"].values = azimuth_bin_centers[minind]
-            self.outputData["elevation"].values = elevation_bin_centers[minind]
+            self.outputData["azimuth"].values = azimuth_bin_centers[minind]%360
+            self.outputData["elevation"].values = elevation_bin_centers[minind]%360
 
             self.outputData = self.outputData.where(~np.isnan(mindiff))
             self.azimuth_regularized = self.outputData["azimuth"].copy()
