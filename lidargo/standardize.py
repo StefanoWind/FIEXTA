@@ -154,10 +154,9 @@ class Standardize:
         if save_path is not None:
             save_filename = os.path.join(save_path, os.path.basename(save_filename))
 
+        os.makedirs(os.path.dirname(save_filename),exist_ok=True)
+        
         self.save_filename = save_filename
-
-        if os.path.exists(os.path.dirname(save_filename)) == False:
-            os.makedirs(os.path.dirname(save_filename))
 
         if save_file and not replace and os.path.isfile(save_filename):
             self.logger.log(
@@ -561,7 +560,11 @@ class Standardize:
 
         # Single-parameter Gaussian fit
         H_x = np.array([x.mid for x in H.index])
-        sigma = curve_fit(utilities.gaussian, H_x, H, p0=[0.1], bounds=[0, 1])[0][0]
+        try:
+            sigma = curve_fit(utilities.gaussian, H_x, H, p0=[0.1], bounds=[0, 1])[0][0]
+        except:
+            self.logger.log("Resonance detection failed, assuming no resonance")
+            return 0
 
         # Check Gaussiainity and possibly calculate rws_min
         rmse = np.nanmean((utilities.gaussian(H_x, sigma) - H) ** 2) ** 0.5

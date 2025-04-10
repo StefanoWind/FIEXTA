@@ -79,7 +79,8 @@ class Format:
         save_filename = ('.'+self.config.data_level_out+'.').join(source00.split('.00.')).replace('.hpl','.nc')
         if save_path is not None:
             save_filename=os.path.join(save_path.replace('.00','.'+self.config.data_level_out),os.path.basename(save_filename))
-            os.makedirs(save_path.replace('.00','.'+self.config.data_level_out),exist_ok=True)
+        
+        os.makedirs(os.path.dirname(save_filename),exist_ok=True)
         
         self.save_filename=save_filename
         
