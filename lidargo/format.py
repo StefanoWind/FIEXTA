@@ -1,5 +1,7 @@
 '''
-Convert raw lidar files to netCDF in WDH-compatible netCDF format
+Convert raw lidar files to netCDF in WDH-compatible netCDF format.
+
+Part of this script is readapted from https://github.com/a2edap/ingest-awaken/tree/main/pipelines/lidar/lidar_halo_xrp under license LICENSE_BSD-2_Batelle.
 '''
 import os
 import xarray as xr
