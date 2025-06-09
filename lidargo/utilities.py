@@ -416,7 +416,7 @@ def _load_config_from_file(config_file: str, source: str, level: str):
         LidarConfig or None: Configuration parameters or None if loading fails
     """
     configs = pd.read_excel(config_file,header=None).set_index(0)
-    date_source = np.int64(re.search(r"\d{8}.\d{6}", source).group(0)[:8])
+    date_source = np.int64(re.search(r"\d{8}", source).group(0))
 
     matches = []
     for c in configs.columns:
