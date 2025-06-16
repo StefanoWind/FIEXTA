@@ -115,7 +115,7 @@ class Format:
         os.makedirs(save_path,exist_ok=True)
         
         if 'Stare' in os.path.basename(source):
-            pattern = r"Stare_\d+_(\d{8})_(\d{2})_(.*?)\.hpl"
+            pattern = r"Stare_\d+_(\d{8})_(\d{2})\.hpl"
             scan_type='stare'
         elif 'User' in os.path.basename(source):
             pattern = r"User\d{1}_\d+_(\d{8})_(\d{6})\.hpl"
@@ -265,7 +265,7 @@ class Format:
         outputData.attrs["Number of gates"] = float(metadata["Number of gates"])  # type: ignore
         outputData.attrs["Scan type"] = str(metadata["Scan type"]).strip()
         outputData.attrs["Pulses per ray"] = float(metadata["Pulses/ray"])  # type: ignore
-        outputData.attrs["System ID"] = int(metadata["System ID"])  # type: ignore
+        outputData.attrs["System ID"] = str(metadata["System ID"]).strip()  # type: ignore
         outputData.attrs["source"] = str(metadata["Filename"])[1:-1]
         outputData.attrs["code_version"]=''
         outputData.attrs["title"]='Lidar Halo XR'
