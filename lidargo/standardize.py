@@ -66,15 +66,10 @@ class Standardize:
 
         # Check distance (range) array.
         if "range_gate" in self.inputData.coords:
-            if " - overlapping" in self.inputData.attrs["Scan type"]:
+            if self.inputData.attrs["Scan type"].split("-")[1].strip()=="overlapping":
                 distance = np.unique(self.inputData["distance_overlapped"])
-            elif " - stepped" in self.inputData.attrs["Scan type"]:
-                distance = np.unique(self.inputData["distance"])
             else:
-                self.logger.log(
-                    "Gate mode not recognized."
-                )
-                return False
+                distance = np.unique(self.inputData["distance"])
             
             distance = distance[~np.isnan(distance)]
             if len(distance) == 0:
@@ -427,9 +422,9 @@ class Standardize:
         self.outputData["deltaTime"] = tnum - tnum.min()
 
         # Swap range index with physical range
-        if "- overlapping" in self.inputData.attrs["Scan type"]:
+        if self.inputData.attrs["Scan type"].split("-")[1].strip()=="overlapping":
             distance = np.unique(self.outputData.distance_overlapped)
-        elif "- stepped" in self.inputData.attrs["Scan type"]:
+        else:
             distance = np.unique(self.outputData.distance)
         distance = distance[~np.isnan(distance)]
         self.outputData = self.outputData.rename({"range_gate": "range"})
