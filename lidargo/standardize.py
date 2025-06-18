@@ -65,18 +65,13 @@ class Standardize:
         """
 
         # Check distance (range) array.
-        if "range_gate" in self.inputData.coords:
-            if self.inputData.attrs["Scan type"].split("-")[1].strip()=="overlapping":
-                distance = np.unique(self.inputData["distance_overlapped"])
-            else:
-                distance = np.unique(self.inputData["distance"])
-            
-            distance = distance[~np.isnan(distance)]
-            if len(distance) == 0:
-                self.logger.log(
-                    f"WARNING: All distance values are invalid on {os.path.basename(self.source)}, skipping it"
-                )
-                return False
+        distance = np.unique(self.inputData[self.config.range_name])
+        distance = distance[~np.isnan(distance)]
+        if len(distance) == 0:
+            self.logger.log(
+                f"WARNING: All distance values are invalid on {os.path.basename(self.source)}, skipping it"
+            )
+            return False
 
         # Check for valid radial wind speed values
         if (
@@ -108,8 +103,26 @@ class Standardize:
             )
             return False
 
+        #Add null picth, roll if missing
+        if "pitch" not in self.inputData.data_vars:
+            self.inputData["pitch"]=xr.DataArray(data=np.zeros(len(self.inputData.time))-9999,
+                                        coords={'time':self.inputData.time.values},
+                                        attrs={"units":"degrees","description":"Pitch angle of the lidar"})
+        self.logger.log(
+            "WARNING: Picth not found, adding dummy variable."
+        )    
+        if "roll" not in self.inputData.data_vars:
+            self.inputData["roll"]=xr.DataArray(data=np.zeros(len(self.inputData.time))-9999,
+                                        coords={'time':self.inputData.time.values},
+                                        attrs={"units":"degrees","description":"Roll angle of the lidar"})
+        self.logger.log(
+            "WARNING: Roll not found, adding dummy variable."
+        )
+        
         return True
-
+    
+        
+        
     @with_logging
     def process_scan(
         self,  save_file=True, save_path=None, replace=True,make_figures=True,save_figures=True
@@ -166,6 +179,12 @@ class Standardize:
         #rename variables
         if len(self.config.rename_vars)>0:
             self.inputData=self.inputData.rename(json.loads(self.config.rename_vars))
+            
+        #rename attributes
+        if len(self.config.rename_attrs)>0:
+            for old_key, new_key in json.loads(self.config.rename_attrs).items():
+                if old_key in self.inputData.attrs:
+                    self.inputData.attrs[new_key] = self.inputData.attrs.pop(old_key)
             
         # Check data
         if not self.check_data():
@@ -413,6 +432,8 @@ class Standardize:
         """
 
         # Add SNR floor
+        if "SNR" not in self.outputData.data_vars:
+            self.outputData["SNR"]=np.log10(self.outputData["intensity"]-1)*10
         self.outputData["SNR"] = self.outputData["SNR"].fillna(self.config.snr_min - 1)
 
         # Add time in seconds from start of the scan
@@ -422,11 +443,7 @@ class Standardize:
         self.outputData["deltaTime"] = tnum - tnum.min()
 
         # Swap range index with physical range
-        if self.inputData.attrs["Scan type"].split("-")[1].strip()=="overlapping":
-            distance = np.unique(self.outputData.distance_overlapped)
-        else:
-            distance = np.unique(self.outputData.distance)
-        distance = distance[~np.isnan(distance)]
+        distance = np.unique(self.outputData[self.config.range_name])
         self.outputData = self.outputData.rename({"range_gate": "range"})
         self.outputData = self.outputData.assign_coords({"range": distance})
 
@@ -842,16 +859,16 @@ class Standardize:
 
         if save_figures:
             if wsqc_fig is not None: 
-                wsqc_fig.savefig(self.save_filename.replace(".nc", ".probability." + filetype))
+                wsqc_fig.savefig(self.save_filename.replace(self.save_filename.split('.')[-1], ".probability." + filetype))
                 plt.close(wsqc_fig)
             if scanqc_fig is not None: 
-                scanqc_fig.savefig(self.save_filename.replace(".nc", ".qcscan." + filetype))
+                scanqc_fig.savefig(self.save_filename.replace(self.save_filename.split('.')[-1], ".qcscan." + filetype))
                 plt.close(scanqc_fig)
             if angscat_fig is not None:
-                angscat_fig.savefig(self.save_filename.replace(".nc", ".angScatter." + filetype))
+                angscat_fig.savefig(self.save_filename.replace(self.save_filename.split('.')[-1], ".angScatter." + filetype))
                 plt.close(angscat_fig)
             if anghist_fig is not None:
-                anghist_fig.savefig(self.save_filename.replace(".nc", ".angHist." + filetype))
+                anghist_fig.savefig(self.save_filename.replace(self.save_filename.split('.')[-1], ".angHist." + filetype))
                 plt.close(anghist_fig)
                 
 if __name__ == "__main__":

@@ -686,9 +686,10 @@ class QCReport:
             plt.subplots_adjust(
                 left=0.05, bottom=0.1, right=0.9, top=0.9, wspace=0.4, hspace=0.25
             )
+        
         if not self.outputData.attrs["scan_mode"] == "Stare":
-            fig_angles.savefig(self.save_filename.replace(".nc", "_angles.png"))
-        fig_probability.savefig(self.save_filename.replace(".nc", "_probability.png"))
-        fig_rws.savefig(self.save_filename.replace(".nc", "_wind_speed.png"))
+            fig_angles.savefig(self.save_filename.replace(self.save_filename.split('.')[-1], "_angles.png"))
+        fig_probability.savefig(self.save_filename.replace(self.save_filename.split('.')[-1], "_probability.png"))
+        fig_rws.savefig(self.save_filename.replace(self.save_filename.split('.')[-1], "_wind_speed.png"))
 
         self.print_and_log(f"QC figures saved in {os.path.dirname(self.save_filename)}")

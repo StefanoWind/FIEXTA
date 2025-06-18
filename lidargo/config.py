@@ -75,7 +75,9 @@ class LidarConfigStand:
     ground_level: float = -120.0
     rws_min: float = 0.0
     rename_vars: str = ""
-
+    rename_attrs: str = ""
+    range_name: str="distance"
+    
     def _validate_date_format(self, date: int, field_name: str) -> None:
         """Validate date format (YYYYMMDD)."""
         date_str = str(date)
