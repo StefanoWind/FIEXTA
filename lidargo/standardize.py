@@ -108,16 +108,16 @@ class Standardize:
             self.inputData["pitch"]=xr.DataArray(data=np.zeros(len(self.inputData.time))-9999,
                                         coords={'time':self.inputData.time.values},
                                         attrs={"units":"degrees","description":"Pitch angle of the lidar"})
-        self.logger.log(
-            "WARNING: Picth not found, adding dummy variable."
-        )    
+            self.logger.log(
+                "WARNING: Picth not found, adding dummy variable."
+            )    
         if "roll" not in self.inputData.data_vars:
             self.inputData["roll"]=xr.DataArray(data=np.zeros(len(self.inputData.time))-9999,
                                         coords={'time':self.inputData.time.values},
                                         attrs={"units":"degrees","description":"Roll angle of the lidar"})
-        self.logger.log(
-            "WARNING: Roll not found, adding dummy variable."
-        )
+            self.logger.log(
+                "WARNING: Roll not found, adding dummy variable."
+            )
         
         return True
     
@@ -157,7 +157,7 @@ class Standardize:
         save_filename = (
             ("." + self.config.data_level_out)
             .join(self.source.split("." + self.config.data_level_in))
-            .replace(".nc", self.config.name + ".nc")
+            .replace(self.source.split(".")[-1], self.config.name + ".nc")
         )
         if save_path is not None:
             save_filename = os.path.join(save_path, os.path.basename(save_filename))
@@ -177,14 +177,16 @@ class Standardize:
             )
 
         #rename variables
-        if len(self.config.rename_vars)>0:
-            self.inputData=self.inputData.rename(json.loads(self.config.rename_vars))
+        if ~np.isnan(self.config.rename_vars):
+            if len(self.config.rename_vars)>0:
+                self.inputData=self.inputData.rename(json.loads(self.config.rename_vars))
             
         #rename attributes
-        if len(self.config.rename_attrs)>0:
-            for old_key, new_key in json.loads(self.config.rename_attrs).items():
-                if old_key in self.inputData.attrs:
-                    self.inputData.attrs[new_key] = self.inputData.attrs.pop(old_key)
+        if ~np.isnan(self.config.rename_attrs):
+            if len(self.config.rename_attrs)>0:
+                for old_key, new_key in json.loads(self.config.rename_attrs).items():
+                    if old_key in self.inputData.attrs:
+                        self.inputData.attrs[new_key] = self.inputData.attrs.pop(old_key)
             
         # Check data
         if not self.check_data():
@@ -292,9 +294,7 @@ class Standardize:
         from scipy import stats
 
         llimit_azi = (
-            utilities.floor(self.outputData.azimuth.min(), self.config.ang_tol)
-            - self.config.ang_tol / 2
-        )
+            utilities.floor(self.outputData.azimuth.min(), self.config.ang_tol))
         ulimit_azi = (
             utilities.ceil(self.outputData.azimuth.max(), self.config.ang_tol)
             + self.config.ang_tol
@@ -302,9 +302,7 @@ class Standardize:
         azi_bins = np.arange(llimit_azi, ulimit_azi, self.config.ang_tol)
 
         llimit_ele = (
-            utilities.floor(self.outputData.elevation.min(), self.config.ang_tol)
-            - self.config.ang_tol / 2
-        )
+            utilities.floor(self.outputData.elevation.min(), self.config.ang_tol))
         ulimit_ele = (
             utilities.ceil(self.outputData.elevation.max(), self.config.ang_tol)
             + self.config.ang_tol
