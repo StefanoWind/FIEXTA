@@ -14,7 +14,7 @@ import matplotlib as mpl
 import matplotlib.pylab as pl
 from scipy.stats import truncnorm, uniform
 import cmasher as cmr
-from lidargo.utilities import get_logger, with_logging, _load_configuration
+from angels.utilities import get_logger, with_logging
 from typing import Optional
 
 
@@ -37,16 +37,22 @@ class angels:
     
         self.logger = get_logger(logger=logger,filename=logfile)
         
-        self.config=yaml.read(config)
+        with open(config, "r") as file:
+            self.config = yaml.safe_load(file)
+            
+        return
+        
     
     @with_logging
-    def generate_noise(self,m,n,config):
+    def generate_noise(self,m,n):
         
         #load noise std table
-        noise_std_table=pd.read_csv(self.config["source_noise_std_table"])
-        self.m_vec=noise_std_table["M/N"]
-        self.n_vec=noise_std_table.columns[1:]
+        noise_std_snr_1=pd.read_csv(self.config["source_noise_std_table"],sheet='snr_1')
+        self.m_vec=noise_std_snr_1["M/N"]
+        self.n_vec=noise_std_snr_1.columns[1:]
         noise_snrs_db, noise_vel_stds = self.generate_noise_curve(m, n, u_nyq=self.config["u_nyquist"])
+    
+        return None
 
 
     def generate_noise_curve(self, m, n, u_nyq, snr_lims=None, fig=False):
@@ -101,6 +107,11 @@ class angels:
     
         return snr_points, noise_stds
 
+def main():
+    print("Running angels script!")
+
+if __name__ == "__main__":
+    main()
 
 # '''
 # For a given grid of range and height points, a curve of range-corrected snr with

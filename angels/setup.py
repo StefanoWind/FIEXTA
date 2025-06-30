@@ -4,14 +4,14 @@ with open("README.md", "r", encoding="utf-8") as fh:
     long_description = fh.read()
 
 setup(
-    name="angles",
-    version="0.1.1",
+    name="angels",
+    version="0.1.0",
     author="Stefano Letizia",
     author_email="stefano.letizia@nrel.gov",
     description="A package for generating realistic LIDAR noise",
     long_description=long_description,
     long_description_content_type="Advanced Noise Generator to Enchance Lidar Simulations (ANGELS).",
-    url="https://github.com/nREL/fiexta/angels",
+    url="https://github.com/NREL/fiexta/angels",
     packages=find_packages(),
     classifiers=[
         "Development Status :: 3 - Alpha",

@@ -1,4 +1,4 @@
-import angels as ang
+from angels import angels as ang
 
 #%% Inputs
 m=14
@@ -7,6 +7,8 @@ source_config="../configs/config.yaml"
 
 #%% Main
 noise_gen=ang.angels(source_config)
+
+nn=noise_gen.generate_noise(m,n)
 
 
 
