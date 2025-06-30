@@ -44,51 +44,65 @@ class angels:
         
     
     @with_logging
-    def generate_noise(self,m,n):
+    def generate_noise(self,m,n,cluster,snr_0):
         
         #load noise std table
-        noise_std_snr_1=pd.read_csv(self.config["source_noise_std_table"],sheet='snr_1')
-        self.m_vec=noise_std_snr_1["M/N"]
-        self.n_vec=noise_std_snr_1.columns[1:]
+        noise_std=pd.read_excel(self.config["source_noise_std"],sheet_name='snr_1')
+        self.snr_1=pd.read_excel(self.config["source_noise_std"],sheet_name='snr_1').values[:,1:]
+        self.sigma_t1=pd.read_excel(self.config["source_noise_std"],sheet_name='sigma_t1').values[:,1:]
+        self.m_vec=np.array([int(m) for m in noise_std["M/N"].values])
+        self.n_vec=np.array([int(n) for n in noise_std.columns[1:]])
         noise_snrs_db, noise_vel_stds = self.generate_noise_curve(m, n, u_nyq=self.config["u_nyquist"])
+        
+        
+        snr_height, snr_corr_norm_avg, snr_corr_std=self.read_snr_stats(self,cluster)
+        
+        sampled_snr= self.sample_snr(self, snr_height, snr_corr_norm_avg, snr_corr_std, snr_0)
     
-        return None
+        return sampled_snr
 
 
-    def generate_noise_curve(self, m, n, u_nyq, snr_lims=None, fig=False):
+    def generate_noise_curve(self, m, n, u_nyq, fig=False):
         '''
         Take gate length points 'm' and number of pulses 'n' and return an array of SNR values
         and associated noise standard deviations using Eq. 7 from the paper. SNR_1 and 
         sigma_{T,1} are interpolated from m and n using the table of points given in Fig. 15.
         '''
-        if (m <= np.max(self.m_vec)) or (m >= np.min(self.m_vec)):
+        if (m > np.max(self.m_vec)) or (m < np.min(self.m_vec)):
             self.logger.log("M is out of bounds")
             
-        if (n <= np.max(self.n_vec)) or (n >= np.min(self.n_vec)):
+        if (n > np.max(self.n_vec)) or (n < np.min(self.n_vec)):
             self.logger.log("N is out of bounds")
     
-        snr2 = -30
+        #define low SNR regime
+        snr2 = self.config["snr_2"]
         sigma_t2 = 2 / np.sqrt(12) * u_nyq
-        if snr_lims is None:
-            snr_lims = [-50, 10]
-        snr_points = np.linspace(snr_lims[0], snr_lims[1], 200)
+
+        #define SNR grid
+        snr_lims = self.config["snr_lim"]
+        snr_points = np.linspace(snr_lims[0], snr_lims[1], self.config["n_snr_points"])
         log_stds = np.full((snr_points.shape[0], ), np.nan)
     
+        #extract from look-up table
+        n_grid,m_grid=np.meshgrid(self.n_vec,self.m_vec)
         snr_interper = LinearNDInterpolator(np.concatenate([
-            self.n_grid.reshape(-1, 1),
-            self.m_grid.reshape(-1, 1)
+            n_grid.reshape(-1, 1),
+            m_grid.reshape(-1, 1)
         ], axis=-1), self.snr_1.reshape(-1, 1))
         snr1 = snr_interper(np.array([n, m]))[0, 0]
     
         sigma_interper = LinearNDInterpolator(np.concatenate([
-            self.n_grid.reshape(-1, 1),
-            self.m_grid.reshape(-1, 1)
+            n_grid.reshape(-1, 1),
+            m_grid.reshape(-1, 1)
         ], axis=-1), self.sigma_t1.reshape(-1, 1))
         sigma_t1 = sigma_interper(np.array([n, m]))[0, 0]
     
-        log_stds[snr_points <= snr2] = np.log(sigma_t2)
-        log_stds[(snr2 < snr_points) & (snr_points <= snr1)] = np.log(sigma_t2) - (np.log(sigma_t2) - np.log(sigma_t1)) * np.power((snr_points[(snr2 < snr_points) & (snr_points <= snr1)] - snr2)/(snr1-snr2), 10)
-        log_stds[snr_points > snr1] = np.log(sigma_t1) - np.log(10)/10*(snr_points[snr_points > snr1] - snr1)
+        region1=snr_points <= snr2
+        region2=(snr2 < snr_points) & (snr_points <= snr1)
+        region3=snr_points > snr1
+        log_stds[region1] = np.log(sigma_t2)
+        log_stds[region2] = np.log(sigma_t2) - (np.log(sigma_t2) - np.log(sigma_t1))*((snr_points[region2] - snr2)/(snr1-snr2))**10
+        log_stds[region3] = np.log(sigma_t1) - np.log(10)/10*(snr_points[region3] - snr1)
         noise_stds = np.exp(log_stds)
     
         if fig:
@@ -102,73 +116,120 @@ class angels:
             ax.set_xlabel("SNR [dB]")
             ax.set_ylabel("$\\sigma_T$ [m s$^{-1}$]")
     
-        print(f"Fitted sigma_T1: {sigma_t1:.3f}")
-        print(f"Fitted SNR_1: {snr1:.3f}")
+        self.logger.log(f"Fitted sigma_T1: {sigma_t1:.3f}")
+        self.logger.log(f"Fitted SNR_1: {snr1:.3f}")
     
         return snr_points, noise_stds
-
-def main():
-    print("Running angels script!")
-
-if __name__ == "__main__":
-    main()
-
-# '''
-# For a given grid of range and height points, a curve of range-corrected snr with
-# associated heights, the normalization parameter snr_0, and the standard deviation of
-# SNR (in dB) at the same heights as the range-corrected profile, generate a single sample
-# of SNR. The minimum range, height, and SNR are all hard-coded according to the paper. If
-# grid of elevation points is also provided, figures are generated of the mean and sampled
-# SNR fields and the figures and axes are returned along with the SNR field. Otherwise,
-# just the SNR field is returned.
-# '''
-# def sample_snr(rng_grid, z_grid, heights, snrs, snr_0, snr_stds, ele_grid=None):
-#     rng_min = 500
-#     z_min = 50
-#     min_snr = 0.0016
-#     mean_snr_cor = np.interp(z_grid.flatten(), heights, snrs).reshape(z_grid.shape)
-#     mean_snr_cor = np.power(10, mean_snr_cor * snr_0 / 10)
-#     mean_snr = np.full(mean_snr_cor.shape, np.nan)
-#     mean_snr[(rng_grid > rng_min) & (z_grid > z_min)] = mean_snr_cor[(rng_grid > rng_min) & (z_grid > z_min)] / rng_grid[(rng_grid > rng_min) & (z_grid > z_min)]**2
-#     mean_snr[(rng_grid <= rng_min) & (z_grid > z_min)] = mean_snr_cor[(rng_grid <= rng_min) & (z_grid > z_min)] / rng_min**2
-#     mean_snr[(rng_grid > rng_min) & (z_grid <= z_min)] = np.power(10, snr_0 / 10) / rng_grid[(rng_grid > rng_min) & (z_grid <= z_min)]**2
-#     mean_snr[(rng_grid <= rng_min) & (z_grid <= z_min)] = np.power(10, snr_0 / 10) / rng_min**2
-#     mean_snr[mean_snr < min_snr] = min_snr
-#     mean_snr_db = 10*np.log10(mean_snr)
-#     mean_snr_cor = mean_snr * rng_grid**2
-
-#     # Assume that snr std is constant below the minimum height
-#     # np.interp fills the values appropriately when beyond the limits
-#     snr_std_cor = np.interp(z_grid.flatten(), heights, snr_stds).reshape(z_grid.shape)
-#     snr_std_cor = np.power(10, snr_std_cor/10)
-
-#     sampled_snr_cor = np.random.normal(mean_snr_cor, snr_std_cor)
-#     sampled_snr = sampled_snr_cor / rng_grid**2
-#     sampled_snr[sampled_snr < min_snr] = min_snr
-#     sampled_snr_db = 10*np.log10(sampled_snr)
-
-#     if ele_grid is not None:
-#         fig0, ax0 = plt.subplots(1, 1, constrained_layout=True, subplot_kw={'projection':'polar'})
-#         fig0.set_size_inches([5, 5])
-
-#         vmin = -28
-#         vmax = 0
-
-#         ax0.set_xlim([0, np.pi])
-#         sm = ax0.pcolormesh(ele_grid, rng_grid, mean_snr_db, cmap=SNR_CMAP, vmin=vmin, vmax=vmax, rasterized=True)
-#         ax0.yaxis.set_major_locator(mpl.ticker.MaxNLocator(4))
-#         fig0.colorbar(sm, label="SNR [dB]", shrink=0.4)
-
-#         fig1, ax1 = plt.subplots(1, 1, constrained_layout=True, subplot_kw={'projection':'polar'})
-#         fig1.set_size_inches([5, 5])
-
-#         ax1.set_xlim([0, np.pi])
-#         sm = ax1.pcolormesh(ele_grid, rng_grid, sampled_snr_db, cmap=SNR_CMAP, vmin=vmin, vmax=vmax, rasterized=True)
-#         ax1.yaxis.set_major_locator(mpl.ticker.MaxNLocator(4))
-#         fig1.colorbar(sm, label="SNR [dB]", shrink=0.4)
-#         return sampled_snr_db, fig0, ax0, fig1, ax1
-
-#     return sampled_snr_db
+    
+        def read_snr_stats(self,cluster):
+            
+            try:
+                snr_height = pd.read_xlsx(self.config["source_snr_stats"])["height"]
+            except:
+                self.logger.log(f'Could not return height from {self.config["source_snr_stats"]} for cluster {cluster}.')
+                return None
+            
+            try:
+                snr_corr_norm_avg = pd.read_xlsx(self.config["source_snr_stats"])[cluster]
+            except:
+                self.logger.log(f'Could not return mean normalized range-corrected SNR from {self.config["source_snr_stats"]} for cluster {cluster}.')
+                return None
+            try:
+                snr_corr_std = pd.read_xlsx(self.config["source_snr_stats"],sheet_name="snr_std")
+            except:
+                self.logger.log(f'Could not return st.dev of range-corrected SNR from {self.config["source_snr_stats"]} for cluster {cluster}.')
+                return None
+            
+            return snr_height, snr_corr_norm_avg, snr_corr_std
+        
+        def read_scan_geometry(self):
+            
+            try:
+                azi_vec = pd.read_xlsx(self.config["source_scan_geometry"])["Azimuth"].values
+                ele_vec = pd.read_xlsx(self.config["source_scan_geometry"])["Elevation"].values
+            except:
+                self.logger.log(f'Could not load scan geometry from {self.config["source_snr_stats"]}.')
+                return None
+            
+            return azi_vec,ele_vec
+            
+        def sample_snr(self, snr_height,snr_corr_norm_avg,snr_corr_std, snr_0, ele_grid=None):
+            '''
+            For a given grid of range and height points, a curve of range-corrected snr with
+            associated heights, the normalization parameter snr_0, and the standard deviation of
+            SNR (in dB) at the same heights as the range-corrected profile, generate a single sample
+            of SNR. The minimum range, height, and SNR are all hard-coded according to the paper. If
+            grid of elevation points is also provided, figures are generated of the mean and sampled
+            SNR fields and the figures and axes are returned along with the SNR field. Otherwise,
+            just the SNR field is returned.
+            '''
+            
+            azi_vec,ele_vec=read_scan_geometry(self)
+            
+            #expand scan geometry
+            rng_vec = np.arange(self.config["rng_gate"], self.config["max_rng"]+self.config["rng_gate"], self.config["rng_gate"])
+            rng_grid,ele_grid=np.outer(rng_vec,ele_vec)
+            z_grid=rng_grid*np.sin(np.radians(ele_grid))
+            
+            #full map of range-corrected mean SNR
+            snr_corr_norm_avg_map_db = np.interp(z_grid.flatten(), snr_height, snr_corr_norm_avg).reshape(z_grid.shape)
+            snr_corr_avg_map = (snr_corr_norm_avg_map_db * snr_0 / 10)**10
+            
+            #full map of mean SNR
+            snr_avg_map = np.full(snr_corr_avg_map.shape, np.nan)
+            
+            #far range/high altitude
+            region1=(rng_grid > self.config["rng_min"]) & (z_grid > self.config["z_min"])
+            snr_avg_map[region1] = snr_corr_avg_map[region1] / rng_grid[region1]**2
+            
+            #short range/high altitude
+            region2=(rng_grid <= self.config["rng_min"]) & (z_grid > self.config["z_min"])
+            snr_avg_map[region2] = snr_corr_avg_map[region2] / self.config["rng_min"]**2
+            
+            #far range/short altitude
+            region3=(rng_grid > self.config["rng_min"]) & (z_grid <= self.config["z_min"])
+            snr_avg_map[region3] = (snr_0 / 10)**10 / rng_grid[region3]**2
+            
+            #short range/short altitude
+            region4=(rng_grid <= self.config["rng_min"]) & (z_grid <= self.config["z_min"])
+            snr_avg_map[region4] = (snr_0 / 10)**10 / self.config["rng_min"]**2
+            
+            snr_avg_map[snr_avg_map < self.config["snr_min"]] = self.config["snr_min"]
+            snr_avg_map_db = 10*np.log10(snr_avg_map)
+            snr_corr_avg_map = snr_avg_map * rng_grid**2
+        
+            # Assume that snr std is constant below the minimum height
+            # np.interp fills the values appropriately when beyond the limits
+            snr_corr_std_map_db = np.interp(z_grid.flatten(), snr_height, snr_corr_std).reshape(z_grid.shape)
+            snr_corr_std_map = (snr_corr_std_map_db/10)**10
+        
+            sampled_snr_corr = np.random.normal(snr_corr_avg_map, snr_corr_std_map)
+            sampled_snr = sampled_snr_corr / rng_grid**2
+            sampled_snr[sampled_snr < self.config["snr_min"]] = self.config["snr_min"]
+            sampled_snr_db = 10*np.log10(sampled_snr)
+        
+            if ele_grid is not None:
+                fig0, ax0 = plt.subplots(1, 1, constrained_layout=True, subplot_kw={'projection':'polar'})
+                fig0.set_size_inches([5, 5])
+        
+                vmin = -28
+                vmax = 0
+        
+                ax0.set_xlim([0, np.pi])
+                sm = ax0.pcolormesh(ele_grid, rng_grid, snr_avg_map_db, cmap="viridis", vmin=vmin, vmax=vmax, rasterized=True)
+                ax0.yaxis.set_major_locator(mpl.ticker.MaxNLocator(4))
+                fig0.colorbar(sm, label="SNR [dB]", shrink=0.4)
+        
+                fig1, ax1 = plt.subplots(1, 1, constrained_layout=True, subplot_kw={'projection':'polar'})
+                fig1.set_size_inches([5, 5])
+        
+                ax1.set_xlim([0, np.pi])
+                sm = ax1.pcolormesh(ele_grid, rng_grid, sampled_snr_db, cmap="viridis", vmin=vmin, vmax=vmax, rasterized=True)
+                ax1.yaxis.set_major_locator(mpl.ticker.MaxNLocator(4))
+                fig1.colorbar(sm, label="SNR [dB]", shrink=0.4)
+                return sampled_snr_db, fig0, ax0, fig1, ax1
+        
+            return sampled_snr_db
 
 
 # '''
