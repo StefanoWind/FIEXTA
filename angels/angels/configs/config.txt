@@ -1,0 +1,2 @@
+u_nyquist: 39 #[m/s] Nyquist velocity
+source_noise_std_table: C:\Users\sletizia\OneDrive - NREL\Desktop\Main\Software\FIEXTA\angels\angels\data\noise_std_table.csv #source of noise standard deviation table
