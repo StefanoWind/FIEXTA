@@ -8,7 +8,7 @@ setup(
     version="0.1.0",
     author="Stefano Letizia",
     author_email="stefano.letizia@nrel.gov",
-    description="A package for generating realistic LIDAR noise",
+    description="A package for generating realistic lidar noise",
     long_description=long_description,
     long_description_content_type="Advanced Noise Generator to Enchance Lidar Simulations (ANGELS).",
     url="https://github.com/NREL/fiexta/angels",

@@ -6,12 +6,12 @@ with open("README.md", "r", encoding="utf-8") as fh:
 setup(
     name="lidargo",
     version="0.1.1",
-    author="Nicholas Hamilton",
-    author_email="nicholas.hamilton@nrel.gov",
+    authors="Nicholas Hamilton, Stefano Letizia",
+    author_email="nicholas.hamilton@nrel.gov, stefano.letizia@nrel.gov",
     description="A package for LIDAR data processing and analysis",
     long_description=long_description,
-    long_description_content_type="LIDARGO (LIDAR General Operator): Standardization, quality control, and statistics of scanning lidar data.",
-    url="hhttps://github.com/nREL/fiexta/LIDARGO",
+    long_description_content_type="LiDARGO (LiDAR General Operator): Fromatting, standardization, quality control, and statistics of scanning lidar data.",
+    url="https://github.com/NREL/fiexta/lidargo",
     packages=find_packages(),
     classifiers=[
         "Development Status :: 3 - Alpha",
