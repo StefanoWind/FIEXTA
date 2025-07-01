@@ -10,13 +10,12 @@ import yaml
 import pandas as pd
 import matplotlib.pyplot as plt
 from scipy.interpolate import LinearNDInterpolator
-import matplotlib as mpl
-import matplotlib.pylab as pl
 from scipy.stats import truncnorm, uniform
-import cmasher as cmr
 from angels.utilities import get_logger, with_logging
 from typing import Optional
-
+import xarray as xr
+import warnings
+warnings.filterwarnings("ignore")
 
 class angels:
     def __init__(
@@ -45,6 +44,13 @@ class angels:
     @with_logging
     def generate_noise(self,m,n,cluster,snr_0,n_samples):
         
+        #
+        self.m=m
+        self.n=n
+        self.cluster=cluster
+        self.snr_0=snr_0
+        self.n_samples=n_samples
+        
         #load noise std table
         noise_std=pd.read_excel(self.config["source_noise_std"],sheet_name='snr_1')
         self.snr_1=pd.read_excel(self.config["source_noise_std"],sheet_name='snr_1').values[:,1:]
@@ -59,13 +65,29 @@ class angels:
         snr_height, snr_corr_norm_avg, snr_corr_std=self.read_snr_stats(cluster)
         
         #sampled SNR
-        sampled_snr_db,x_grid,y_grid,z_grid= self.sample_snr(snr_height, snr_corr_norm_avg, snr_corr_std, snr_0,n_samples)
+        sampled_snr_db,x_grid,y_grid,z_grid,rng_vec= self.sample_snr(snr_height, snr_corr_norm_avg, snr_corr_std, snr_0,n_samples)
         
         #generate noise
         sampled_noise = self.sample_noise(sampled_snr_db, noise_snr_db, noise_vel_std, self.config["u_nyquist"])
+        
+        fig_noise=self.visualizations(sampled_noise, sampled_snr_db, x_grid, y_grid, z_grid)
+        
+        #output
+        output=xr.Dataset()
+        output['rws_noise']=xr.DataArray(data=sampled_noise,coords={'range':rng_vec,'beamID':np.arange(len(self.azi)),'realization':np.arange(n_samples)},
+                                        attrs={'units':'m/s','description':'noise of radial wind speed'})
+        output['snr']=xr.DataArray(data=sampled_snr_db,coords={'range':rng_vec,'beamID':np.arange(len(self.azi)),'realization':np.arange(n_samples)},
+                                        attrs={'units':'dB','description':'signal-to-noise ratio'})
+        output.attrs["M"]=m
+        output.attrs["N"]=n
+        output.attrs["cluster"]=cluster
+        output.attrs["SNR_0"]=snr_0
+        for c in self.config:
+            output.attrs["config_"+c]=self.config[c]
+        output.attrs["contact"]='Coleman Moss (coleman.moss@utdallas.edu)'
+        output.attrs["description"]="Lidar noise simulated based on Moss, Letizia, Iungo 2025"
     
-        return sampled_noise, sampled_snr_db, x_grid, y_grid, z_grid
-
+        return output, fig_noise
 
     def generate_noise_curve(self, m, n, u_nyq, fig=False):
         '''
@@ -159,6 +181,8 @@ class angels:
             self.logger.log(f'Could not load scan geometry from {self.config["source_snr_stats"]}.')
             return None
         
+        self.azi=azi_vec
+        self.ele=ele_vec
         return azi_vec,ele_vec
         
     def sample_snr(self, snr_height,snr_corr_norm_avg,snr_corr_std, snr_0, n_samples):
@@ -216,7 +240,7 @@ class angels:
         sampled_snr[sampled_snr < self.config["snr_min"]] = self.config["snr_min"]
         sampled_snr_db = 10*np.log10(sampled_snr)
     
-        return sampled_snr_db,x_grid,y_grid,z_grid
+        return sampled_snr_db,x_grid,y_grid,z_grid,rng_vec
 
     def sample_noise(self,snr_grid_db, noise_snr_db, noise_vel_std,u_nyq):
         '''
@@ -247,7 +271,7 @@ class angels:
                     sampled_noise[i, j, k] = self.sample_from_joint_distribution(
                         normal_std[i, j, k], normal_weight[i, j, k], u_nyq
                     )
-            self.logger.log(f'Noise generation: {k}/{normal_std.shape[2]} scans done.')
+            self.logger.log(f'Noise generation: {k+1}/{normal_std.shape[2]} scans done.')
         return sampled_noise
     
     def sample_from_joint_distribution(self,normal_std, normal_weight, u_nyq):
@@ -265,4 +289,127 @@ class angels:
         joint_samp = np.interp(uni_samp, joint_cdf, x_points)
 
         return joint_samp
+    
+    def identify_scan_mode(self,azi,ele):
+        """
+        Identify the type of scan, which is useful for plotting
+        """
+        azimuth_variation = np.abs(np.nanmax(np.tan(azi)) - np.nanmin(np.tan(azi)))
+        elevation_variation = np.abs(np.nanmax(np.cos(ele)) - np.nanmin(np.cos(ele)))
 
+        if (elevation_variation < 0.25
+            and azimuth_variation < 0.25
+        ):
+            scan_mode= "Stare"
+        elif (
+            elevation_variation < 0.25
+            and azimuth_variation > 0.25
+        ):
+            scan_mode = "PPI"
+        elif (
+            elevation_variation > 0.25
+            and azimuth_variation < 0.25
+        ):
+            scan_mode = "RHI"
+        else:
+            scan_mode = "3D"
+        return scan_mode
+    
+    def visualizations(self,sampled_noise, sampled_snr_db, x_grid, y_grid, z_grid):
+        """
+        Visualization of SNR and noise
+        """
+        
+        scan_mode=self.identify_scan_mode(self.azi,self.ele)
+        
+        if scan_mode=='stare':
+            fig_noise = plt.figure(figsize=(12, 12))
+            ax=plt.subplot(2,1,1)
+            rng_vec = np.arange(self.config["rng_gate"], self.config["max_rng"]+self.config["rng_gate"], self.config["rng_gate"])
+            plt.pcolor(np.arange(self.n_samples),rng_vec,sampled_noise.squeeze(),vmin=-self.config["u_nyquist"],vmax=self.config["u_nyquist"],cmap='seismic')
+
+            plt.xlabel("Realization")
+            plt.ylabel("Range [m]")
+            plt.grid()
+            plt.title(f"M={self.m}, N={self.n}, cluster={self.cluster},"+r" SNR$_0$="+f"{self.snr_0} dB")
+            plt.colorbar(label="Radial wind speed noise [m s$^{-1}$]")
+            
+            ax=plt.subplot(2,1,2)
+            plt.pcolor(np.arange(self.n_samples),rng_vec,sampled_snr_db.squeeze(),vmin=-30,vmax=0,cmap='hot')
+
+            plt.xlabel("Realization")
+            plt.ylabel("Range [m]")
+            plt.grid()
+            plt.colorbar(label="SNR [dB]")
+            plt.tight_layout()
+            
+        elif scan_mode=='RHI':
+            fig_noise = plt.figure(figsize=(12, 12))
+            ax=plt.subplot(2,1,1)
+            plt.pcolor((x_grid**2+y_grid**2)**0.5*np.sign(np.cos(np.radians(self.ele))),z_grid,sampled_noise[:,:,0],vmin=-self.config["u_nyquist"],vmax=self.config["u_nyquist"],cmap='seismic')
+
+            ax.set_aspect("equal")
+            plt.xlabel("Horizontal dimension [m]")
+            plt.ylabel("Vertical dimension [m]")
+            plt.grid()
+            plt.title(f"M={self.m}, N={self.n}, cluster={self.cluster},"+r" SNR$_0$="+f"{self.snr_0} dB")
+            plt.colorbar(label="Radial wind speed noise [m s$^{-1}$]")
+            
+            ax=plt.subplot(2,1,2)
+            plt.pcolor((x_grid**2+y_grid**2)**0.5*np.sign(np.cos(np.radians(self.ele))),z_grid,sampled_snr_db[:,:,0],vmin=-30,vmax=0,cmap='hot')
+
+            ax.set_aspect("equal")
+            plt.xlabel("Horizontal dimension [m]")
+            plt.ylabel("Vertical dimension [m]")
+            plt.grid()
+            plt.colorbar(label="SNR [dB]")
+            plt.tight_layout()
+            
+        elif scan_mode=='PPI':
+            fig_noise = plt.figure(figsize=(12, 12))
+            ax=plt.subplot(2,1,1)
+            plt.pcolor(x_grid,y_grid,sampled_noise[:,:,0],vmin=-self.config["u_nyquist"],vmax=self.config["u_nyquist"],cmap='seismic')
+            ax.set_aspect("equal")
+            plt.xlabel("X dimension [m]")
+            plt.ylabel("Y dimension [m]")
+            plt.grid()
+            plt.title(f"M={self.m}, N={self.n}, cluster={self.cluster},"+r" SNR$_0$="+f"{self.snr_0} dB")
+            plt.colorbar(label="Radial wind speed noise [m s$^{-1}$]")
+            
+            ax=plt.subplot(2,1,2)
+            plt.pcolor(x_grid,y_grid,sampled_snr_db[:,:,0],vmin=-30,vmax=0,cmap='hot')
+            ax.set_aspect("equal")
+            plt.xlabel("X dimension [m]")
+            plt.ylabel("Y dimension [m]")
+            plt.grid()
+            plt.colorbar(label="SNR [dB]")
+            plt.tight_layout()
+            
+        elif scan_mode=='3D':
+            fig_noise = plt.figure(figsize=(12, 12))
+            ax = plt.subplot(2,1,1, projection="3d")
+            sc = ax.scatter(x_grid,y_grid,z_grid,s=2,c=sampled_noise[:,:,0],
+                 vmin=-self.config["u_nyquist"],vmax=self.config["u_nyquist"],cmap='seismic')
+
+            ax.set_aspect("equal")
+            ax.set_xlabel("X dimension [m]")
+            ax.set_ylabel("Y dimension [m]")
+            ax.set_zlabel("Vertical dimension [m]")
+            plt.grid()
+            plt.title(f"M={self.m}, N={self.n}, cluster={self.cluster},"+r" SNR$_0$="+f"{self.snr_0} dB")
+            plt.colorbar(sc,label="Radial wind speed noise [m s$^{-1}$]")
+            
+            ax = plt.subplot(2,1,2, projection="3d")
+            sc = ax.scatter(x_grid,y_grid,z_grid,s=2,c=sampled_snr_db[:,:,0],
+                 vmin=-30,vmax=0,cmap='hot')
+
+            ax.set_aspect("equal")
+            ax.set_xlabel("X dimension [m]")
+            ax.set_ylabel("Y dimension [m]")
+            ax.set_zlabel("Vertical dimension [m]")
+            plt.grid()
+            plt.title(f"M={self.m}, N={self.n}, cluster={self.cluster},"+r" SNR$_0$="+f"{self.snr_0} dB")
+            plt.colorbar(sc,label="SNR [dB]")
+            plt.tight_layout()
+            
+        return fig_noise
