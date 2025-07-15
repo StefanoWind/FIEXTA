@@ -177,16 +177,14 @@ class Standardize:
             )
 
         #rename variables
-        if ~np.isnan(self.config.rename_vars):
-            if len(self.config.rename_vars)>0:
-                self.inputData=self.inputData.rename(json.loads(self.config.rename_vars))
+        if isinstance(self.config.rename_vars, str):
+            self.inputData=self.inputData.rename(json.loads(self.config.rename_vars))
             
         #rename attributes
-        if ~np.isnan(self.config.rename_attrs):
-            if len(self.config.rename_attrs)>0:
-                for old_key, new_key in json.loads(self.config.rename_attrs).items():
-                    if old_key in self.inputData.attrs:
-                        self.inputData.attrs[new_key] = self.inputData.attrs.pop(old_key)
+        if isinstance(self.config.rename_vars, str):
+            for old_key, new_key in json.loads(self.config.rename_attrs).items():
+                if old_key in self.inputData.attrs:
+                    self.inputData.attrs[new_key] = self.inputData.attrs.pop(old_key)
             
         # Check data
         if not self.check_data():
@@ -222,6 +220,7 @@ class Standardize:
         """
         
         #wrap to 360
+        self.inputData["azimuth"]+= self.config.azimuth_offset
         self.inputData["azimuth"]=np.round(self.inputData["azimuth"]/(self.config.ang_tol/10))*self.config.ang_tol/10%360
         self.inputData["elevation"]=self.inputData["elevation"]%360
 
@@ -450,7 +449,7 @@ class Standardize:
             utilities.lidar_xyz(
                 self.outputData["range"],
                 self.outputData["elevation"],
-                self.outputData["azimuth"] + self.config.azimuth_offset,
+                self.outputData["azimuth"],
             )
         )
 
