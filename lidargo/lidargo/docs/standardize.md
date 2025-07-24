@@ -59,9 +59,9 @@ align: center
 ---
 Time history of the azimuth (top) and elevation (bottom) for a PPI scan before and after the pre-processing.
 ```
- ### Quality control
- The QC in LIDARGO combines static and dynamic quality flags to identify outliers in the radial wind speed (RWS) data due to low-signal-to-noise ratio (SNR), which typically happen in the far range, echo from hard target, or signal saturation (first $\sim$ 100 m). The outcome is the `qc_wind_speed` structure which stores QC flags, where 0 indicates good data and other values bad data based on several criteria. The QC process includes the following steps:
- 1. **Dataframe conversion**: the xarray structure is converted into a pandas dataframe to facilitate the subsequent processing. At this stage LIDARGO also defines Cartesian coordinates for all points, as shown in {numref}`fig-spherical` and according to the follwing relationship:
+### Quality control
+The QC in LIDARGO combines static and dynamic quality flags to identify outliers in the radial wind speed (RWS) data due to low-signal-to-noise ratio (SNR), which typically happen in the far range, echo from hard target, or signal saturation (first $\sim$ 100 m). The outcome is the `qc_wind_speed` structure which stores QC flags, where 0 indicates good data and other values bad data based on several criteria. The QC process includes the following steps:
+1. **Dataframe conversion**: the xarray structure is converted into a pandas dataframe to facilitate the subsequent processing. At this stage LIDARGO also defines Cartesian coordinates for all points, as shown in {numref}`fig-spherical` and according to the follwing relationship:
 ```{math}
 :label: eq-cartesian
 \begin{cases}

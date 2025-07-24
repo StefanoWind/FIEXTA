@@ -7,12 +7,12 @@ import json
 from scipy.optimize import curve_fit
 from typing import Union, Optional
 from dataclasses import asdict
-
+import matplotlib.pyplot as plt
 from lidargo import utilities
-from lidargo.utilities import get_logger, with_logging
+from lidargo.utilities import get_logger, with_logging, _load_configuration
 from lidargo import vis
 from lidargo.statistics import local_probability
-from lidargo.config import LidarConfig
+from lidargo.config import LidarConfigStand
 
 
 pd.set_option("future.no_silent_downcasting", True)
@@ -22,7 +22,7 @@ class Standardize:
     def __init__(
         self,
         source: str,
-        config: Union[str, dict, LidarConfig],
+        config: Union[str, dict, LidarConfigStand],
         verbose: bool = True,
         logger: Optional[object] = None,
         logfile=None,
@@ -44,9 +44,12 @@ class Standardize:
         )
 
         # Load configuration based on input type
-        self.config = self._load_configuration(config)
+        self.config,exit_flag = _load_configuration(config,self.source,'standardize')
+        self.logger.log(exit_flag)
         if self.config is None:
             return
+        else:
+            LidarConfigStand.validate(self.config)
 
         # Load input data
         try:
@@ -56,88 +59,19 @@ class Standardize:
             return
 
     @with_logging
-    def _load_configuration(
-        self, config: Union[str, dict, LidarConfig]
-    ) -> Optional[LidarConfig]:
-        """
-        Load configuration from either a file path, dictionary, or LidarConfig object.
-
-        Args:
-            config (str, dict, or LidarConfig): Configuration source
-
-        Returns:
-            LidarConfig or None: Configuration parameters or None if loading fails
-        """
-        try:
-            if isinstance(config, LidarConfig):
-                return config
-            elif isinstance(config, str):
-                return self._load_config_from_file(config)
-            elif isinstance(config, dict):
-                return LidarConfig(**config)
-            else:
-                self.logger.log(
-                    f"Invalid config type. Expected str, dict, or LidarConfig, got {type(config)}"
-                )
-                return None
-        except Exception as e:
-            self.logger.log(f"Error loading configuration: {str(e)}")
-            return None
-
-    @with_logging
-    def _load_config_from_file(self, config_file: str) -> Optional[LidarConfig]:
-        """
-        Load configuration from an Excel file.
-
-        Args:
-            config_file (str): Path to Excel configuration file
-
-        Returns:
-            LidarConfig or None: Configuration parameters or None if loading fails
-        """
-        configs = pd.read_excel(config_file).set_index("PARAMETER")
-        date_source = np.int64(re.search(r"\d{8}.\d{6}", self.source).group(0)[:8])
-
-        matches = []
-        for regex in configs.columns:
-            match = re.findall(regex, self.source)
-            sdate = configs[regex]["start_date"]
-            edate = configs[regex]["end_date"]
-            if len(match) > 0 and sdate <= date_source <= edate:
-                matches.append(regex)
-
-        if not matches:
-            self.logger.log("No regular expression matching the file name")
-            return None
-        elif len(matches) > 1:
-            self.logger.log("Multiple regular expressions matching the file name")
-            return None
-
-        config_dict = configs[matches[0]].to_dict()
-        try:
-            return LidarConfig(**config_dict)
-        except Exception as e:
-            self.logger.log(f"Error validating configuration: {str(e)}")
-            return None
-
-    @with_logging
     def check_data(self):
         """
         Check input data for consistency
         """
 
         # Check distance (range) array.
-        if "range_gate" in self.inputData.coords:
-            if "overlapping" in self.inputData.attrs["Scan type"]:
-                distance = np.unique(self.inputData["distance_overlapped"])
-            else:
-                distance = np.unique(self.inputData["distance"])
-            distance = distance[~np.isnan(distance)]
-            if len(distance) == 0:
-                self.logger.log(
-                    f"WARNING: All distance values are invalid on {os.path.basename(self.source)}, skipping it"
-                )
-                return False
+        distance = np.unique(self.inputData[self.config.range_name])
+        distance = distance[~np.isnan(distance)]
+        if len(distance) == 0:
+            self.logger.log(
+                f"WARNING: All distance values are invalid on {os.path.basename(self.source)}, skipping it"
+            )
+            return False
 
         # Check for valid radial wind speed values
         if (
@@ -169,8 +103,26 @@ class Standardize:
             )
             return False
 
+        #Add null picth, roll if missing
+        if "pitch" not in self.inputData.data_vars:
+            self.inputData["pitch"]=xr.DataArray(data=np.zeros(len(self.inputData.time))-9999,
+                                        coords={'time':self.inputData.time.values},
+                                        attrs={"units":"degrees","description":"Pitch angle of the lidar"})
+            self.logger.log(
+                "WARNING: Picth not found, adding dummy variable."
+            )    
+        if "roll" not in self.inputData.data_vars:
+            self.inputData["roll"]=xr.DataArray(data=np.zeros(len(self.inputData.time))-9999,
+                                        coords={'time':self.inputData.time.values},
+                                        attrs={"units":"degrees","description":"Roll angle of the lidar"})
+            self.logger.log(
+                "WARNING: Roll not found, adding dummy variable."
+            )
+        
         return True
-
+    
+        
+        
     @with_logging
     def process_scan(
         self,  save_file=True, save_path=None, replace=True,make_figures=True,save_figures=True
@@ -203,17 +155,16 @@ class Standardize:
 
         # Compose filename
         save_filename = (
-            ("." + self.config.data_level_out + ".")
-            .join(self.source.split("." + self.config.data_level_in + "."))
-            .replace(".nc", "." + self.config.project + "." + self.config.name + ".nc")
+            ("." + self.config.data_level_out)
+            .join(self.source.split("." + self.config.data_level_in))
+            .replace(self.source.split(".")[-1], self.config.name + ".nc")
         )
         if save_path is not None:
             save_filename = os.path.join(save_path, os.path.basename(save_filename))
 
+        os.makedirs(os.path.dirname(save_filename),exist_ok=True)
+        
         self.save_filename = save_filename
-
-        if os.path.exists(os.path.dirname(save_filename)) == False:
-            os.makedirs(os.path.dirname(save_filename))
 
         if save_file and not replace and os.path.isfile(save_filename):
             self.logger.log(
@@ -226,8 +177,14 @@ class Standardize:
             )
 
         #rename variables
-        if len(self.config.rename_vars)>0:
+        if isinstance(self.config.rename_vars, str):
             self.inputData=self.inputData.rename(json.loads(self.config.rename_vars))
+            
+        #rename attributes
+        if isinstance(self.config.rename_vars, str):
+            for old_key, new_key in json.loads(self.config.rename_attrs).items():
+                if old_key in self.inputData.attrs:
+                    self.inputData.attrs[new_key] = self.inputData.attrs.pop(old_key)
             
         # Check data
         if not self.check_data():
@@ -261,6 +218,11 @@ class Standardize:
         Reject fast scanning head repositioning, identified based on the azimuth and elevation step thresholds.
 
         """
+        
+        #wrap to 360
+        self.inputData["azimuth"]+= self.config.azimuth_offset
+        self.inputData["azimuth"]=np.round(self.inputData["azimuth"]/(self.config.ang_tol/10))*self.config.ang_tol/10%360
+        self.inputData["elevation"]=self.inputData["elevation"]%360
 
         # Angular difference (forward difference)
         diff_azi_fw = self.inputData["azimuth"].diff(dim="time", label="lower")
@@ -331,9 +293,7 @@ class Standardize:
         from scipy import stats
 
         llimit_azi = (
-            utilities.floor(self.outputData.azimuth.min(), self.config.ang_tol)
-            - self.config.ang_tol / 2
-        )
+            utilities.floor(self.outputData.azimuth.min(), self.config.ang_tol))
         ulimit_azi = (
             utilities.ceil(self.outputData.azimuth.max(), self.config.ang_tol)
             + self.config.ang_tol
@@ -341,9 +301,7 @@ class Standardize:
         azi_bins = np.arange(llimit_azi, ulimit_azi, self.config.ang_tol)
 
         llimit_ele = (
-            utilities.floor(self.outputData.elevation.min(), self.config.ang_tol)
-            - self.config.ang_tol / 2
-        )
+            utilities.floor(self.outputData.elevation.min(), self.config.ang_tol))
         ulimit_ele = (
             utilities.ceil(self.outputData.elevation.max(), self.config.ang_tol)
             + self.config.ang_tol
@@ -392,8 +350,8 @@ class Standardize:
             mindiff[mindiff > self.config.ang_tol] = np.nan
             minind = np.argmin(diff_ang, axis=1)
 
-            self.outputData["azimuth"].values = azimuth_bin_centers[minind]
-            self.outputData["elevation"].values = elevation_bin_centers[minind]
+            self.outputData["azimuth"].values = azimuth_bin_centers[minind]%360
+            self.outputData["elevation"].values = elevation_bin_centers[minind]%360
 
             self.outputData = self.outputData.where(~np.isnan(mindiff))
             self.azimuth_regularized = self.outputData["azimuth"].copy()
@@ -471,6 +429,8 @@ class Standardize:
         """
 
         # Add SNR floor
+        if "SNR" not in self.outputData.data_vars:
+            self.outputData["SNR"]=np.log10(self.outputData["intensity"]-1)*10
         self.outputData["SNR"] = self.outputData["SNR"].fillna(self.config.snr_min - 1)
 
         # Add time in seconds from start of the scan
@@ -480,11 +440,7 @@ class Standardize:
         self.outputData["deltaTime"] = tnum - tnum.min()
 
         # Swap range index with physical range
-        if "overlapping" in self.inputData.attrs["Scan type"]:
-            distance = np.unique(self.outputData.distance_overlapped)
-        else:
-            distance = np.unique(self.outputData.distance)
-        distance = distance[~np.isnan(distance)]
+        distance = np.unique(self.outputData[self.config.range_name])
         self.outputData = self.outputData.rename({"range_gate": "range"})
         self.outputData = self.outputData.assign_coords({"range": distance})
 
@@ -493,7 +449,7 @@ class Standardize:
             utilities.lidar_xyz(
                 self.outputData["range"],
                 self.outputData["elevation"],
-                self.outputData["azimuth"] + self.config.azimuth_offset,
+                self.outputData["azimuth"],
             )
         )
 
@@ -613,7 +569,11 @@ class Standardize:
 
         # Single-parameter Gaussian fit
         H_x = np.array([x.mid for x in H.index])
-        sigma = curve_fit(utilities.gaussian, H_x, H, p0=[0.1], bounds=[0, 1])[0][0]
+        try:
+            sigma = curve_fit(utilities.gaussian, H_x, H, p0=[0.1], bounds=[0, 1])[0][0]
+        except:
+            self.logger.log("Resonance detection failed, assuming no resonance")
+            return 0
 
         # Check Gaussiainity and possibly calculate rws_min
         rmse = np.nanmean((utilities.gaussian(H_x, sigma) - H) ** 2) ** 0.5
@@ -895,11 +855,19 @@ class Standardize:
         )
 
         if save_figures:
-            if wsqc_fig is not None: wsqc_fig.savefig(self.save_filename.replace(".nc", ".probability." + filetype))
-            if scanqc_fig is not None: scanqc_fig.savefig(self.save_filename.replace(".nc", ".qcscan." + filetype))
-            if angscat_fig is not None: angscat_fig.savefig(self.save_filename.replace(".nc", ".angScatter." + filetype))
-            if anghist_fig is not None: anghist_fig.savefig(self.save_filename.replace(".nc", ".angHist." + filetype))
-
+            if wsqc_fig is not None: 
+                wsqc_fig.savefig(self.save_filename.replace(self.save_filename.split('.')[-1], "probability." + filetype))
+                plt.close(wsqc_fig)
+            if scanqc_fig is not None: 
+                scanqc_fig.savefig(self.save_filename.replace(self.save_filename.split('.')[-1], "qcscan." + filetype))
+                plt.close(scanqc_fig)
+            if angscat_fig is not None:
+                angscat_fig.savefig(self.save_filename.replace(self.save_filename.split('.')[-1], "angScatter." + filetype))
+                plt.close(angscat_fig)
+            if anghist_fig is not None:
+                anghist_fig.savefig(self.save_filename.replace(self.save_filename.split('.')[-1], "angHist." + filetype))
+                plt.close(anghist_fig)
+                
 if __name__ == "__main__":
     """
     Test block

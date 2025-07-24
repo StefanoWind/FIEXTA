@@ -4,14 +4,14 @@ with open("README.md", "r", encoding="utf-8") as fh:
     long_description = fh.read()
 
 setup(
-    name="lidargo",
-    version="0.1.1",
-    author="Nicholas Hamilton",
-    author_email="nicholas.hamilton@nrel.gov",
-    description="A package for LIDAR data processing and analysis",
+    name="angels",
+    version="0.1.0",
+    author="Stefano Letizia",
+    author_email="stefano.letizia@nrel.gov",
+    description="A package for generating realistic lidar noise",
     long_description=long_description,
-    long_description_content_type="LIDARGO (LIDAR General Operator): Standardization, quality control, and statistics of scanning lidar data.",
-    url="hhttps://github.com/nREL/fiexta/LIDARGO",
+    long_description_content_type="Advanced Noise Generator to Enchance Lidar Simulations (ANGELS).",
+    url="https://github.com/NREL/fiexta/angels",
     packages=find_packages(),
     classifiers=[
         "Development Status :: 3 - Alpha",
@@ -20,7 +20,7 @@ setup(
         "Programming Language :: Python :: 3.8",
         "Programming Language :: Python :: 3.9",
         "Programming Language :: Python :: 3.10",
-        "License :: OSI Approved :: MIT License",
+        "License :: OSI Approved :: GNU Affero GPL v3.0 License",
         "Operating System :: OS Independent",
         "Topic :: Scientific/Engineering",
     ],
