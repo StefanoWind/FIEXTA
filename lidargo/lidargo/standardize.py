@@ -299,6 +299,8 @@ class Standardize:
             + self.config.ang_tol
         )
         azi_bins = np.arange(llimit_azi, ulimit_azi, self.config.ang_tol)
+        if len(azi_bins)==1:
+            azi_bins=np.array([azi_bins[0]-self.config.ang_tol/2,azi_bins[0]+self.config.ang_tol/2])
 
         llimit_ele = (
             utilities.floor(self.outputData.elevation.min(), self.config.ang_tol))
@@ -307,6 +309,8 @@ class Standardize:
             + self.config.ang_tol
         )
         ele_bins = np.arange(llimit_ele, ulimit_ele, self.config.ang_tol)
+        if len(ele_bins)==1:
+            ele_bins=np.array([ele_bins[0]-self.config.ang_tol/2,ele_bins[0]+self.config.ang_tol/2])
 
         E, A = np.meshgrid(utilities.mid(ele_bins), utilities.mid(azi_bins))
         counts = stats.binned_statistic_2d(
