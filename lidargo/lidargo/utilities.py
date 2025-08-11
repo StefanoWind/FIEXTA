@@ -330,6 +330,7 @@ def add_qc_attrs(ds, qcAttrDict: dict):
     global_attrs = {
         "data_level": qcAttrDict["data_level"],
         "datastream": os.path.basename(qcAttrDict["datastream"]),
+        "input_source": os.path.basename(qcAttrDict["input_source"]),
         "contact": "stefano.letizia@nrel.gov",
         "institution": "NREL",
         "description": "Halo XR/XR+ Lidar standardized and quality-controlled data",

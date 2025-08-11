@@ -547,7 +547,7 @@ def titleGenerator(ds, inputString: str = None, components=["location", "date"])
     componentDict = {
         "date": f"on {ds.time.dt.strftime('%Y-%m-%d').values.flatten()[0]}",
         "location": f"at {ds.attrs['location_id']}",
-        "file": f"\nFile: {ds.attrs['datastream']}",
+        "file": f"\nFile: {ds.attrs['input_source']}",
     }
 
     title = [inputString] + [componentDict[comp] for comp in components]

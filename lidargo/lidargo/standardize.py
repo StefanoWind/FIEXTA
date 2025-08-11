@@ -841,9 +841,9 @@ class Standardize:
             "qc_flag": self.qc_flag,
             "processConfig": asdict(self.config),
             "data_level": self.config.data_level_out,
+            "input_source": os.path.basename(self.source),
             "datastream": self.save_filename,
-            "qc_probability_threshold": self.qc_probability_threshold,
-            "qc_rws_range": [b.mid for b in self.qc_rws_range.index],
+            "qc_probability_threshold": self.qc_probability_threshold
         }
         self.outputData = utilities.add_qc_attrs(self.outputData, qcAttrDict)
 
