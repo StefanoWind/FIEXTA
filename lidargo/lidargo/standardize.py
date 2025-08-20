@@ -444,7 +444,7 @@ class Standardize:
         self.outputData["deltaTime"] = tnum - tnum.min()
 
         # Swap range index with physical range
-        distance = np.unique(self.outputData[self.config.range_name])
+        distance = np.unique(self.inputData[self.config.range_name])
         self.outputData = self.outputData.rename({"range_gate": "range"})
         self.outputData = self.outputData.assign_coords({"range": distance})
 
