@@ -353,13 +353,26 @@ class Standardize:
             )
             mindiff[mindiff > self.config.ang_tol] = np.nan
             minind = np.argmin(diff_ang, axis=1)
-
+            
             self.outputData["azimuth"].values = azimuth_bin_centers[minind]%360
             self.outputData["elevation"].values = elevation_bin_centers[minind]%360
-
+            
             self.outputData = self.outputData.where(~np.isnan(mindiff))
             self.azimuth_regularized = self.outputData["azimuth"].copy()
             self.elevation_regularized = self.outputData["elevation"].copy()
+            
+            #recount and discard low occurences
+            recounts=np.zeros(len(self.outputData["azimuth"].values))
+            ctr=0
+            for a, e in zip(self.azimuth_detected, self.elevation_detected):
+                sel = (self.outputData.azimuth.values == a)*(self.outputData.elevation.values == e)
+                recounts[sel]=np.sum(sel)
+                ctr += 1
+            
+            recounts_condition = xr.DataArray(recounts/recounts.max() > self.config.count_threshold,
+                                              coords={'time':self.outputData.time})
+
+            self.outputData = self.outputData.where(recounts_condition)
 
             self.logger.log(
                 f"Relevant angles detection: {np.round(np.sum(~np.isnan(self.azimuth_regularized.values+self.elevation_regularized.values))/len(self.inputData.azimuth)*100,2)}% retained"
@@ -750,10 +763,10 @@ class Standardize:
             sel = (self.outputData.azimuth.values == a) * (
                 self.outputData.elevation.values == e
             )
-            deltaTime_median[ctr] = np.nanmedian(self.outputData.deltaTime[sel])
-            deltaTime_regularized[sel] = np.nanmedian(self.outputData.deltaTime[sel])
+            deltaTime_median[ctr] = np.nanmean(self.outputData.deltaTime[sel])
+            deltaTime_regularized[sel] = np.nanmean(self.outputData.deltaTime[sel])
             ctr += 1
-
+        
         sort_angles = np.argsort(deltaTime_median[~np.isnan(deltaTime_median)])
         beamID = np.zeros(len(deltaTime_regularized)) + np.nan
         beamID[~np.isnan(deltaTime_regularized)] = np.where(
