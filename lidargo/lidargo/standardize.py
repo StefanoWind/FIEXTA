@@ -312,19 +312,44 @@ class Standardize:
         if len(ele_bins)==1:
             ele_bins=np.array([ele_bins[0]-self.config.ang_tol/2,ele_bins[0]+self.config.ang_tol/2])
 
-        E, A = np.meshgrid(utilities.mid(ele_bins), utilities.mid(azi_bins))
-        counts = stats.binned_statistic_2d(
-            self.outputData.azimuth,
-            self.outputData.elevation,
-            None,
-            "count",
-            bins=[azi_bins, ele_bins],
-        )[0]
+    
+        #2D hisotgram of angles
+        counts = stats.binned_statistic_2d(self.outputData.azimuth,self.outputData.elevation,
+            None,"count", bins=[azi_bins, ele_bins])[0]
         counts_condition = counts / counts.max() > self.config.count_threshold
+        
+        azi_avg = stats.binned_statistic_2d(self.outputData.azimuth,self.outputData.elevation,
+            self.outputData.azimuth,"median", bins=[azi_bins, ele_bins])[0]
+        ele_avg = stats.binned_statistic_2d(self.outputData.azimuth,self.outputData.elevation,
+            self.outputData.elevation,"median", bins=[azi_bins, ele_bins])[0]
+        
+        azi=azi_avg[counts_condition]
+        ele=ele_avg[counts_condition]
 
-        self.counts = counts[counts_condition]
-        self.azimuth_detected = A[counts_condition]
-        self.elevation_detected = E[counts_condition]
+        #condensate adjacent angles
+        diff_ang = (np.abs(azi[:, None] - azi[None, :]) ** 2
+                  + np.abs(ele[:, None] - ele[None, :]) ** 2) ** 0.5
+        diff_ang[(diff_ang==0)+np.isnan(diff_ang)]=360
+        minind1=np.arange(len(azi))
+        minind2=np.argmin(diff_ang,axis=1) 
+        mindiff=np.nanmin(diff_ang,axis=1) 
+        adjacent_condition=mindiff<self.config.ang_tol
+        
+        azi_cond=azi.copy()
+        azi_cond[adjacent_condition]=(azi[minind1[adjacent_condition]]+azi[minind2[adjacent_condition]])/2
+        
+        ele_cond=ele.copy()
+        ele_cond[adjacent_condition]=(ele[minind1[adjacent_condition]]+ele[minind2[adjacent_condition]])/2
+        
+        counts_cond=counts[counts_condition]
+        counts_cond[adjacent_condition]=counts_cond[minind1[adjacent_condition]]+counts_cond[minind2[adjacent_condition]]
+        
+        pairs = np.column_stack((azi_cond, ele_cond))           
+        uniq_pairs, uniind = np.unique(pairs, axis=0, return_index=True)
+        
+        self.counts = counts_cond[uniind]
+        self.azimuth_detected = azi_cond[uniind]
+        self.elevation_detected = ele_cond[uniind]
 
     @with_logging
     def update_angles_to_nominal(self):
@@ -748,7 +773,8 @@ class Standardize:
             "scan_start_time"
         ].ffill(dim="time")
         self.outputData = self.outputData.where(self.outputData["scanID"] >= 0)
-
+    
+    @with_logging
     def calculate_beam_number(self):
         """
         Calculate the beam number based on how long after each scan start an angular position occurs on average
