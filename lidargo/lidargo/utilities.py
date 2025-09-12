@@ -71,7 +71,7 @@ def lidar_xyz(r, ele, azi):
 def dropDuplicatedCoords(ds, varsToClean=["x", "y", "z"]):
     """drop duplicated Cartesian coordinate info"""
     dupcoord = []
-    for coord in ds.x.coords:
+    for coord in ds.coords:
         tmp = ds.x.std(dim=coord).mean()
         if tmp < 1e-10:
             dupcoord.append(coord)
