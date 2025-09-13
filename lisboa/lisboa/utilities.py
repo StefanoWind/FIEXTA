@@ -3,10 +3,10 @@
 LiSBOA utilities
 """
 from typing import Optional, Union
-from logger import SingletonLogger
+from lisboa.logger import SingletonLogger
 import numpy as np
 from functools import wraps
-from config import LisboaConfig
+from lisboa.config import LisboaConfig
 
 def get_logger(
         name: str = None, verbose: bool = True, logger: Optional[object] = None, filename=None

@@ -8,7 +8,7 @@ from typing import Union, Optional
 from scipy.interpolate import interpn
 import itertools
 import numpy as np
-from utilities import mid, get_logger, with_logging, _load_configuration
+from lisboa.utilities import mid, get_logger, with_logging, _load_configuration
 from lisboa.config import LisboaConfig
 
 class statistics:
@@ -32,13 +32,20 @@ class statistics:
     @with_logging    
     def calculate_weights(
             self,
-            x_exp: list):
+            x_exp: list,
+            f=None):
         
         #reject non valid points
         n=len(self.config.Dn0) 
-        real=~np.isnan(np.sum(np.array(x_exp),axis=0))
+        if f is None:
+            real=~np.isnan(np.sum(np.array(x_exp),axis=0))
+        else:
+            real=~np.isnan(np.sum(np.array(x_exp),axis=0)+f)
+            
         for j in range(n):
             x_exp[j]=x_exp[j][real]
+
+        f=f[real]
         
         #initialize variables
         Dn0=np.array(self.config.Dn0)   
@@ -126,13 +133,13 @@ class statistics:
                     edge[i_inf]=True
         Dd[edge]=10**9
 
-        return grid,Dd,w,sel,x_exp
+        return grid,Dd,w,sel,x_exp,f
         
     def calculate_statistics(self,
                             x_exp: list,
                             f=None):
         
-        grid,Dd,w,sel,x_exp=self.calculate_weights(x_exp)
+        grid,Dd,w,sel,x_exp,f=self.calculate_weights(x_exp,f)
         
         #zeroing
         WM=np.zeros(np.shape(Dd))+np.nan
