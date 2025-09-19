@@ -45,7 +45,6 @@ class LisboaConfig:
             
     def _validate_Dn0(self, Dn0: list) -> None:
         """Validate Dn0"""
-        
         for d in Dn0:
             if d<=0:
                 raise ValueError(f"Every element of Dn0 must be positive (one value is {d})")
@@ -67,7 +66,7 @@ class LisboaConfig:
             
     def _validate_max_iter(self, max_iter: int) -> None:
         """Validate tol_dist model."""
-        if max_iter<=0:
+        if max_iter<=0 or max_iter!=int(max_iter):
             raise ValueError(f"max_iter must be a positive interger (given value is {max_iter})")
         
 
@@ -83,3 +82,4 @@ class LisboaConfig:
         self._validate_tol_dist(self.tol_dist)
         self._validate_grid_factor(self.grid_factor)
         self._validate_max_Dd(self.max_Dd)
+        self._validate_max_iter(self.max_iter)
