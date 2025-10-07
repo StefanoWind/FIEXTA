@@ -20,6 +20,8 @@ def scan_file_compiler(mode: str,
                        ppr: int=0,
                        S_azi: float=36,
                        S_ele: float=72,
+                       A_azi: float=50,
+                       A_ele: float=50,
                        config: dict={},
                        kinematic_file: str=''):
     
@@ -36,7 +38,7 @@ def scan_file_compiler(mode: str,
     else:
         vol_flag=''
         
-    if mode=='SSM':
+    if mode=='ssm':
         if isinstance(azi, np.ndarray):
             L=''
             for a,e in zip(azi[:-1],ele[:-1]):
@@ -44,7 +46,7 @@ def scan_file_compiler(mode: str,
         else:
             L='%07.3f' % azi+ '%07.3f' % ele +'\n'
     
-    if mode =='CSM':
+    if mode =='csm':
         if type(azi).__name__!= 'ndarray':
             if type(azi).__name__!='list':
                 azi=[azi]
@@ -53,8 +55,8 @@ def scan_file_compiler(mode: str,
             if type(ele).__name__!='list':
                 ele=[ele]
             ele=np.array(ele)
-        azi=np.append(azi,azi[0])
-        ele=np.append(ele,ele[0])
+        # azi=np.append(azi,azi[0])
+        # ele=np.append(ele,ele[0])
         if kinematic_file=='':
             ppd1=config['ppd_azi'][lidar_id]#points per degree in azimuth motor
             ppd2=config['ppd_ele'][lidar_id]#points per degree in elevation motor
@@ -66,22 +68,22 @@ def scan_file_compiler(mode: str,
             azi_range=azi[stop]
             P1=-azi_range*ppd1
             S1=S_azi*ppd1/10+np.zeros(len(P1))
-            A1=config['max_A_azi'][lidar_id]+np.zeros(len(P1))
+            A1=A_azi+np.zeros(len(P1))
             a1=A1*1000/ppd1
             
             ele_range=ele[stop]
             P2=-ele_range*ppd2
-            S2=S_ele*ppd1/10+np.zeros(len(P1))
-            A2=config['max_A_ele'][lidar_id]+np.zeros(len(P2))
-            a2=A2*1000/ppd1
+            S2=S_ele*ppd2/10+np.zeros(len(P2))
+            A2=A_ele+np.zeros(len(P2))
+            a2=A2*1000/ppd2
         L=''
-        for p1,p2,s1,s2,a1,a2 in zip(P1[:-1],P2[:-1],S1[:-1],S2[:-1],A1[:-1],A2[:-1]):
+        for p1,p2,s1,s2,a1,a2 in zip(P1,P2,S1,S2,A1,A2):
             
             l='A.1=%.0f'%a1+',S.1=%.0f'%s1+',P.1=%.0f'%p1+'*A.2=%.0f'%a2+',S.2=%.0f'%s2+',P.2=%.0f'%p2+'\nW=0\n'
             L+=l
         
     os.makedirs(save_path,exist_ok=True)
-    save_name=f'{identifier}.{mode}.{vol_flag}.txt'
+    save_name=f'{identifier}.{mode}.{vol_flag}txt'
     with open(os.path.join(save_path,save_name),'w') as fid:
         fid.write(L*repeats)
         fid.close()
