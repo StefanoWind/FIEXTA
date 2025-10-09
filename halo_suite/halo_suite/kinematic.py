@@ -17,6 +17,8 @@ plt.close('all')
 path_config=os.path.join(cd,'configs/config.yaml')
 lidar_id=input('Lidar ID: ')
 mode=input('Mode (SSM or CSM): ').lower()
+if mode=='csm':
+    ppr_test=int(input('PPR for motion test: '))
 
 #%% Initialization
 #configs
@@ -98,12 +100,14 @@ if len(files)==0:
             config_csm[c]=config[c][lidar_id]
         config_csm['T_d']=dt_d
         config_csm['T_dppr']=dt_dppr
-        scan_file_compiler(mode=mode,azi=azi,ele=ele,repeats=1,identifier='motion',
+        scan_file_compiler(mode=mode,azi=azi,ele=ele,repeats=1,identifier=f'motion.{ppr_test}',ppr=ppr_test,
                            config=config_csm,lidar_id=lidar_id)
     print(f'File for motion test saved. Run it on the lidar with different PPRs. Save data in ./data/{lidar_id}/kinematic/motion/{mode}')
 else:
     for f in files:
         tnum,azi,ele,Nr,dr,ppr=read_hpl(f,lidar_id,config)
+        if ppr!=ppr_test:
+            continue
         azi=np.round(azi/config['ang_tol'])*config['ang_tol']%360
         ele=np.round(ele/config['ang_tol'])*config['ang_tol']%360
         T=tnum-tnum[0]
@@ -111,62 +115,96 @@ else:
         dazi=((azi[1:] - azi[:-1] + 180) % 360) - 180
         dele=((ele[1:] - ele[:-1] + 180) % 360) - 180
         
-        #fit kinematic model
-        V, cov = curve_fit(kinematic_model,dazi[dazi>0.01],dt_m[dazi>0.01]-dt_d-dt_dppr*ppr)
-        S_azi=np.round(V[0],1)
-        A_azi=np.round(V[1],1)
-        
-        V, cov = curve_fit(kinematic_model,dele[dele>0.01],dt_m[dele>0.01]-dt_d-dt_dppr*ppr)
-        S_ele=np.round(V[0],1)
-        A_ele=np.round(V[1],1)
-        
-        #plot
-        plt.figure(figsize=(16,8))
-        dazi_plot=np.arange(0,np.nanmax(dazi),0.1)
-        dele_plot=np.arange(0,np.nanmax(dele),0.1)
-        ax=plt.subplot(2,1,1)
-        plt.plot(dazi[dazi>0.01],dt_m[dazi>0.01]-dt_d-dt_dppr*ppr,'.k',alpha=0.5,label='PPI data')
-        plt.plot(dazi_plot,kinematic_model(dazi_plot,S_azi, A_azi),'-r',
-                 label=r'$\dot{\alpha}_{max}='+str(S_azi)+r'^\circ s^{-1}$'+'\n'+r'$\ddot{\alpha}='+str(A_azi)+r'^\circ s^{-2}$')
-        plt.xlabel(r'$\Delta \alpha$ [$^\circ$]')
-        plt.ylabel(r'$\Delta t_m$ [s]')
-        plt.legend()
-        plt.grid()
-        
-        plt.title(f'PPR={ppr}, mode={mode}, file: {os.path.basename(f)}')
-        ax=plt.subplot(2,1,2)
-        plt.plot(dele[dele>0.01],dt_m[dele>0.01]-dt_d-dt_dppr*ppr,'.k',alpha=0.5,label='RHI data')
-        plt.plot(dele_plot,kinematic_model(dele_plot,S_ele, A_ele),'-r',
-                 label=r'$\dot{\beta}_{max}='+str(S_ele)+r'^\circ s^{-1}$'+'\n'+r'$\ddot{\beta}='+str(A_ele)+r'^\circ s^{-2}$')
-        plt.xlabel(r'$\Delta \beta$ [$^\circ$]')
-        plt.ylabel(r'$\Delta t_m$ [s]')
-        plt.legend()
-        plt.grid()
-        
-        
-        #simulate scanning head
-        halo_sim=hls.halo_simulator(config={'processing_time':dt_d,
-                      'acquisition_time':dt_dppr,
-                      'max_S_azi':S_azi,
-                      'max_A_azi':A_azi,
-                      'max_S_ele':S_ele,
-                      'max_A_ele':A_ele})
-        
-        T2,t2,azi2,ele2=halo_sim.scanning_head_sim(mode='ssm',ppr=ppr,azi=azi,ele=ele)
-    
+        if mode=='ssm':
+            #fit kinematic model
+            V, cov = curve_fit(kinematic_model,dazi[dazi>0.01],dt_m[dazi>0.01]-dt_d-dt_dppr*ppr)
+            S_azi=np.round(V[0],1)
+            A_azi=np.round(V[1],1)
+            
+            V, cov = curve_fit(kinematic_model,dele[dele>0.01],dt_m[dele>0.01]-dt_d-dt_dppr*ppr)
+            S_ele=np.round(V[0],1)
+            A_ele=np.round(V[1],1)
+            
+            #plot
+            plt.figure(figsize=(16,8))
+            dazi_plot=np.arange(0,np.nanmax(dazi),0.1)
+            dele_plot=np.arange(0,np.nanmax(dele),0.1)
+            ax=plt.subplot(2,1,1)
+            plt.plot(dazi[dazi>0.01],dt_m[dazi>0.01]-dt_d-dt_dppr*ppr,'.k',alpha=0.5,label='PPI data')
+            plt.plot(dazi_plot,kinematic_model(dazi_plot,S_azi, A_azi),'-r',
+                     label=r'$\dot{\alpha}_{max}='+str(S_azi)+r'^\circ s^{-1}$'+'\n'+r'$\ddot{\alpha}='+str(A_azi)+r'^\circ s^{-2}$')
+            plt.xlabel(r'$\Delta \alpha$ [$^\circ$]')
+            plt.ylabel(r'$\Delta t_m$ [s]')
+            plt.legend()
+            plt.grid()
+            
+            plt.title(f'PPR={ppr}, mode={mode}, file: {os.path.basename(f)}')
+            ax=plt.subplot(2,1,2)
+            plt.plot(dele[dele>0.01],dt_m[dele>0.01]-dt_d-dt_dppr*ppr,'.k',alpha=0.5,label='RHI data')
+            plt.plot(dele_plot,kinematic_model(dele_plot,S_ele, A_ele),'-r',
+                     label=r'$\dot{\beta}_{max}='+str(S_ele)+r'^\circ s^{-1}$'+'\n'+r'$\ddot{\beta}='+str(A_ele)+r'^\circ s^{-2}$')
+            plt.xlabel(r'$\Delta \beta$ [$^\circ$]')
+            plt.ylabel(r'$\Delta t_m$ [s]')
+            plt.legend()
+            plt.grid()
+
+            #simulate scanning head
+            halo_sim=hls.halo_simulator(config={'processing_time':dt_d,
+                          'acquisition_time':dt_dppr,
+                          'max_S_azi':S_azi,
+                          'max_A_azi':A_azi,
+                          'max_S_ele':S_ele,
+                          'max_A_ele':A_ele})
+            
+            T2,azi2,ele2,t2,azi_all,ele_all=halo_sim.scanning_head_sim(mode='ssm',ppr=ppr,azi=azi,ele=ele)
+            
+        elif mode=='csm':
+            halo_sim=hls.halo_simulator(config={'processing_time':dt_d,
+                          'acquisition_time':dt_dppr})
+            
+            T2,azi2,ele2,t2,azi_all,ele_all=halo_sim.scanning_head_sim(mode='csm',ppr=ppr,source=os.path.join(cd,'scans',f'motion.{ppr}.csm.txt'),
+                                                       ppd1=config['ppd_azi'][lidar_id],ppd2=config['ppd_ele'][lidar_id],dwell=1)
+            
+            plt.figure(figsize=(18,8))            
+            ax=plt.subplot(2,1,1)
+            for da in config['dazi_test']:
+                if da==config['dazi_test'][0]:
+                    plt.plot(T,T*0+da,'--r',label='Targets')
+                else:
+                    plt.plot(T,T*0+da,'--r')
+            plt.plot(T[1:],dazi,'.k',label='Data')
+            ax.set_yscale('symlog')
+            plt.ylim([0,np.max(config['dazi_test'])+5])
+            plt.ylabel(r'$\Delta\alpha$ [$^\circ$]')
+            plt.title(f'PPR={ppr}, mode={mode}, file: {os.path.basename(f)}')
+            plt.legend()
+            plt.grid()
+            
+            ax=plt.subplot(2,1,2)
+            for da in config['dele_test']:
+                plt.plot(T,T*0+da,'--r')
+            plt.plot(T[1:],dele,'.k',label='Data')
+            ax.set_yscale('symlog')
+            plt.ylim([0,np.max(config['dele_test'])+5])
+            plt.ylabel(r'$\Delta\beta$ [$^\circ$]')
+            plt.title(f'PPR={ppr}, mode={mode}, file: {os.path.basename(f)}')
+            plt.legend()
+            plt.grid()
+            
         plt.figure(figsize=(18,8))
         ax=plt.subplot(2,1,1)
-        plt.plot(t2,azi2,'-r')
+        plt.plot(t2,azi_all,'-r')
         plt.plot(T,azi,'.k',label='Data')
-        plt.plot(T2,azi,'o', markerfacecolor='none', markeredgecolor='r',label='Simulator')
+        plt.plot(T2,azi2,'o', markerfacecolor='none', markeredgecolor='r',label='Simulator')
         plt.ylabel(r'$\alpha$ [$^\circ$]')
         plt.title(f'PPR={ppr}, mode={mode}, file: {os.path.basename(f)}')
+        plt.legend()
         plt.grid()
         
         ax=plt.subplot(2,1,2)
-        plt.plot(t2,ele2,'-r')
+        plt.plot(t2,ele_all,'-r')
         plt.plot(T,ele,'.k')
-        plt.plot(T2,ele,'o', markerfacecolor='none', markeredgecolor='r',label='Simulator')
+        plt.plot(T2,ele2,'o', markerfacecolor='none', markeredgecolor='r',label='Simulator')
         plt.xlabel('Time [s]')
         plt.ylabel(r'$\beta$ [$^\circ$]')
         plt.grid()

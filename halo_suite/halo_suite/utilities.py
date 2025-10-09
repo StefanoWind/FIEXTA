@@ -73,7 +73,6 @@ def scan_file_compiler(mode: str,
         ele_range=ele[stop]
         P2=-ele_range*ppd2
         
-        
         if 'T_d' in config:
             T_d=config['T_d']
             T_a=config['T_dppr']
@@ -90,15 +89,20 @@ def scan_file_compiler(mode: str,
             for i1,i2 in zip(stop[:-1:2],stop[1::2]):
                 dazi=(azi[i1+1]-azi[i1]+ 180) % 360 - 180
                 dele=(ele[i1+1]-ele[i1]+ 180) % 360 - 180
-                print(dazi)
-                print(dele)
                 if np.abs(dazi)>ang_tol and np.abs(dele)<ang_tol:
-                    res = minimize(angular_error,[dazi/T_s,A_max_azi],
-                                   args=(azi[i2]-azi[i1], dazi, T_d,T_a,ppr),
-                                   bounds= [(ang_tol, S_max_azi), (ang_tol, A_max_azi)])
-                    S_azi=np.append(S_azi,res.x[0])
+                    if dazi<=S_max_azi*T_s:
+                        res = minimize(angular_error,[dazi/T_s,A_max_azi],
+                                       args=(azi[i2]-azi[i1], dazi, T_d,T_a,ppr),
+                                       bounds= [(ang_tol, S_max_azi), (ang_tol, A_max_azi)])
+                        if res.success==False:
+                            raise BaseException(f'Optimization of motion failed for azimuth step={dazi} deg, PPR={ppr}.')
+                        opt=res.x
+                    else:
+                        opt=[S_max_azi,A_max_azi]
+                    
+                    S_azi=np.append(S_azi,opt[0])
                     S_ele=np.append(S_ele,0)
-                    A_azi=np.append(A_azi,res.x[1])
+                    A_azi=np.append(A_azi,opt[1])
                     A_ele=np.append(A_ele,0)
                     
                     S_azi=np.append(S_azi,S_max_azi)
@@ -107,14 +111,20 @@ def scan_file_compiler(mode: str,
                     A_ele=np.append(A_ele,0)
                    
                 elif np.abs(dazi)<ang_tol and np.abs(dele)>ang_tol:
-                    res = minimize(angular_error,[dele/T_s,A_max_ele],
-                                   args=(ele[i2]-ele[i1], dele, T_d,T_a,ppr),
-                                   bounds= [(ang_tol, S_max_ele), (ang_tol, A_max_ele)])
+                    if dele<=S_max_ele*T_s:
+                        res = minimize(angular_error,[dele/T_s,A_max_ele],
+                                       args=(ele[i2]-ele[i1], dele, T_d,T_a,ppr),
+                                       bounds= [(ang_tol, S_max_ele), (ang_tol, A_max_ele)])
+                        if res.success==False:
+                            raise BaseException(f'Optimization of motion failed for elevation step={dele} deg, PPR={ppr}.')
+                        opt=res.x
+                    else:
+                        opt=[S_max_ele,A_max_ele]
                     
                     S_azi=np.append(S_azi,0)
-                    S_ele=np.append(S_ele,res.x[0])
+                    S_ele=np.append(S_ele,opt[0])
                     A_azi=np.append(A_azi,0)
-                    A_ele=np.append(A_ele,res.x[1])
+                    A_ele=np.append(A_ele,opt[1])
                     S_azi=np.append(S_azi,0)
                     S_ele=np.append(S_ele,S_max_ele)
                     A_azi=np.append(A_azi,0)
@@ -123,7 +133,6 @@ def scan_file_compiler(mode: str,
             S_ele=S_ele[:-1]
             A_azi=A_azi[:-1]
             A_ele=A_ele[:-1]
-                
            
         S1=S_azi*ppd1/10+np.zeros(len(P1))
         A1=A_azi*ppd1/1000+np.zeros(len(P1))
@@ -174,7 +183,7 @@ def read_hpl(file,lidar_id,config):
         return tnum, azi, ele, Nr, dr, ppr
             
 
-def angular_error(params,ang_range,dang,T_d,T_a,ppr):
+def angular_error(params,ang_range,dang,T_d,T_a,ppr,ang_tol=0.1):
     
     S=params[0]
     A=params[1]
@@ -183,10 +192,11 @@ def angular_error(params,ang_range,dang,T_d,T_a,ppr):
                   'S_ele':0,
                   'A_ele':0})
     
-    t,T,ang_all,_,ang,_=halo_sim.scanning_head_sim(mode='csm',ppr=ppr,azi=np.array([0,ang_range]),ele=np.array([0,0]),
-                                                   S_azi=S,A_azi=A)
-    
-    ang_error=(np.median(np.diff(ang))-dang)**2
+    T,ang,_,_,_,_=halo_sim.scanning_head_sim(mode='csm',ppr=ppr,azi=np.array([0,ang_range]),ele=np.array([0,0]),
+                                                   S_azi=S,A_azi=A,S_ele=0,A_ele=0)
+    dang2=(ang[1:]-ang[:-1]+ 180) % 360 - 180
+    dang2=np.append(dang2[0],dang2)
+    ang_error=(np.median(np.diff(ang[np.abs(dang2)>ang_tol]))-dang)**2
     return ang_error
     
         
