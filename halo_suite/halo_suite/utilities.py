@@ -9,6 +9,8 @@ cd=os.path.dirname(__file__)
 import os
 import numpy as np
 from datetime import datetime
+from halo_suite import halo_simulator as hls
+from scipy.optimize import minimize
 def scan_file_compiler(mode: str, 
                        azi: np.array,
                        ele: np.array,
@@ -23,7 +25,7 @@ def scan_file_compiler(mode: str,
                        A_azi: float=50,
                        A_ele: float=50,
                        config: dict={},
-                       kinematic_file: str=''):
+                       ang_tol: float=0.1):
     
     if save_path=='':
         save_path=os.path.join(cd,'scans')
@@ -57,25 +59,77 @@ def scan_file_compiler(mode: str,
             ele=np.array(ele)
         # azi=np.append(azi,azi[0])
         # ele=np.append(ele,ele[0])
-        if kinematic_file=='':
-            ppd1=config['ppd_azi'][lidar_id]#points per degree in azimuth motor
-            ppd2=config['ppd_ele'][lidar_id]#points per degree in elevation motor
+       
             
-            dazi=((azi[1:] - azi[:-1] + 180) % 360) - 180
-            dele=((ele[1:] - ele[:-1] + 180) % 360) - 180
-            stop=np.concatenate(([0],np.where(np.abs((np.diff(dazi)+np.diff(dele)))>10**-10)[0]+1,[-1]))
+        ppd1=config['ppd_azi']#points per degree in azimuth motor
+        ppd2=config['ppd_ele']#points per degree in elevation motor
+        
+        dazi=(azi[1:] - azi[:-1] + 180) % 360 - 180
+        dele=(ele[1:] - ele[:-1] + 180) % 360 - 180
+        stop=np.concatenate(([0],np.where(np.abs((np.diff(dazi)+np.diff(dele)))>10**-10)[0]+1,[-1]))
+        
+        azi_range=azi[stop]
+        P1=-azi_range*ppd1
+        ele_range=ele[stop]
+        P2=-ele_range*ppd2
+        
+        
+        if 'T_d' in config:
+            T_d=config['T_d']
+            T_a=config['T_dppr']
+            S_max_azi=config['S_max_azi']*10/ppd1
+            A_max_azi=config['A_max_azi']*1000/ppd1
+            S_max_ele=config['S_max_ele']*10/ppd2
+            A_max_ele=config['A_max_ele']*1000/ppd2
+            T_s=T_d+T_a*ppr
             
-            azi_range=azi[stop]
-            P1=-azi_range*ppd1
-            S1=S_azi*ppd1/10+np.zeros(len(P1))
-            A1=A_azi+np.zeros(len(P1))
-            a1=A1*1000/ppd1
-            
-            ele_range=ele[stop]
-            P2=-ele_range*ppd2
-            S2=S_ele*ppd2/10+np.zeros(len(P2))
-            A2=A_ele+np.zeros(len(P2))
-            a2=A2*1000/ppd2
+            S_azi=[S_max_azi]
+            A_azi=[A_max_azi]
+            S_ele=[S_max_ele]
+            A_ele=[A_max_ele]
+            for i1,i2 in zip(stop[:-1:2],stop[1::2]):
+                dazi=(azi[i1+1]-azi[i1]+ 180) % 360 - 180
+                dele=(ele[i1+1]-ele[i1]+ 180) % 360 - 180
+                print(dazi)
+                print(dele)
+                if np.abs(dazi)>ang_tol and np.abs(dele)<ang_tol:
+                    res = minimize(angular_error,[dazi/T_s,A_max_azi],
+                                   args=(azi[i2]-azi[i1], dazi, T_d,T_a,ppr),
+                                   bounds= [(ang_tol, S_max_azi), (ang_tol, A_max_azi)])
+                    S_azi=np.append(S_azi,res.x[0])
+                    S_ele=np.append(S_ele,0)
+                    A_azi=np.append(A_azi,res.x[1])
+                    A_ele=np.append(A_ele,0)
+                    
+                    S_azi=np.append(S_azi,S_max_azi)
+                    S_ele=np.append(S_ele,0)
+                    A_azi=np.append(A_azi,A_max_azi)
+                    A_ele=np.append(A_ele,0)
+                   
+                elif np.abs(dazi)<ang_tol and np.abs(dele)>ang_tol:
+                    res = minimize(angular_error,[dele/T_s,A_max_ele],
+                                   args=(ele[i2]-ele[i1], dele, T_d,T_a,ppr),
+                                   bounds= [(ang_tol, S_max_ele), (ang_tol, A_max_ele)])
+                    
+                    S_azi=np.append(S_azi,0)
+                    S_ele=np.append(S_ele,res.x[0])
+                    A_azi=np.append(A_azi,0)
+                    A_ele=np.append(A_ele,res.x[1])
+                    S_azi=np.append(S_azi,0)
+                    S_ele=np.append(S_ele,S_max_ele)
+                    A_azi=np.append(A_azi,0)
+                    A_ele=np.append(A_ele,A_max_ele)
+            S_azi=S_azi[:-1]
+            S_ele=S_ele[:-1]
+            A_azi=A_azi[:-1]
+            A_ele=A_ele[:-1]
+                
+           
+        S1=S_azi*ppd1/10+np.zeros(len(P1))
+        A1=A_azi*ppd1/1000+np.zeros(len(P1))
+        S2=S_ele*ppd2/10+np.zeros(len(P2))
+        A2=A_ele*ppd2/1000+np.zeros(len(P2))
+   
         L=''
         for p1,p2,s1,s2,a1,a2 in zip(P1,P2,S1,S2,A1,A2):
             
@@ -120,5 +174,20 @@ def read_hpl(file,lidar_id,config):
         return tnum, azi, ele, Nr, dr, ppr
             
 
+def angular_error(params,ang_range,dang,T_d,T_a,ppr):
+    
+    S=params[0]
+    A=params[1]
+    halo_sim=hls.halo_simulator(config={'processing_time':T_d,
+                  'acquisition_time':T_a,
+                  'S_ele':0,
+                  'A_ele':0})
+    
+    t,T,ang_all,_,ang,_=halo_sim.scanning_head_sim(mode='csm',ppr=ppr,azi=np.array([0,ang_range]),ele=np.array([0,0]),
+                                                   S_azi=S,A_azi=A)
+    
+    ang_error=(np.median(np.diff(ang))-dang)**2
+    return ang_error
+    
         
                        

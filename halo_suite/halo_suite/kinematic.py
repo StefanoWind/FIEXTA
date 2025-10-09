@@ -89,8 +89,17 @@ if len(files)==0:
         new_ele=np.arange(0,max_ele,dele+0.1)
         azi=np.append(azi,new_ele*0)
         ele=np.append(ele,new_ele)
-        
-    scan_file_compiler(mode=mode,azi=azi,ele=ele,repeats=1,identifier='motion')
+    
+    if mode=='ssm':
+        scan_file_compiler(mode=mode,azi=azi,ele=ele,repeats=1,identifier='motion')
+    elif mode=='csm':
+        config_csm={}
+        for c in ['ppd_azi','ppd_ele','S_max_azi','S_max_ele','A_max_azi','A_max_ele']:
+            config_csm[c]=config[c][lidar_id]
+        config_csm['T_d']=dt_d
+        config_csm['T_dppr']=dt_dppr
+        scan_file_compiler(mode=mode,azi=azi,ele=ele,repeats=1,identifier='motion',
+                           config=config_csm,lidar_id=lidar_id)
     print(f'File for motion test saved. Run it on the lidar with different PPRs. Save data in ./data/{lidar_id}/kinematic/motion/{mode}')
 else:
     for f in files:
