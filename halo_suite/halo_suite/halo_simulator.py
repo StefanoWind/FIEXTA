@@ -8,6 +8,9 @@ import numpy as np
 import os
 import re
 class halo_simulator:
+    '''
+    Simulator of the movement of the lidar scanninf head
+    '''
     def __init__(self,
                  config: dict,
                  source_scan: str=''):
@@ -20,21 +23,27 @@ class halo_simulator:
                           azi: np.array=np.array([0,0]),
                           ele: np.array=np.array([0,0]),
                           source: str='',
-                          ppd1: float=0,
-                          ppd2: float=0,
                           S_azi: float=21,
                           S_ele: float=72,
                           A_azi: float=40,
                           A_ele: float=40,
-                          dwell: float=3,
                           dt: float=0.01,
                           ang_tol: float=0.1,
                           azi0: float=0,
                           ele0: float=0):
-        
-        T_p=self.config['processing_time']
-        T_a=self.config['acquisition_time']
-        T_s=T_p+T_a*ppr
+        '''
+        This module takes as input either:
+            1) for SSM, a sequence of azimuths and elevations and maximum speeds and accelrations
+            2) for CSM, either a txt scan file or specific valies of azimuths, elevations, speeds and accelerations
+        '''
+        #extract config
+        Dt_p=self.config['processing_time']
+        Dt_a=self.config['acquisition_time']
+        Dt_d=self.config['dwell_time']
+        Dt_s=Dt_p+Dt_a*ppr
+        if mode=='csm':
+            ppd1=self.config['ppd_azi']
+            ppd2=self.config['ppd_ele']
         
         #read scan file if provided
         if os.path.isfile(source) and mode=='csm':
@@ -66,37 +75,44 @@ class halo_simulator:
             S_ele=S2*10/ppd2
             A_azi=A1*1000/ppd1
             A_ele=A2*1000/ppd2
+        else:
+            azi=np.append(azi0,azi)
+            ele=np.append(ele0,ele)
                 
+        #wrap angles
         azi=azi%360
         ele=ele%360
         
         if mode=='ssm':
+            #for SSM, use the maximum speeds and acceleration provided in the config
             S_azi=self.config['max_S_azi']+np.zeros((len(azi))-1)
             S_ele=self.config['max_S_ele']+np.zeros((len(azi))-1)
             A_azi=self.config['max_A_azi']+np.zeros((len(azi))-1)
             A_ele=self.config['max_A_ele']+np.zeros((len(azi))-1)
-
+            
+        #zeroing
         azi_all=np.array([azi[0]])
         ele_all=np.array([ele[0]])
         t_all=np.array([0])
-        T_all=np.array([0])
+        t=np.array([0])
         
         S_azi+=np.zeros((len(azi))-1)
         S_ele+=np.zeros((len(azi))-1)
         A_azi+=np.zeros((len(azi))-1)
         A_ele+=np.zeros((len(azi))-1)
         
+        #loop through segments
         for azi1,azi2,ele1,ele2,S1,S2,A1,A2 in zip(azi[:-1],azi[1:],ele[:-1],ele[1:],S_azi,S_ele,A_azi,A_ele):
             dazi=((azi2 - azi1 + 180) % 360) - 180
             dele=((ele2 - ele1 + 180) % 360) - 180
-            if np.abs(dazi)>ang_tol and np.abs(dele)<ang_tol:
-                t,_azi=self.step_scanning_head(azi1,azi2,S1,A1,mode=mode)
+            if np.abs(dazi)>ang_tol and np.abs(dele)<ang_tol:#PPI simulation
+                _t,_azi=self.step_scanning_head(azi1,azi2,S1,A1,mode=mode)
                 _ele=ele1+_azi*0
-            elif np.abs(dazi)<ang_tol and np.abs(dele)>ang_tol:
-                t,_ele=self.step_scanning_head(ele1,ele2,S2,A2,mode=mode)
+            elif np.abs(dazi)<ang_tol and np.abs(dele)>ang_tol:#RHI simulations
+                _t,_ele=self.step_scanning_head(ele1,ele2,S2,A2,mode=mode)
                 _azi=azi1+_ele*0
-            elif np.abs(dazi)<ang_tol and np.abs(dele)<ang_tol:
-                    t=[0,0]
+            elif np.abs(dazi)<ang_tol and np.abs(dele)<ang_tol:#stare
+                    _t=[0,0]
                     _azi=[azi1,azi2]
                     _ele=[ele1,ele2]
             else:
@@ -105,43 +121,51 @@ class halo_simulator:
             azi_all=np.append(azi_all,_azi[1:])
             ele_all=np.append(ele_all,_ele[1:])
             if mode=='ssm':
-                t_all=np.append(t_all,t_all[-1]+t[1:]+T_s)
-                T_all=np.append(T_all,T_all[-1]+t[-1]+T_s)
+                #in SSM, add acquisition delay
+                t_all=np.append(t_all,t_all[-1]+_t[1:]+Dt_s)
+                t=np.append(t,t[-1]+_t[-1]+Dt_s)
             elif mode=='csm':
-                t_all=np.append(t_all,t_all[-1]+t[1:]+dwell*T_s)
+                #in CSM mode, add the dwelling time
+                t_all=np.append(t_all,t_all[-1]+_t[1:]+Dt_d)
         
         if mode=='csm':
-            T_all=np.arange(0,t_all[-1]+T_s,T_s)
-            azi=np.interp(T_all,t_all,azi_all)
-            ele=np.interp(T_all,t_all,ele_all)
+            #in CSM mode, iterpolate at sampling point
+            t=np.arange(0,t_all[-1]+Dt_s,Dt_s)
+            azi=np.interp(t,t_all,azi_all)
+            ele=np.interp(t,t_all,ele_all)
             
-        return T_all,azi,ele,t_all,azi_all,ele_all
+        return t,azi,ele,t_all,azi_all,ele_all
     
     def step_scanning_head(self,ang1,ang2,S,A,mode='ssm',dt=0.01):
+        
+        #fix 0 values
         if A==0:
             A+=10**-10
         if S==0:
             S+=10**-10
+        
+        #if SSM mode is on and path crosses 0 degrees, find shortest route
         if mode=='ssm':
             if ang2-ang1<-180:
                 ang1-=360
             elif ang2-ang1>180:
                    ang2-=360     
+        
         sign=np.sign(ang2-ang1)
         
-        if np.abs(ang2-ang1)<np.abs(S)**2/A:
-            T=2*(np.abs(ang2-ang1)/A)**0.5
-            t=np.arange(0,T+dt,dt)
+        if np.abs(ang2-ang1)<S**2/A:#for angular ranges shorter than the critical value
+            Dt_m=2*(np.abs(ang2-ang1)/A)**0.5
+            t=np.arange(0,Dt_m+dt,dt)
             ang=np.zeros(len(t))
-            t1=T/2
+            t1=Dt_m/2
             ang[t<t1]=ang1+0.5*A*(t[t<t1])**2*sign
             ang[t>=t1]=ang1+(ang2-ang1)/2+A*t1*(t[t>=t1]-t1)*sign-0.5*A*(t[t>=t1]-t1)**2*sign
-        else:
-            T=np.abs(ang2-ang1)/np.abs(S)+np.abs(S)/A
-            t=np.arange(0,T+dt,dt)
+        else:#for angular ranges larger than the critical value
+            Dt_m=np.abs(ang2-ang1)/S+S/A
+            t=np.arange(0,Dt_m+dt,dt)
             ang=np.zeros(len(t))
             t1=S/A
-            t2=T-S/A
+            t2=Dt_m-S/A
             ang[t<t1]=ang1+0.5*A*(t[t<t1])**2*sign
             ang[(t>=t1)*(t<t2)]=ang1+S**2/(2*A)*sign+S*(t[(t>=t1)*(t<t2)]-t1)*sign
             ang[t>=t2]=ang2-S**2/A/2*sign+S*(t[t>=t2]-t2)*sign-0.5*A*(t[t>=t2]-t2)**2*sign
