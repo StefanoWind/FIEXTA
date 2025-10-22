@@ -12,8 +12,10 @@ from datetime import datetime
 from halo_suite import halo_simulator as hls
 from scipy.optimize import minimize
 def scan_file_compiler(mode: str, 
-                       azi: np.array,
-                       ele: np.array,
+                       azi: np.array([]),
+                       ele: np.array([]),
+                       azi_dir: np.array([]),
+                       ele_dir: np.array([]),
                        repeats: int,
                        save_path: str='',
                        identifier: str='',
@@ -40,12 +42,21 @@ def scan_file_compiler(mode: str,
         save_path=os.path.join(cd,'scans')
     if identifier=='':
         identifier=datetime.strftime(datetime.now(),'%Y%m%d.%H%M%S')
-    
+        
+    #assign default scan direction if empty
+    if len(azi_dir)==0:
+        azi_dir=np.ones(len(azi)-1)
+    if len(ele_dir)==0:
+        ele_dir=np.ones(len(ele)-1)
+        
     #cartesian product of angles if it s a volumetric scan
     if volumetric:
         [azi,ele]=np.meshgrid(azi,ele)
         azi=azi.ravel()
         ele=ele.ravel()
+        [azi_dir,ele_dir]=np.meshgrid(azi_dir,ele_dir)
+        azi_dir=azi_dir.ravel()
+        ele_dir=ele_dir.ravel()
         vol_flag='vol.'
     else:
         vol_flag=''
@@ -59,6 +70,10 @@ def scan_file_compiler(mode: str,
         if type(ele).__name__!='list':
             ele=[ele]
         ele=np.array(ele)
+        
+    #wrap to 360
+    azi=azi%360
+    ele=ele%360
     
     #scan for SSM
     if mode=='ssm':
@@ -72,10 +87,23 @@ def scan_file_compiler(mode: str,
         ppd1=config['ppd_azi']
         ppd2=config['ppd_ele']
         
+        #optimize initial point
+        if azi[0]>180: azi[0]-=360
+        if ele[0]>180: ele[0]-=360
+        
         #split scan into segments with same angular resolution
         dazi=(azi[1:] - azi[:-1] + 180) % 360 - 180
         dele=(ele[1:] - ele[:-1] + 180) % 360 - 180
         stop=np.concatenate(([0],np.where(np.abs((np.diff(dazi)+np.diff(dele)))>10**-10)[0]+1,[-1]))
+        
+        #fix points according to direction
+        dazi[(dazi>0)*(azi_dir<0)]=dazi[(dazi>0)*(azi_dir<0)]-360
+        dazi[(dazi<0)*(azi_dir>0)]=dazi[(dazi<0)*(azi_dir>0)]+360
+        azi=azi[0]+np.cumsum(np.append(0,dazi))
+        
+        dele[(dele>0)*(ele_dir<0)]=dele[(dele>0)*(ele_dir<0)]-360
+        dele[(dele<0)*(ele_dir>0)]=dele[(dele<0)*(ele_dir>0)]+360
+        ele=ele[0]+np.cumsum(np.append(0,dele))
         
         #program start-end points
         azi_range=azi[stop]
@@ -84,13 +112,13 @@ def scan_file_compiler(mode: str,
         P2=-ele_range*ppd2
         
         #do this if kinematic optimization is requestes
-        if 'Dt_a' in config:
+        if 'Dt_a_CSM' in config:
             
             #extract configs
             ang_tol=config['ang_tol']
-            Dt_p=config['Dt_p']
-            Dt_a=config['Dt_a']
-            Dt_d=config['Dt_d']
+            Dt_p=config['Dt_p_CSM']
+            Dt_a=config['Dt_a_CSM']
+            Dt_d=config['Dt_d'][ppr]
             S_max_azi=config['S_max_azi']*10/ppd1
             A_max_azi=config['A_max_azi']*1000/ppd1
             S_max_ele=config['S_max_ele']*10/ppd2
@@ -179,6 +207,7 @@ def scan_file_compiler(mode: str,
     with open(os.path.join(save_path,save_name),'w') as fid:
         fid.write(L*repeats)
         fid.close()
+    return os.path.join(save_path,save_name)
         
         
 def read_hpl(file,config):
@@ -194,7 +223,10 @@ def read_hpl(file,config):
         fid.seek(0)
         ppr=int(fid.readlines()[config['hpl_ppr']].split(':')[1].strip())
         fid.seek(0)
+        mode=fid.readlines()[config['hpl_mode']].split(' - ')[1].strip()
+        fid.seek(0)
         data=fid.readlines()[config['hpl_header']::Nr+1]
+       
 
         #zeroing (specific file)
         tnum=[]
@@ -209,7 +241,7 @@ def read_hpl(file,config):
             azi=np.append(azi,np.float64(d_split[config['hpl_index_azi']]))
             ele=np.append(ele,np.float64(d_split[config['hpl_index_ele']]))
                 
-        return tnum, azi, ele, Nr, dr, ppr
+        return tnum, azi, ele, Nr, dr, ppr, mode
             
 
 def angular_error(params,ang_range,dang,ppr,Dt_p,Dt_a,Dt_d,ppd1,ppd2,ang_tol=0.1):

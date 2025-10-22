@@ -78,10 +78,6 @@ class halo_simulator:
         else:
             azi=np.append(azi0,azi)
             ele=np.append(ele0,ele)
-                
-        #wrap angles
-        azi=azi%360
-        ele=ele%360
         
         if mode=='ssm':
             #for SSM, use the maximum speeds and acceleration provided in the config
@@ -91,8 +87,8 @@ class halo_simulator:
             A_ele=self.config['max_A_ele']+np.zeros((len(azi))-1)
             
         #zeroing
-        azi_all=np.array([azi[0]])
-        ele_all=np.array([ele[0]])
+        azi_all=np.array([azi0])
+        ele_all=np.array([ele0])
         t_all=np.array([0])
         t=np.array([0])
         
@@ -127,12 +123,17 @@ class halo_simulator:
             elif mode=='csm':
                 #in CSM mode, add the dwelling time
                 t_all=np.append(t_all,t_all[-1]+_t[1:]+Dt_d)
+                azi_all=azi_all%360
         
         if mode=='csm':
             #in CSM mode, iterpolate at sampling point
             t=np.arange(0,t_all[-1]+Dt_s,Dt_s)
             azi=np.interp(t,t_all,azi_all)
             ele=np.interp(t,t_all,ele_all)
+            
+        
+        azi=azi%360
+        
             
         return t,azi,ele,t_all,azi_all,ele_all
     
@@ -170,7 +171,7 @@ class halo_simulator:
             ang[(t>=t1)*(t<t2)]=ang1+S**2/(2*A)*sign+S*(t[(t>=t1)*(t<t2)]-t1)*sign
             ang[t>=t2]=ang2-S**2/A/2*sign+S*(t[t>=t2]-t2)*sign-0.5*A*(t[t>=t2]-t2)**2*sign
             
-        return t,ang%360
+        return t,ang
         
         
         
