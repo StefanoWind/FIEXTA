@@ -20,8 +20,6 @@ class halo_simulator:
     def scanning_head_sim(self,
                           mode: str='SSM',
                           ppr: int=1000,
-                          azi: np.array=np.array([0,0]),
-                          ele: np.array=np.array([0,0]),
                           source: str='',
                           S_azi: float=21,
                           S_ele: float=72,
@@ -41,15 +39,24 @@ class halo_simulator:
         Dt_a=self.config['acquisition_time']
         Dt_d=self.config['dwell_time']
         Dt_s=Dt_p+Dt_a*ppr
-        if mode=='csm':
+        
+        #read scan file
+        with open(source,'r') as fid:
+            lines = fid.readlines()
+        lines = [line.strip() for line in lines]
+            
+        if mode=='ssm':
+            
+            #extract geometry
+            azi=[azi0]
+            ele=[ele0]
+            for l in lines:
+                azi=np.append(azi,np.float32(l[:7]))
+                ele=np.append(ele,np.float32(l[7:]))
+            
+        elif mode=='csm':
             ppd1=self.config['ppd_azi']
             ppd2=self.config['ppd_ele']
-        
-        #read scan file if provided
-        if os.path.isfile(source) and mode=='csm':
-            with open(source,'r') as fid:
-                lines = fid.readlines()
-            lines = [line.strip() for line in lines]
             
             #extract kinematic parameters
             P1=[]
@@ -75,9 +82,6 @@ class halo_simulator:
             S_ele=S2*10/ppd2
             A_azi=A1*1000/ppd1
             A_ele=A2*1000/ppd2
-        else:
-            azi=np.append(azi0,azi)
-            ele=np.append(ele0,ele)
         
         if mode=='ssm':
             #for SSM, use the maximum speeds and acceleration provided in the config
@@ -120,6 +124,7 @@ class halo_simulator:
                 #in SSM, add acquisition delay
                 t_all=np.append(t_all,t_all[-1]+_t[1:]+Dt_s)
                 t=np.append(t,t[-1]+_t[-1]+Dt_s)
+                azi_all=azi_all%360
             elif mode=='csm':
                 #in CSM mode, add the dwelling time
                 t_all=np.append(t_all,t_all[-1]+_t[1:]+Dt_d)
@@ -128,8 +133,12 @@ class halo_simulator:
         if mode=='csm':
             #in CSM mode, iterpolate at sampling point
             t=np.arange(0,t_all[-1]+Dt_s,Dt_s)
-            azi=np.interp(t,t_all,azi_all)
-            ele=np.interp(t,t_all,ele_all)
+            c=np.interp(t,t_all,np.cos(np.radians(azi_all)))
+            s=np.interp(t,t_all,np.sin(np.radians(azi_all)))
+            azi=np.degrees(np.arctan2(s,c))%360
+            c=np.interp(t,t_all,np.cos(np.radians(ele_all)))
+            s=np.interp(t,t_all,np.sin(np.radians(ele_all)))
+            ele=np.degrees(np.arctan2(s,c))%360
             
         
         azi=azi%360

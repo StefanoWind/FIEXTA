@@ -43,11 +43,15 @@ def scan_file_compiler(mode: str,
     if identifier=='':
         identifier=datetime.strftime(datetime.now(),'%Y%m%d.%H%M%S')
         
-    #assign default scan direction if empty
-    if len(azi_dir)==0:
-        azi_dir=np.ones(len(azi)-1)
-    if len(ele_dir)==0:
-        ele_dir=np.ones(len(ele)-1)
+    #array conversion for scalar inputs
+    if type(azi).__name__!= 'ndarray':
+        if type(azi).__name__!='list':
+            azi=[azi]
+        azi=np.array(azi)
+    if type(ele).__name__!= 'ndarray':
+        if type(ele).__name__!='list':
+            ele=[ele]
+        ele=np.array(ele)
         
     #cartesian product of angles if it s a volumetric scan
     if volumetric:
@@ -61,24 +65,14 @@ def scan_file_compiler(mode: str,
     else:
         vol_flag=''
         
-    #array conversion for scalar inputs
-    if type(azi).__name__!= 'ndarray':
-        if type(azi).__name__!='list':
-            azi=[azi]
-        azi=np.array(azi)
-    if type(ele).__name__!= 'ndarray':
-        if type(ele).__name__!='list':
-            ele=[ele]
-        ele=np.array(ele)
+    #linearize angles
+    azi=linearize_angle(azi, azi_dir)
+    ele=linearize_angle(ele, ele_dir)
         
-    #wrap to 360
-    azi=azi%360
-    ele=ele%360
-    
     #scan for SSM
     if mode=='ssm':
         L=''
-        for a,e in zip(azi,ele):
+        for a,e in zip(azi%360,ele%360):
             L=L+('%07.3f' % a+ '%07.3f' % e +'\n')
     
     if mode =='csm':
@@ -87,23 +81,10 @@ def scan_file_compiler(mode: str,
         ppd1=config['ppd_azi']
         ppd2=config['ppd_ele']
         
-        #optimize initial point
-        if azi[0]>180: azi[0]-=360
-        if ele[0]>180: ele[0]-=360
-        
         #split scan into segments with same angular resolution
         dazi=(azi[1:] - azi[:-1] + 180) % 360 - 180
         dele=(ele[1:] - ele[:-1] + 180) % 360 - 180
         stop=np.concatenate(([0],np.where(np.abs((np.diff(dazi)+np.diff(dele)))>10**-10)[0]+1,[-1]))
-        
-        #fix points according to direction
-        dazi[(dazi>0)*(azi_dir<0)]=dazi[(dazi>0)*(azi_dir<0)]-360
-        dazi[(dazi<0)*(azi_dir>0)]=dazi[(dazi<0)*(azi_dir>0)]+360
-        azi=azi[0]+np.cumsum(np.append(0,dazi))
-        
-        dele[(dele>0)*(ele_dir<0)]=dele[(dele>0)*(ele_dir<0)]-360
-        dele[(dele<0)*(ele_dir>0)]=dele[(dele<0)*(ele_dir>0)]+360
-        ele=ele[0]+np.cumsum(np.append(0,dele))
         
         #program start-end points
         azi_range=azi[stop]
@@ -111,7 +92,7 @@ def scan_file_compiler(mode: str,
         ele_range=ele[stop]
         P2=-ele_range*ppd2
         
-        #do this if kinematic optimization is requestes
+        #do this if kinematic optimization is requested
         if 'Dt_a_CSM' in config:
             
             #extract configs
@@ -132,14 +113,14 @@ def scan_file_compiler(mode: str,
             A_ele=[A_max_ele]
             
             #loop through segments
-            for i1,i2 in zip(stop[:-1:2],stop[1::2]):
+            for i1,i2 in zip(stop[:-1],stop[1:]):
                 dazi=(azi[i1+1]-azi[i1]+ 180) % 360 - 180
                 dele=(ele[i1+1]-ele[i1]+ 180) % 360 - 180
                 
                 #optimal azimuth kinematic for PPIs
                 if np.abs(dazi)>ang_tol and np.abs(dele)<ang_tol:
                     if dazi<=S_max_azi*T_s:
-                        res = minimize(angular_error,[dazi/T_s,A_max_azi],
+                        res = minimize(angular_error,[np.abs(dazi)/T_s,A_max_azi],
                                        args=(azi[i2]-azi[i1],dazi,ppr,Dt_p,Dt_a,Dt_d,ppd1,ppd2,ang_tol),
                                        bounds= [(ang_tol, S_max_azi), (ang_tol, A_max_azi)])
                         if res.success==False:
@@ -152,17 +133,11 @@ def scan_file_compiler(mode: str,
                     S_ele=np.append(S_ele,0)
                     A_azi=np.append(A_azi,opt[1])
                     A_ele=np.append(A_ele,0)
-                    
-                    #back swipe at max speed
-                    S_azi=np.append(S_azi,S_max_azi)
-                    S_ele=np.append(S_ele,0)
-                    A_azi=np.append(A_azi,A_max_azi)
-                    A_ele=np.append(A_ele,0)
                    
                 #optimal elevation kinematic for RHIs
                 elif np.abs(dazi)<ang_tol and np.abs(dele)>ang_tol:
                     if dele<=S_max_ele*T_s:
-                        res = minimize(angular_error,[dele/T_s,A_max_ele],
+                        res = minimize(angular_error,[np.abs(dele)/T_s,A_max_ele],
                                        args=(ele[i2]-ele[i1],dele,ppr,Dt_p,Dt_a,Dt_d,ppd1,ppd2,ang_tol),
                                        bounds= [(ang_tol, S_max_ele), (ang_tol, A_max_ele)])
                         if res.success==False:
@@ -175,18 +150,6 @@ def scan_file_compiler(mode: str,
                     S_ele=np.append(S_ele,opt[0])
                     A_azi=np.append(A_azi,0)
                     A_ele=np.append(A_ele,opt[1])
-                    
-                    #backswipe at max speed
-                    S_azi=np.append(S_azi,0)
-                    S_ele=np.append(S_ele,S_max_ele)
-                    A_azi=np.append(A_azi,0)
-                    A_ele=np.append(A_ele,A_max_ele)
-            
-            #drop last backswipe
-            S_azi=S_azi[:-1]
-            S_ele=S_ele[:-1]
-            A_azi=A_azi[:-1]
-            A_ele=A_ele[:-1]
            
         #convert to Halo's units
         S1=S_azi*ppd1/10+np.zeros(len(P1))
@@ -224,6 +187,8 @@ def read_hpl(file,config):
         ppr=int(fid.readlines()[config['hpl_ppr']].split(':')[1].strip())
         fid.seek(0)
         mode=fid.readlines()[config['hpl_mode']].split(' - ')[1].strip()
+        if mode=='stepped':
+            mode='ssm'
         fid.seek(0)
         data=fid.readlines()[config['hpl_header']::Nr+1]
        
@@ -266,4 +231,27 @@ def angular_error(params,ang_range,dang,ppr,Dt_p,Dt_a,Dt_d,ppd1,ppd2,ang_tol=0.1
     return ang_error
     
         
-                       
+def linearize_angle(ang,ang_dir):
+    '''
+    Make angle continuous by resolving circularity and preserving direction
+    '''
+    
+    #wrap to 360
+    ang=ang%360
+    
+    #optimize initial point
+    if ang[0]>180: ang[0]-=360
+    
+    #calculate smallest difference
+    dang=(ang[1:] - ang[:-1] + 180) % 360 - 180
+    
+    #assign default direction if missing
+    if len(ang_dir)==0:
+        ang_dir=np.sign(dang)
+
+    #fix points according to direction
+    dang[(dang>0)*(ang_dir<0)]=dang[(dang>0)*(ang_dir<0)]-360
+    dang[(dang<0)*(ang_dir>0)]=dang[(dang<0)*(ang_dir>0)]+360
+    ang=ang[0]+np.cumsum(np.append(0,dang))
+    
+    return ang
