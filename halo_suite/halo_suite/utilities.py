@@ -12,19 +12,20 @@ from datetime import datetime
 from halo_suite import halo_simulator as hls
 from scipy.optimize import minimize
 def scan_file_compiler(mode: str, 
-                       azi: np.array([]),
-                       ele: np.array([]),
-                       azi_dir: np.array([]),
-                       ele_dir: np.array([]),
-                       repeats: int,
+                       azi: np.ndarray = np.array([]),
+                       ele: np.ndarray = np.array([]),
+                       azi_dir: np.ndarray = np.array([]),
+                       ele_dir: np.ndarray = np.array([]),
+                       repeats: int=1,
                        save_path: str='',
                        identifier: str='',
                        volumetric: bool=False,
+                       optimize: bool=False,
                        ppr: int=0,
                        S_azi: float=36,
                        S_ele: float=72,
-                       A_azi: float=50,
-                       A_ele: float=50,
+                       A_azi: float=36,
+                       A_ele: float=72,
                        config: dict={}):
     
     '''
@@ -52,6 +53,14 @@ def scan_file_compiler(mode: str,
         if type(ele).__name__!='list':
             ele=[ele]
         ele=np.array(ele)
+    if type(azi_dir).__name__!= 'ndarray':
+        if type(azi_dir).__name__!='list':
+            azi_dir=[azi_dir]
+        azi_dir=np.array(azi_dir)
+    if type(ele_dir).__name__!= 'ndarray':
+        if type(ele_dir).__name__!='list':
+            ele_dir=[ele_dir]
+        ele_dir=np.array(ele_dir)
         
     #cartesian product of angles if it s a volumetric scan
     if volumetric:
@@ -70,12 +79,12 @@ def scan_file_compiler(mode: str,
     ele=linearize_angle(ele, ele_dir)
         
     #scan for SSM
-    if mode=='ssm':
+    if mode=='SSM':
         L=''
         for a,e in zip(azi%360,ele%360):
             L=L+('%07.3f' % a+ '%07.3f' % e +'\n')
     
-    if mode =='csm':
+    if mode =='CSM':
         
         #extract step motors resolution
         ppd1=config['ppd_azi']
@@ -93,13 +102,16 @@ def scan_file_compiler(mode: str,
         P2=-ele_range*ppd2
         
         #do this if kinematic optimization is requested
-        if 'Dt_a_CSM' in config:
+        if optimize:
             
             #extract configs
             ang_tol=config['ang_tol']
             Dt_p=config['Dt_p_CSM']
             Dt_a=config['Dt_a_CSM']
-            Dt_d=config['Dt_d'][ppr]
+            try:
+                Dt_d=config['Dt_d_CSM'][ppr]
+            except:
+                Dt_d=0
             S_max_azi=config['S_max_azi']*10/ppd1
             A_max_azi=config['A_max_azi']*1000/ppd1
             S_max_ele=config['S_max_ele']*10/ppd2
@@ -186,9 +198,9 @@ def read_hpl(file,config):
         fid.seek(0)
         ppr=int(fid.readlines()[config['hpl_ppr']].split(':')[1].strip())
         fid.seek(0)
-        mode=fid.readlines()[config['hpl_mode']].split(' - ')[1].strip()
-        if mode=='stepped':
-            mode='ssm'
+        mode=fid.readlines()[config['hpl_mode']].split(' - ')[1].strip().upper()
+        if mode=='STEPPED':
+            mode='SSM'
         fid.seek(0)
         data=fid.readlines()[config['hpl_header']::Nr+1]
        
@@ -221,12 +233,15 @@ def angular_error(params,ang_range,dang,ppr,Dt_p,Dt_a,Dt_d,ppd1,ppd2,ang_tol=0.1
                                         'ppd_azi':ppd1,
                                         'ppd_ele':ppd2})
     
-    T,ang,_,_,_,_=halo_sim.scanning_head_sim(mode='csm',ppr=ppr,azi=np.array([0,ang_range]),ele=np.array([0,0]),
+    T,ang,_,_,_,_=halo_sim.scanning_head_sim(mode='CSM',ppr=ppr,azi=np.array([0,ang_range]),ele=np.array([0,0]),
                                                    S_azi=S,A_azi=A,S_ele=0,A_ele=0)
     
     #exclude points where the angle is dwelling 
     dang2=(ang[1:]-ang[:-1]+ 180) % 360 - 180
-    dang2=np.append(dang2[0],dang2)
+    try:
+        dang2=np.append(dang2[0],dang2)
+    except:
+        k=0
     ang_error=(np.median(np.diff(ang[np.abs(dang2)>ang_tol]))-dang)**2
     return ang_error
     

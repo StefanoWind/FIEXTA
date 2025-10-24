@@ -12,12 +12,14 @@ from halo_suite.utilities import scan_file_compiler, read_hpl
 from scipy.optimize import curve_fit
 from halo_suite import halo_simulator as hls
 import glob
+S_azi=None
+Dt_p=None
 plt.close('all')
 
 #%% Inputs
 path_config=os.path.join(cd,'configs/config.{lidar_id}.yaml')
 lidar_id=input('Lidar ID: ')
-mode=input('Mode (SSM or CSM): ').lower()
+mode=input('Mode (SSM or CSM): ')
 
 #%% Initialization
 #configs
@@ -40,14 +42,15 @@ def motion_time(dang,S,A):
 #STATIC ACQUISITION
 files=glob.glob(os.path.join(config['path_data'],f'{lidar_id}','kinematic','acquisition',f'{mode}','*hpl'))
 if len(files)==0:
-    #write file for acquisitin test
-    if mode=='ssm':
+    #write file for acquisition test
+    if mode=='SSM':
         scan_file_compiler(mode=mode,azi=[0],ele=[0],repeats=config['repeats_test'],
                            identifier=f'acquisition.{lidar_id}',config=config)
-    elif mode=='csm':
-        scan_file_compiler(mode=mode,azi=[0,360],ele=[0,0],repeats=1,
+    elif mode=='CSM':
+        scan_file_compiler(mode=mode,azi=[0,359],ele=[0,0],azi_dir=[1],repeats=1,
                            identifier=f'acquisition.{lidar_id}',config=config)
-    print(f'File for acquisition test saved as ./scans/acquisition.{lidar_id}.txt. Run it on the lidar with different PPRs. Save data in ./data/{lidar_id}/kinematic/acquisition/{mode}')
+    print(f'File for acquisition test saved as ./scans/acquisition.{lidar_id}.{mode}.txt. Run it on the lidar with different PPRs. Save data in ./data/{lidar_id}/kinematic/acquisition/{mode}')
+    os.makedirs(os.path.join(cd,f'data/{lidar_id}/kinematic/acquisition/{mode}'),exist_ok=True)
 else:
     #read acquisition test data
     dDt_avg=[]
@@ -55,7 +58,7 @@ else:
     dt_top=[]
     ppr_all=[]
     for f in files:
-        tnum,azi,ele,Nr,dr,ppr=read_hpl(f,config)
+        tnum,azi,ele,Nr,dr,ppr,mode=read_hpl(f,config)
         dDt_avg=np.append(dDt_avg,np.nanmedian(np.diff(tnum[1:-1])))
         dt_low=np.append(dt_low,np.nanpercentile(np.diff(tnum[1:-1]),5))
         dt_top=np.append(dt_top,np.nanpercentile(np.diff(tnum[1:-1]),95))
@@ -84,41 +87,43 @@ else:
     for dazi in config['dazi_test']:
         max_azi=config['azi_max_test']
         if dazi>=max_azi/2:
-            max_azi=360
-        new_azi=np.arange(0,max_azi,dazi+0.1)
+            max_azi=359
+        new_azi=np.arange(0,max_azi+0.01,dazi)
         azi=np.append(azi,new_azi)
         ele=np.append(ele,new_azi*0)
         
     for dele in config['dele_test']:
         max_ele=config['ele_max_test']
         if dele>=max_ele/2:
-            max_ele=180
-        new_ele=np.arange(0,max_ele,dele+0.1)
+            max_ele=179
+        new_ele=np.arange(0,max_ele+0.01,dele)
         azi=np.append(azi,new_ele*0)
         ele=np.append(ele,new_ele)
     
-    if mode=='ssm':
-        scan_file_compiler(mode=mode,azi=azi,ele=ele,repeats=1,identifier=f'motion.{lidar_id}')
-        print(f'File for motion test saved as ./scans/motion.{lidar_id}.txt. Run it on the lidar with different PPRs. Save data in ./data/{lidar_id}/kinematic/motion/{mode}')
-    elif mode=='csm':
+    if mode=='SSM':
+        if not os.path.isfile(os.path.join(cd,f'/scans/motion.{lidar_id}.{mode}.txt')):
+            scan_file_compiler(mode=mode,azi=azi,ele=ele,repeats=1,identifier=f'motion.{lidar_id}')
+            print(f'File for motion test saved as ./scans/motion.{lidar_id}.{mode}.txt. Run it on the lidar with different PPRs. Save data in ./data/{lidar_id}/kinematic/motion/{mode}')
+    elif mode=='CSM':
         ppr_test=int(input('PPR for motion test: '))
         
-        #prepare configuration
-        config_csm={}
-        for c in ['ppd_azi','ppd_ele','S_max_azi','S_max_ele','A_max_azi','A_max_ele','ang_tol']:
-            config_csm[c]=config[c]
-        config_csm['Dt_p']=Dt_p
-        config_csm['Dt_a']=Dt_a
-        config_csm['Dt_d']=0
-        scan_file_compiler(mode=mode,azi=azi,ele=ele,repeats=1,identifier=f'motion.{lidar_id}.{ppr_test}',ppr=ppr_test,
-                           config=config_csm)
-        print(f'File for motion test saved as ./scans/motion.{lidar_id}.{ppr_test}.txt. Run it on the lidar with the selected PPRs. Save data in ./data/{lidar_id}/kinematic/motion/{mode}')
+        if not os.path.isfile(os.path.join(cd,f'/scans/motion.{lidar_id}.{ppr_test}.{mode}.txt')):
+            #prepare configuration
+            config_CSM={}
+            for c in ['ppd_azi','ppd_ele','S_max_azi','S_max_ele','A_max_azi','A_max_ele','ang_tol']:
+                config_CSM[c]=config[c]
+            config_CSM['Dt_p_CSM']=Dt_p
+            config_CSM['Dt_a_CSM']=Dt_a
+            config_CSM['Dt_d_CSM']={ppr:0}
+            scan_file_compiler(mode=mode,azi=azi,ele=ele,repeats=1,identifier=f'motion.{lidar_id}.{ppr_test}',ppr=ppr_test,
+                               config=config_CSM,optimize=True)
+            print(f'File for motion test saved as ./scans/motion.{lidar_id}.{ppr_test}.txt. Run it on the lidar with the selected PPRs. Save data in ./data/{lidar_id}/kinematic/motion/{mode}')
 
     #read motion test data
     files=glob.glob(os.path.join(config['path_data'],f'{lidar_id}','kinematic','motion',f'{mode}','*hpl'))
     for f in files:
-        tnum,azi,ele,Nr,dr,ppr=read_hpl(f,config)
-        if mode=='csm':
+        tnum,azi,ele,Nr,dr,ppr,mode=read_hpl(f,config)
+        if mode=='CSM':
             if ppr!=ppr_test:
                 continue
         azi=np.round(azi/config['ang_tol'])*config['ang_tol']%360
@@ -128,7 +133,7 @@ else:
         dazi=((azi[1:] - azi[:-1] + 180) % 360) - 180
         dele=((ele[1:] - ele[:-1] + 180) % 360) - 180
         
-        if mode=='ssm':
+        if mode=='SSM':
             #fit kinematic model to estimate kinematic parameters of SSM
             V, cov = curve_fit(motion_time,dazi[dazi>0.01],Dt_m[dazi>0.01]-Dt_p-Dt_a*ppr)
             S_azi=np.round(V[0],1)
@@ -164,25 +169,23 @@ else:
             #simulate scanning head
             halo_sim=hls.halo_simulator(config={'processing_time':Dt_p,
                                                  'acquisition_time':Dt_a,
-                                                 'dwell_time': 0,
-                                                 'max_S_azi':S_azi,
-                                                 'max_A_azi':A_azi,
-                                                 'max_S_ele':S_ele,
-                                                 'max_A_ele':A_ele})
+                                                 'dwell_time': 0})
             
-            t2,azi2,ele2,t_all,azi_all,ele_all=halo_sim.scanning_head_sim(mode='ssm',ppr=ppr,azi=azi,ele=ele)
+            t2,azi2,ele2,t_all,azi_all,ele_all=halo_sim.scanning_head_sim(mode='SSM',ppr=ppr,
+                                                                          S_azi=S_azi,A_azi=A_azi,S_ele=S_ele,A_ele=A_ele,
+                                                                          source=os.path.join(cd,'scans',f'motion.{lidar_id}.SSM.txt'))
             
-        elif mode=='csm':
+        elif mode=='CSM':
             
             #simulate scanning head
             halo_sim=hls.halo_simulator(config={'processing_time':Dt_p,
                                                 'acquisition_time':Dt_a,
-                                                'dwell_time':config['Dt_d'][ppr],
+                                                'dwell_time':config['Dt_d_CSM'][ppr],
                                                 'ppd_azi':config['ppd_azi'],
                                                 'ppd_ele':config['ppd_ele']})
             
-            t2,azi2,ele2,t_all,azi_all,ele_all=halo_sim.scanning_head_sim(mode='csm',ppr=ppr,
-                                                                       source=os.path.join(cd,'scans',f'motion.{lidar_id}.{ppr}.csm.txt'))
+            t2,azi2,ele2,t_all,azi_all,ele_all=halo_sim.scanning_head_sim(mode='CSM',ppr=ppr,
+                                                                       source=os.path.join(cd,'scans',f'motion.{lidar_id}.{ppr}.CSM.txt'))
             
             plt.figure(figsize=(18,8))            
             ax=plt.subplot(2,1,1)
@@ -227,19 +230,23 @@ else:
         plt.xlabel('Time [s]')
         plt.ylabel(r'$\beta$ [$^\circ$]')
         plt.grid()
-        
-add=input('Add parameters to configuration? (y/n): ')
-if add.lower()=='y':
-    if mode=='ssm':
+
+if mode=='SSM' and S_azi is not None:        
+    add=input('Add parameters to configuration? (y/n): ')
+    if add.lower()=='y':
         config['Dt_p_SSM']=Dt_p.item()
         config['Dt_a_SSM']=Dt_a.item()
         config['S_azi_SSM']=S_azi.item()
         config['S_ele_SSM']=S_ele.item()
         config['A_azi_SSM']=A_azi.item()
         config['A_ele_SSM']=A_ele.item()
-    elif mode=='csm':
+        with open(path_config.format(lidar_id=lidar_id), 'w') as fid:
+            yaml.safe_dump(config,fid)  
+        
+if mode=='CSM' and Dt_p is not None:        
+    add=input('Add parameters to configuration? (y/n): ')
+    if add.lower()=='y':    
         config['Dt_p_CSM']=Dt_p.item()
         config['Dt_a_CSM']=Dt_a.item()
-
-with open(path_config.format(lidar_id=lidar_id), 'w') as fid:
-    yaml.safe_dump(config,fid)      
+        with open(path_config.format(lidar_id=lidar_id), 'w') as fid:
+            yaml.safe_dump(config,fid)      

@@ -32,21 +32,21 @@ if mode=='ssm':
     halo_sim=hls.halo_simulator(config={'processing_time':config['Dt_p_SSM'],
                                          'acquisition_time':config['Dt_a_SSM'],
                                          'dwell_time': 0,
-                                         'max_S_azi':config['S_azi_SSM'],
-                                         'max_A_azi':config['A_azi_SSM'],
-                                         'max_S_ele':config['S_ele_SSM'],
-                                         'max_A_ele':config['A_ele_SSM']})
+                                         'S_max_azi':config['S_azi_SSM'],
+                                         'A_max_azi':config['A_azi_SSM'],
+                                         'S_max_ele':config['S_ele_SSM'],
+                                         'A_max_ele':config['A_ele_SSM']})
     
     t2,azi2,ele2,t_all,azi_all,ele_all=halo_sim.scanning_head_sim(mode='ssm',ppr=ppr,source=scan_file,azi0=azi[0],ele0=ele[0])
     
 elif mode=='csm':
     
     #simulate scanning head
-    halo_sim=hls.halo_simulator(config={'processing_time':config['Dt_p_CSM'],
-                                        'acquisition_time':config['Dt_a_CSM'],
+    halo_sim=hls.halo_simulator(config={'processing_time':config['Dt_p_csm'],
+                                        'acquisition_time':config['Dt_a_csm'],
                                         'dwell_time':config['Dt_d'][ppr],
                                         'ppd_azi':config['ppd_azi'],
-                                        'ppd_ele':config['ppd_ele']})
+                                        'ppd_ele':config['ppd_ele'])})
     
     t2,azi2,ele2,t_all,azi_all,ele_all=halo_sim.scanning_head_sim(mode='csm',ppr=ppr,source=scan_file,azi0=azi[0],ele0=ele[0])
     

@@ -21,14 +21,14 @@ class halo_simulator:
                           mode: str='SSM',
                           ppr: int=1000,
                           source: str='',
-                          S_azi: float=21,
+                          azi: np.ndarray = np.array([]),
+                          ele: np.ndarray = np.array([]),
+                          S_azi: float=36,
                           S_ele: float=72,
-                          A_azi: float=40,
-                          A_ele: float=40,
+                          A_azi: float=36,
+                          A_ele: float=72,
                           dt: float=0.01,
-                          ang_tol: float=0.1,
-                          azi0: float=0,
-                          ele0: float=0):
+                          ang_tol: float=0.1):
         '''
         This module takes as input either:
             1) for SSM, a sequence of azimuths and elevations and maximum speeds and accelrations
@@ -41,58 +41,54 @@ class halo_simulator:
         Dt_s=Dt_p+Dt_a*ppr
         
         #read scan file
-        with open(source,'r') as fid:
-            lines = fid.readlines()
-        lines = [line.strip() for line in lines]
+        if mode=='SSM':
+            if os.path.isfile(source):
+                with open(source,'r') as fid:
+                    lines = fid.readlines()
+                lines = [line.strip() for line in lines]
+                #extract geometry
+                azi=[]
+                ele=[]
+                for l in lines:
+                    azi=np.append(azi,np.float32(l[:7]))
+                    ele=np.append(ele,np.float32(l[7:]))
             
-        if mode=='ssm':
-            
-            #extract geometry
-            azi=[azi0]
-            ele=[ele0]
-            for l in lines:
-                azi=np.append(azi,np.float32(l[:7]))
-                ele=np.append(ele,np.float32(l[7:]))
-            
-        elif mode=='csm':
+        elif mode=='CSM':
             ppd1=self.config['ppd_azi']
             ppd2=self.config['ppd_ele']
             
-            #extract kinematic parameters
-            P1=[]
-            P2=[]
-            S1=[]
-            S2=[]
-            A1=[]
-            A2=[]
-            for l in lines:
-                if len(l)>10:
-                    kin = [np.float64(v[1:]) for v in re.findall(r'=[-]?\d*\.?\d+', l)]
-                
-                    A1=np.append(A1,kin[0])
-                    S1=np.append(S1,kin[1])
-                    P1=np.append(P1,kin[2])
-                    A2=np.append(A2,kin[3])
-                    S2=np.append(S2,kin[4])
-                    P2=np.append(P2,kin[5])
+            if os.path.isfile(source):
+                with open(source,'r') as fid:
+                    lines = fid.readlines()
+                lines = [line.strip() for line in lines]
+                #extract kinematic parameters
+                P1=[]
+                P2=[]
+                S1=[]
+                S2=[]
+                A1=[]
+                A2=[]
+                for l in lines:
+                    if len(l)>10:
+                        kin = [np.float64(v[1:]) for v in re.findall(r'=[-]?\d*\.?\d+', l)]
                     
-            azi=np.append(azi0,-np.round(P1/ppd1/ang_tol)*ang_tol)
-            ele=np.append(ele0,-np.round(P2/ppd2/ang_tol)*ang_tol)
-            S_azi=S1*10/ppd1
-            S_ele=S2*10/ppd2
-            A_azi=A1*1000/ppd1
-            A_ele=A2*1000/ppd2
+                        A1=np.append(A1,kin[0])
+                        S1=np.append(S1,kin[1])
+                        P1=np.append(P1,kin[2])
+                        A2=np.append(A2,kin[3])
+                        S2=np.append(S2,kin[4])
+                        P2=np.append(P2,kin[5])
+                        
+                azi=-np.round(P1/ppd1/ang_tol)*ang_tol
+                ele=-np.round(P2/ppd2/ang_tol)*ang_tol
+                S_azi=S1[1:]*10/ppd1
+                S_ele=S2[1:]*10/ppd2
+                A_azi=A1[1:]*1000/ppd1
+                A_ele=A2[1:]*1000/ppd2
         
-        if mode=='ssm':
-            #for SSM, use the maximum speeds and acceleration provided in the config
-            S_azi=self.config['max_S_azi']+np.zeros((len(azi))-1)
-            S_ele=self.config['max_S_ele']+np.zeros((len(azi))-1)
-            A_azi=self.config['max_A_azi']+np.zeros((len(azi))-1)
-            A_ele=self.config['max_A_ele']+np.zeros((len(azi))-1)
-            
         #zeroing
-        azi_all=np.array([azi0])
-        ele_all=np.array([ele0])
+        azi_all=np.array([0])
+        ele_all=np.array([0])
         t_all=np.array([0])
         t=np.array([0])
         
@@ -103,8 +99,8 @@ class halo_simulator:
         
         #loop through segments
         for azi1,azi2,ele1,ele2,S1,S2,A1,A2 in zip(azi[:-1],azi[1:],ele[:-1],ele[1:],S_azi,S_ele,A_azi,A_ele):
-            dazi=((azi2 - azi1 + 180) % 360) - 180
-            dele=((ele2 - ele1 + 180) % 360) - 180
+            dazi=azi2-azi1
+            dele=ele2-ele1
             if np.abs(dazi)>ang_tol and np.abs(dele)<ang_tol:#PPI simulation
                 _t,_azi=self.step_scanning_head(azi1,azi2,S1,A1,mode=mode)
                 _ele=ele1+_azi*0
@@ -120,33 +116,33 @@ class halo_simulator:
                 
             azi_all=np.append(azi_all,_azi[1:])
             ele_all=np.append(ele_all,_ele[1:])
-            if mode=='ssm':
+            if mode=='SSM':
                 #in SSM, add acquisition delay
                 t_all=np.append(t_all,t_all[-1]+_t[1:]+Dt_s)
                 t=np.append(t,t[-1]+_t[-1]+Dt_s)
-                azi_all=azi_all%360
-            elif mode=='csm':
+            elif mode=='CSM':
                 #in CSM mode, add the dwelling time
                 t_all=np.append(t_all,t_all[-1]+_t[1:]+Dt_d)
-                azi_all=azi_all%360
+                
+        azi_all=azi_all[1:]%360
+        ele_all=ele_all[1:]
+        t_all=t_all[1:]
         
-        if mode=='csm':
+        if mode=='CSM':
             #in CSM mode, iterpolate at sampling point
             t=np.arange(0,t_all[-1]+Dt_s,Dt_s)
             c=np.interp(t,t_all,np.cos(np.radians(azi_all)))
             s=np.interp(t,t_all,np.sin(np.radians(azi_all)))
-            azi=np.degrees(np.arctan2(s,c))%360
+            azi=np.degrees(np.arctan2(s,c))
             c=np.interp(t,t_all,np.cos(np.radians(ele_all)))
             s=np.interp(t,t_all,np.sin(np.radians(ele_all)))
-            ele=np.degrees(np.arctan2(s,c))%360
+            ele=np.degrees(np.arctan2(s,c))
             
-        
         azi=azi%360
-        
             
         return t,azi,ele,t_all,azi_all,ele_all
     
-    def step_scanning_head(self,ang1,ang2,S,A,mode='ssm',dt=0.01):
+    def step_scanning_head(self,ang1,ang2,S,A,mode='SSM',dt=0.01):
         
         #fix 0 values
         if A==0:
@@ -155,7 +151,7 @@ class halo_simulator:
             S+=10**-10
         
         #if SSM mode is on and path crosses 0 degrees, find shortest route
-        if mode=='ssm':
+        if mode=='SSM':
             if ang2-ang1<-180:
                 ang1-=360
             elif ang2-ang1>180:
