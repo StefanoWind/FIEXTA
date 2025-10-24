@@ -126,7 +126,7 @@ class halo_simulator:
                 
         azi_all=azi_all[1:]%360
         ele_all=ele_all[1:]
-        t_all=t_all[1:]
+        t_all=t_all[1:]-t_all[1]
         
         if mode=='CSM':
             #in CSM mode, iterpolate at sampling point

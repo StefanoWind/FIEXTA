@@ -7,6 +7,8 @@ import numpy as np
 from halo_suite import halo_simulator as hls 
 from halo_suite.utilities import scan_file_compiler
 from lisboa import statistics as stats
+import lisboa.utilities as utl
+from matplotlib import pyplot as plt
 import yaml
 
 class scan_optimizer:
@@ -23,21 +25,30 @@ class scan_optimizer:
             ele2: np.array,
             dazi: np.array,
             dele: np.array,
+            rmin: float,
+            rmax: float,
+            dr: float,
+            ppr: int,
             volumetric: bool,
             mode: str,
-            ppr: int,
-            dr: float,
-            path_config_lidar: str):
+            path_config_lidar: str,
+            T: float,
+            tau: float):
         
         #zeroing
-        epsilon1=np.array(azi1)+np.nan
-        epsilon2=np.array(azi1)+np.nan
+        epsilon1=np.zeros((len(azi1),len(dazi)))+np.nan
+        epsilon2=np.zeros((len(azi1),len(dazi)))+np.nan
+        
+        #initialize LiSBOA
+        lproc=stats.statistics(self.config)
         
         with open(path_config_lidar, 'r') as fid:
             config_lidar = yaml.safe_load(fid)    
         
-        
+        r=np.arange(rmin,rmax+dr,dr)
+        i_ang=0
         for a1,a2,e1,e2 in zip(azi1,azi2,ele1,ele2):
+            i_dang=0
             for da,de in zip(dazi,dele):
                 da+=10**-10
                 de+=10**-10
@@ -50,18 +61,31 @@ class scan_optimizer:
                 
                 azi=np.append(azi,azi[0])
                 ele=np.append(ele,ele[0])
-                if mode=='csm':
+                if mode=='CSM':
                     scan_file=scan_file_compiler(mode=mode,azi=azi,ele=ele,repeats=1,ppr=ppr,volumetric=volumetric,
-                                       identifier=f'{a1}.{a2}.{e1}.{e2}.{ppr}',config=config_lidar)
+                                       identifier=f'{a1}.{a2}.{e1}.{e2}.{ppr}',config=config_lidar,optimize=True)
        
-                    halo_sim=hls.halo_simulator(config={'processing_time':config_lidar['Dt_d'][ppr],
+                    halo_sim=hls.halo_simulator(config={'processing_time':config_lidar['Dt_p_CSM'],
                                                         'acquisition_time':config_lidar['Dt_a_CSM'],
-                                                        'dwell_time':config_lidar['Dt_d'][ppr],
+                                                        'dwell_time':config_lidar['Dt_d_CSM'][ppr],
                                                         'ppd_azi':config_lidar['ppd_azi'],
                                                         'ppd_ele':config_lidar['ppd_ele']})
                 
-                    t2,azi2,ele2,t_all,azi_all,ele_all=halo_sim.scanning_head_sim(mode='csm',ppr=ppr,
-                                                                               source=scan_file,azi0=azi[0],ele0=ele[0])
-                        
+                    t,azi_sim,ele_sim,t_all,azi_all,ele_all=halo_sim.scanning_head_sim(mode=mode,ppr=ppr,source=scan_file)
+                # elif mode=='SSM':
+                    
+                #epsilon1
+                x,y,z=utl.sphere2cart(r, azi_sim, ele_sim)
+                x_exp=[x.ravel(),y.ravel()]
+                grid,Dd,excl,w,sel,x_exp,f=lproc.calculate_weights(x_exp)
+                epsilon1[i_ang,i_dang]=np.sum(excl)/np.size(excl)
+                
+                #epsilon2
+                L=np.floor(T/t[-1])
+                p=np.arange(1,L)
+                epsilon2[i_ang,i_dang]=(1/L+2/L**2*np.sum((L-p)*np.exp(-T/tau*p)))**0.5
+                
+                i_dang+=1
+            i_ang+=1
                     
         return epsilon1,epsilon2

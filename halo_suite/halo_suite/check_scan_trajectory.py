@@ -9,7 +9,6 @@ from matplotlib import pyplot as plt
 import yaml
 from halo_suite.utilities import read_hpl
 from halo_suite import halo_simulator as hls
-import numpy as np
 plt.close('all')
 
 #%% Inputs
@@ -27,28 +26,28 @@ with open(path_config, 'r') as fid:
 tnum,azi,ele,Nr,dr,ppr,mode=read_hpl(source,config)
 t=tnum-tnum[0]
 
-if mode=='ssm':
+if mode=='SSM':
     #simulate scanning head
     halo_sim=hls.halo_simulator(config={'processing_time':config['Dt_p_SSM'],
                                          'acquisition_time':config['Dt_a_SSM'],
-                                         'dwell_time': 0,
-                                         'S_max_azi':config['S_azi_SSM'],
-                                         'A_max_azi':config['A_azi_SSM'],
-                                         'S_max_ele':config['S_ele_SSM'],
-                                         'A_max_ele':config['A_ele_SSM']})
+                                         'dwell_time': 0})
     
-    t2,azi2,ele2,t_all,azi_all,ele_all=halo_sim.scanning_head_sim(mode='ssm',ppr=ppr,source=scan_file,azi0=azi[0],ele0=ele[0])
+    t2,azi2,ele2,t_all,azi_all,ele_all=halo_sim.scanning_head_sim(mode='SSM',ppr=ppr,source=scan_file,
+                                                                  S_azi=config['S_azi_SSM'],
+                                                                  A_azi=config['A_azi_SSM'],
+                                                                  S_ele=config['S_ele_SSM'],
+                                                                  A_ele=config['A_ele_SSM'])
     
-elif mode=='csm':
+elif mode=='CSM':
     
     #simulate scanning head
-    halo_sim=hls.halo_simulator(config={'processing_time':config['Dt_p_csm'],
-                                        'acquisition_time':config['Dt_a_csm'],
-                                        'dwell_time':config['Dt_d'][ppr],
+    halo_sim=hls.halo_simulator(config={'processing_time':config['Dt_p_CSM'],
+                                        'acquisition_time':config['Dt_a_CSM'],
+                                        'dwell_time':config['Dt_d_CSM'][ppr],
                                         'ppd_azi':config['ppd_azi'],
-                                        'ppd_ele':config['ppd_ele'])})
+                                        'ppd_ele':config['ppd_ele']})
     
-    t2,azi2,ele2,t_all,azi_all,ele_all=halo_sim.scanning_head_sim(mode='csm',ppr=ppr,source=scan_file,azi0=azi[0],ele0=ele[0])
+    t2,azi2,ele2,t_all,azi_all,ele_all=halo_sim.scanning_head_sim(mode='CSM',ppr=ppr,source=scan_file)
     
 plt.figure(figsize=(18,8))
 ax=plt.subplot(2,1,1)

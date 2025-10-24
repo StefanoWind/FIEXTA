@@ -87,3 +87,10 @@ def sind(x):
     return np.sin(x/180*np.pi)
 
 
+def sphere2cart(r,azi,ele):
+    x=np.outer(r,np.cos(np.radians(ele))*np.cos(np.radians(90-azi)))
+    y=np.outer(r,np.cos(np.radians(ele))*np.sin(np.radians(90-azi)))
+    z=np.outer(r,np.sin(np.radians(ele)))
+    return x,y,z
+
+

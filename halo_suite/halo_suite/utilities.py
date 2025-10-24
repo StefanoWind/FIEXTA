@@ -178,7 +178,7 @@ def scan_file_compiler(mode: str,
             
     #save file
     os.makedirs(save_path,exist_ok=True)
-    save_name=f'{identifier}.{mode}.{vol_flag}txt'
+    save_name=f'{identifier}.{mode.lower()}.{vol_flag}txt'
     with open(os.path.join(save_path,save_name),'w') as fid:
         fid.write(L*repeats)
         fid.close()
@@ -238,10 +238,7 @@ def angular_error(params,ang_range,dang,ppr,Dt_p,Dt_a,Dt_d,ppd1,ppd2,ang_tol=0.1
     
     #exclude points where the angle is dwelling 
     dang2=(ang[1:]-ang[:-1]+ 180) % 360 - 180
-    try:
-        dang2=np.append(dang2[0],dang2)
-    except:
-        k=0
+    dang2=np.append(dang2[0],dang2)
     ang_error=(np.median(np.diff(ang[np.abs(dang2)>ang_tol]))-dang)**2
     return ang_error
     

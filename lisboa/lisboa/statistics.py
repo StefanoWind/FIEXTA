@@ -42,12 +42,11 @@ class statistics:
             real=~np.isnan(np.sum(np.array(x_exp),axis=0))
         else:
             real=~np.isnan(np.sum(np.array(x_exp),axis=0)+f)
+            f=f[real]
             
         for j in range(n):
             x_exp[j]=x_exp[j][real]
 
-        f=f[real]
-        
         #initialize variables
         Dn0=np.array(self.config.Dn0)   
         N=len(x_exp[0])

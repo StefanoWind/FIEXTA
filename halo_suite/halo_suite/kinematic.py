@@ -101,13 +101,13 @@ else:
         ele=np.append(ele,new_ele)
     
     if mode=='SSM':
-        if not os.path.isfile(os.path.join(cd,f'/scans/motion.{lidar_id}.{mode}.txt')):
+        if not os.path.isfile(os.path.join(cd,f'scans/motion.{lidar_id}.{mode}.txt')):
             scan_file_compiler(mode=mode,azi=azi,ele=ele,repeats=1,identifier=f'motion.{lidar_id}')
             print(f'File for motion test saved as ./scans/motion.{lidar_id}.{mode}.txt. Run it on the lidar with different PPRs. Save data in ./data/{lidar_id}/kinematic/motion/{mode}')
     elif mode=='CSM':
         ppr_test=int(input('PPR for motion test: '))
         
-        if not os.path.isfile(os.path.join(cd,f'/scans/motion.{lidar_id}.{ppr_test}.{mode}.txt')):
+        if not os.path.isfile(os.path.join(cd,f'scans/motion.{lidar_id}.{ppr_test}.{mode}.txt')):
             #prepare configuration
             config_CSM={}
             for c in ['ppd_azi','ppd_ele','S_max_azi','S_max_ele','A_max_azi','A_max_ele','ang_tol']:
