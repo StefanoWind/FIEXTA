@@ -107,6 +107,15 @@ class halo_simulator:
             elif np.abs(dazi)<ang_tol and np.abs(dele)>ang_tol:#RHI simulations
                 _t,_ele=self.step_scanning_head(ele1,ele2,S2,A2,mode=mode)
                 _azi=azi1+_ele*0
+            elif np.abs(dazi)>ang_tol and np.abs(dele)>ang_tol: #two-axis motion simulations
+                _t_azi,_azi=self.step_scanning_head(azi1,azi2,S1,A1,mode=mode)
+                _t_ele,_ele=self.step_scanning_head(ele1,ele2,S2,A2,mode=mode)
+                if _t_azi[-1]>_t_ele[1]:
+                    _t=_t_azi
+                    _ele=np.append(_ele,np.zeros(np.sum(_t_azi>_t_ele[-1]))+_ele[-1])
+                elif _t_azi[-1]<_t_ele[1]:
+                    _t=_t_ele
+                    _azi=np.append(_azi,np.zeros(np.sum(_t_ele>_t_azi[-1]))+_azi[-1])
             elif np.abs(dazi)<ang_tol and np.abs(dele)<ang_tol:#stare
                     _t=[0,0]
                     _azi=[azi1,azi2]

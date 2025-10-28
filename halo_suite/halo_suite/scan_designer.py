@@ -17,11 +17,21 @@ source=input('Scan file: ')
 mode=input('Scan mode (SSM or CSM): ')
 reps=int(input('Repetitions: '))
 volumetric=input('Volumetric (y/n): ')=='y'
-
+reset=input('Reset (y/n): ')=='y'
 name=input('Name: ')
 if mode=='CSM':
     path_config=input('Config file: ')
     optimize=input('Optimize trajectory (y/n): ')=='y'
+    
+# source= './scans/test_vol_csm_kin.xlsx'
+# mode='CSM'
+# reps=1
+# volumetric=True
+# reset=True
+# name='test1'
+# path_config= './configs/config.217.yaml'
+# optimize=True
+# ppr=1000
     
 #%% Initialization
 config=[]
@@ -33,7 +43,7 @@ ele=data['Elevation [deg]'].values
 
 #configs
 if mode=='SSM':
-    scan_file_compiler(mode=mode,azi=azi,ele=ele,repeats=reps,identifier=name,volumetric=volumetric)
+    scan_file_compiler(mode=mode,azi=azi,ele=ele,repeats=reps,identifier=name,volumetric=volumetric,reset=reset)
 elif mode=='CSM':
     with open(path_config, 'r') as fid:
         config = yaml.safe_load(fid)    
@@ -49,5 +59,5 @@ elif mode=='CSM':
     ele_dir=ele_dir[~np.isnan(ele_dir)]
     
     scan_file_compiler(mode=mode,azi=azi,ele=ele,azi_dir=azi_dir,ele_dir=ele_dir,config=config,
-                       ppr=ppr,optimize=optimize,identifier=name,repeats=reps,volumetric=volumetric)
+                       ppr=ppr,optimize=optimize,identifier=name,repeats=reps,volumetric=volumetric,reset=reset)
     

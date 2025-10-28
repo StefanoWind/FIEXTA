@@ -19,6 +19,7 @@ class scan_optimizer:
       
     def pareto(
             self,
+            coords,
             azi1: np.array,
             azi2: np.array,
             ele1: np.array,
@@ -38,6 +39,11 @@ class scan_optimizer:
         #zeroing
         epsilon1=np.zeros((len(azi1),len(dazi)))+np.nan
         epsilon2=np.zeros((len(azi1),len(dazi)))+np.nan
+        grid=np.empty((len(azi1),len(dazi)),dtype=object)
+        Dd=np.empty((len(azi1),len(dazi)),dtype=object)
+        excl=np.empty((len(azi1),len(dazi)),dtype=object)
+        points=np.empty((len(azi1),len(dazi)),dtype=object)
+        duration=np.zeros((len(azi1),len(dazi)))+np.nan
         
         #initialize LiSBOA
         lproc=stats.statistics(self.config)
@@ -59,10 +65,14 @@ class scan_optimizer:
                 if len(ele)==1:
                     ele=ele.squeeze()+np.zeros(len(azi))
                 
+                if volumetric:
+                    [azi,ele]=np.meshgrid(azi,ele)
+                    azi=azi.ravel()
+                    ele=ele.ravel()
                 azi=np.append(azi,azi[0])
                 ele=np.append(ele,ele[0])
                 if mode=='CSM':
-                    scan_file=scan_file_compiler(mode=mode,azi=azi,ele=ele,repeats=1,ppr=ppr,volumetric=volumetric,
+                    scan_file=scan_file_compiler(mode=mode,azi=azi,ele=ele,repeats=1,ppr=ppr,
                                        identifier=f'{a1}.{a2}.{e1}.{e2}.{ppr}',config=config_lidar,optimize=True)
        
                     halo_sim=hls.halo_simulator(config={'processing_time':config_lidar['Dt_p_CSM'],
@@ -76,16 +86,20 @@ class scan_optimizer:
                     
                 #epsilon1
                 x,y,z=utl.sphere2cart(r, azi_sim, ele_sim)
-                x_exp=[x.ravel(),y.ravel()]
-                grid,Dd,excl,w,sel,x_exp,f=lproc.calculate_weights(x_exp)
-                epsilon1[i_ang,i_dang]=np.sum(excl)/np.size(excl)
+                if coords=='xy':
+                    x_exp=[x.ravel(),y.ravel()]
+                elif coords=='xyz':
+                    x_exp=[x.ravel(),y.ravel(),z.ravel()]
+                grid[i_ang,i_dang],Dd[i_ang,i_dang],excl[i_ang,i_dang],_,_,_,_=lproc.calculate_weights(x_exp)
+                epsilon1[i_ang,i_dang]=np.sum(excl[i_ang,i_dang])/np.size(excl[i_ang,i_dang])
+                points[i_ang,i_dang]=x_exp
                 
                 #epsilon2
                 L=np.floor(T/t[-1])
                 p=np.arange(1,L)
                 epsilon2[i_ang,i_dang]=(1/L+2/L**2*np.sum((L-p)*np.exp(-T/tau*p)))**0.5
-                
+                duration[i_ang,i_dang]=t[-1]
                 i_dang+=1
             i_ang+=1
                     
-        return epsilon1,epsilon2
+        return epsilon1,epsilon2,grid,Dd,excl,points,duration

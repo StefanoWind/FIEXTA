@@ -21,6 +21,7 @@ def scan_file_compiler(mode: str,
                        identifier: str='',
                        volumetric: bool=False,
                        optimize: bool=False,
+                       reset: bool=False,
                        ppr: int=0,
                        S_azi: float=36,
                        S_ele: float=72,
@@ -62,18 +63,38 @@ def scan_file_compiler(mode: str,
             ele_dir=[ele_dir]
         ele_dir=np.array(ele_dir)
         
-    #cartesian product of angles if it s a volumetric scan
+    #clear nan
+    azi=azi[~np.isnan(azi)]
+    ele=ele[~np.isnan(ele)]
+    azi_dir=azi_dir[~np.isnan(azi_dir)]
+    ele_dir=ele_dir[~np.isnan(ele_dir)]
+    
+    #cartesian product of angles if it is a volumetric scan
     if volumetric:
+        azi_dir=np.append(azi_dir,np.sign((azi[0] - azi[-1] + 180) % 360 - 180))
+        ele_dir=np.append(1,ele_dir)
+        
         [azi,ele]=np.meshgrid(azi,ele)
         azi=azi.ravel()
         ele=ele.ravel()
+        
         [azi_dir,ele_dir]=np.meshgrid(azi_dir,ele_dir)
-        azi_dir=azi_dir.ravel()
-        ele_dir=ele_dir.ravel()
+        azi_dir=azi_dir.ravel()[:-1]
+        ele_dir=ele_dir.ravel()[:-1]
         vol_flag='vol.'
     else:
         vol_flag=''
-        
+    
+    #add backswipe to home position
+    if reset:
+        if azi[0]!=azi[-1] or ele[0]!=ele[-1]:
+            if len(azi_dir)!=0:
+                azi_dir=np.append(azi_dir,np.sign((azi[0] - azi[-1] + 180) % 360 - 180))
+                ele_dir=np.append(ele_dir,np.sign((ele[0] - ele[-1] + 180) % 360 - 180))
+            
+            azi=np.append(azi,azi[0])
+            ele=np.append(ele,ele[0])
+            
     #linearize angles
     azi=linearize_angle(azi, azi_dir)
     ele=linearize_angle(ele, ele_dir)
@@ -112,11 +133,14 @@ def scan_file_compiler(mode: str,
                 Dt_d=config['Dt_d_CSM'][ppr]
             except:
                 Dt_d=0
+            T_s=Dt_p+Dt_a*ppr
+             
+            #Halo units -> S.I.
             S_max_azi=config['S_max_azi']*10/ppd1
             A_max_azi=config['A_max_azi']*1000/ppd1
             S_max_ele=config['S_max_ele']*10/ppd2
             A_max_ele=config['A_max_ele']*1000/ppd2
-            T_s=Dt_p+Dt_a*ppr
+           
             
             #zeroing
             S_azi=[S_max_azi]
@@ -129,39 +153,20 @@ def scan_file_compiler(mode: str,
                 dazi=(azi[i1+1]-azi[i1]+ 180) % 360 - 180
                 dele=(ele[i1+1]-ele[i1]+ 180) % 360 - 180
                 
-                #optimal azimuth kinematic for PPIs
-                if np.abs(dazi)>ang_tol and np.abs(dele)<ang_tol:
-                    if dazi<=S_max_azi*T_s:
-                        res = minimize(angular_error,[np.abs(dazi)/T_s,A_max_azi],
-                                       args=(azi[i2]-azi[i1],dazi,ppr,Dt_p,Dt_a,Dt_d,ppd1,ppd2,ang_tol),
-                                       bounds= [(ang_tol, S_max_azi), (ang_tol, A_max_azi)])
-                        if res.success==False:
-                            raise BaseException(f'Optimization of motion failed for azimuth step={dazi} deg, PPR={ppr}.')
-                        opt=res.x
-                    else:
-                        opt=[S_max_azi,A_max_azi]
-                    
-                    S_azi=np.append(S_azi,opt[0])
-                    S_ele=np.append(S_ele,0)
-                    A_azi=np.append(A_azi,opt[1])
-                    A_ele=np.append(A_ele,0)
-                   
-                #optimal elevation kinematic for RHIs
-                elif np.abs(dazi)<ang_tol and np.abs(dele)>ang_tol:
-                    if dele<=S_max_ele*T_s:
-                        res = minimize(angular_error,[np.abs(dele)/T_s,A_max_ele],
-                                       args=(ele[i2]-ele[i1],dele,ppr,Dt_p,Dt_a,Dt_d,ppd1,ppd2,ang_tol),
-                                       bounds= [(ang_tol, S_max_ele), (ang_tol, A_max_ele)])
-                        if res.success==False:
-                            raise BaseException(f'Optimization of motion failed for elevation step={dele} deg, PPR={ppr}.')
-                        opt=res.x
-                    else:
-                        opt=[S_max_ele,A_max_ele]
-                    
-                    S_azi=np.append(S_azi,0)
-                    S_ele=np.append(S_ele,opt[0])
-                    A_azi=np.append(A_azi,0)
-                    A_ele=np.append(A_ele,opt[1])
+                #optimization of motor paramters to match median angular resolution
+                res = minimize(angular_error,[np.min([np.abs(dazi)/T_s,S_max_azi-1]),A_max_azi-1,
+                                              np.min([np.abs(dele)/T_s,S_max_ele-1]),A_max_ele-1],
+                               args=(azi[i2]-azi[i1],ele[i2]-ele[i1],dazi,dele,ppr,Dt_p,Dt_a,Dt_d,ppd1,ppd2,ang_tol),
+                               bounds= [(ang_tol, S_max_azi), (ang_tol, A_max_azi), (ang_tol, S_max_ele), (ang_tol, A_max_ele)])
+                if res.success==False:
+                    raise BaseException(f'Optimization of motion failed for azimuth step={dazi} deg, elevation step={dele} deg, PPR={ppr}.')
+                opt=res.x
+        
+                #S.I. -> Halo units
+                S_azi=np.append(S_azi,opt[0])
+                A_azi=np.append(A_azi,opt[1])
+                S_ele=np.append(S_ele,opt[2])
+                A_ele=np.append(A_ele,opt[3])
            
         #convert to Halo's units
         S1=S_azi*ppd1/10+np.zeros(len(P1))
@@ -221,26 +226,40 @@ def read_hpl(file,config):
         return tnum, azi, ele, Nr, dr, ppr, mode
             
 
-def angular_error(params,ang_range,dang,ppr,Dt_p,Dt_a,Dt_d,ppd1,ppd2,ang_tol=0.1):
+def angular_error(params,azi_range,ele_range,dazi,dele,ppr,Dt_p,Dt_a,Dt_d,ppd1,ppd2,ang_tol=0.1):
     '''
-    Squared error in median angular resolution for a give setup
+    Squared error in median angular resolution for a given setup
     '''
-    S=params[0]
-    A=params[1]
+    S_azi=params[0]
+    A_azi=params[1]
+    S_ele=params[2]
+    A_ele=params[3]
     halo_sim=hls.halo_simulator(config={'processing_time': Dt_p,
                                         'acquisition_time':Dt_a,
                                         'dwell_time':      Dt_d,
                                         'ppd_azi':ppd1,
                                         'ppd_ele':ppd2})
     
-    T,ang,_,_,_,_=halo_sim.scanning_head_sim(mode='CSM',ppr=ppr,azi=np.array([0,ang_range]),ele=np.array([0,0]),
-                                                   S_azi=S,A_azi=A,S_ele=0,A_ele=0)
+    _,azi,ele,_,_,_=halo_sim.scanning_head_sim(mode='CSM',ppr=ppr,azi=np.array([0,azi_range]),ele=np.array([0,ele_range]),
+                                                   S_azi=S_azi,A_azi=A_azi,S_ele=S_ele,A_ele=A_ele)
     
     #exclude points where the angle is dwelling 
-    dang2=(ang[1:]-ang[:-1]+ 180) % 360 - 180
-    dang2=np.append(dang2[0],dang2)
-    ang_error=(np.median(np.diff(ang[np.abs(dang2)>ang_tol]))-dang)**2
-    return ang_error
+    dazi2=(azi[1:]-azi[:-1]+ 180) % 360 - 180
+    if np.max(np.abs(dazi2))>ang_tol:
+        dazi2=np.append(dazi2[0],dazi2)
+        azi_error=(np.median(np.diff(azi[np.abs(dazi2)>ang_tol]))-dazi)**2
+    else:
+        azi_error=0
+        
+    dele2=(ele[1:]-ele[:-1]+ 180) % 360 - 180
+    
+    if np.max(np.abs(dele2))>ang_tol:
+        dele2=np.append(dele2[0],dele2)
+        ele_error=(np.median(np.diff(ele[np.abs(dele2)>ang_tol]))-dele)**2
+    else:
+        ele_error=0
+    
+    return azi_error+ele_error
     
         
 def linearize_angle(ang,ang_dir):
