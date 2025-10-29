@@ -56,6 +56,7 @@ class scan_optimizer:
         for a1,a2,e1,e2 in zip(azi1,azi2,ele1,ele2):
             i_dang=0
             for da,de in zip(dazi,dele):
+                print(f"Evaluating azi={a1}:{da}:{a2},ele={e1}:{de}:{e2}")
                 da+=10**-10
                 de+=10**-10
                 azi=np.arange(a1,a2+da/2,da)
@@ -65,15 +66,9 @@ class scan_optimizer:
                 if len(ele)==1:
                     ele=ele.squeeze()+np.zeros(len(azi))
                 
-                if volumetric:
-                    [azi,ele]=np.meshgrid(azi,ele)
-                    azi=azi.ravel()
-                    ele=ele.ravel()
-                azi=np.append(azi,azi[0])
-                ele=np.append(ele,ele[0])
                 if mode=='CSM':
                     scan_file=scan_file_compiler(mode=mode,azi=azi,ele=ele,repeats=1,ppr=ppr,
-                                       identifier=f'{a1}.{a2}.{e1}.{e2}.{ppr}',config=config_lidar,optimize=True)
+                                       identifier=f'{a1:.2f}.{da:.2f}.{a2:.2f}.{e1:.2f}.{de:.2f}.{e2:.2f}.{ppr}',config=config_lidar,optimize=True,volumetric=True,reset=True)
        
                     halo_sim=hls.halo_simulator(config={'processing_time':config_lidar['Dt_p_CSM'],
                                                         'acquisition_time':config_lidar['Dt_a_CSM'],
@@ -88,6 +83,10 @@ class scan_optimizer:
                 x,y,z=utl.sphere2cart(r, azi_sim, ele_sim)
                 if coords=='xy':
                     x_exp=[x.ravel(),y.ravel()]
+                elif coords=='xz':
+                     x_exp=[x.ravel(),z.ravel()]
+                elif coords=='yz':
+                    x_exp=[y.ravel(),z.ravel()]
                 elif coords=='xyz':
                     x_exp=[x.ravel(),y.ravel(),z.ravel()]
                 grid[i_ang,i_dang],Dd[i_ang,i_dang],excl[i_ang,i_dang],_,_,_,_=lproc.calculate_weights(x_exp)

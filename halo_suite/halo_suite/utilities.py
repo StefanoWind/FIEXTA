@@ -133,7 +133,7 @@ def scan_file_compiler(mode: str,
                 Dt_d=config['Dt_d_CSM'][ppr]
             except:
                 Dt_d=0
-            T_s=Dt_p+Dt_a*ppr
+            Dt_s=Dt_p+Dt_a*ppr
              
             #Halo units -> S.I.
             S_max_azi=config['S_max_azi']*10/ppd1
@@ -153,15 +153,31 @@ def scan_file_compiler(mode: str,
                 dazi=(azi[i1+1]-azi[i1]+ 180) % 360 - 180
                 dele=(ele[i1+1]-ele[i1]+ 180) % 360 - 180
                 
+                #cap maximum angular resolution
+                if np.abs(dazi)>S_max_azi*Dt_s:
+                    S_min_azi=S_max_azi-1
+                    A_min_azi=A_max_azi-1
+                else:
+                    S_min_azi=ang_tol
+                    A_min_azi=ang_tol
+                if np.abs(dele)>S_max_ele*Dt_s:
+                    dele=np.sign(dele)*(S_max_ele-1)*Dt_s
+                    S_min_ele=S_max_ele-1
+                    A_min_ele=A_max_ele-1
+                else:
+                    S_min_ele=ang_tol
+                    A_min_ele=ang_tol
+                    
                 #optimization of motor paramters to match median angular resolution
-                res = minimize(angular_error,[np.min([np.abs(dazi)/T_s,S_max_azi-1]),A_max_azi-1,
-                                              np.min([np.abs(dele)/T_s,S_max_ele-1]),A_max_ele-1],
-                               args=(azi[i2]-azi[i1],ele[i2]-ele[i1],dazi,dele,ppr,Dt_p,Dt_a,Dt_d,ppd1,ppd2,ang_tol),
-                               bounds= [(ang_tol, S_max_azi), (ang_tol, A_max_azi), (ang_tol, S_max_ele), (ang_tol, A_max_ele)])
+                res = minimize(angular_error,[np.min([np.abs(dazi)/Dt_s,S_max_azi-0.5]),A_max_azi-0.5,
+                                              np.min([np.abs(dele)/Dt_s,S_max_ele-0.5]),A_max_ele-0.5],
+                               args=(azi[i2]-azi[i1],ele[i2]-ele[i1],dazi,dele,ppr,Dt_p,Dt_a,Dt_d,ppd1,ppd2),
+                               bounds= [(S_min_azi, S_max_azi), (A_min_azi, A_max_azi), 
+                                        (S_min_ele, S_max_ele), (A_min_ele, A_max_ele)])
                 if res.success==False:
                     raise BaseException(f'Optimization of motion failed for azimuth step={dazi} deg, elevation step={dele} deg, PPR={ppr}.')
                 opt=res.x
-        
+                
                 #S.I. -> Halo units
                 S_azi=np.append(S_azi,opt[0])
                 A_azi=np.append(A_azi,opt[1])
@@ -226,7 +242,7 @@ def read_hpl(file,config):
         return tnum, azi, ele, Nr, dr, ppr, mode
             
 
-def angular_error(params,azi_range,ele_range,dazi,dele,ppr,Dt_p,Dt_a,Dt_d,ppd1,ppd2,ang_tol=0.1):
+def angular_error(params,azi_range,ele_range,dazi,dele,ppr,Dt_p,Dt_a,Dt_d,ppd1,ppd2,ang_tol=10**-10):
     '''
     Squared error in median angular resolution for a given setup
     '''
@@ -239,7 +255,7 @@ def angular_error(params,azi_range,ele_range,dazi,dele,ppr,Dt_p,Dt_a,Dt_d,ppd1,p
                                         'dwell_time':      Dt_d,
                                         'ppd_azi':ppd1,
                                         'ppd_ele':ppd2})
-    
+
     _,azi,ele,_,_,_=halo_sim.scanning_head_sim(mode='CSM',ppr=ppr,azi=np.array([0,azi_range]),ele=np.array([0,ele_range]),
                                                    S_azi=S_azi,A_azi=A_azi,S_ele=S_ele,A_ele=A_ele)
     
