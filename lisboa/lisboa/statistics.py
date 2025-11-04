@@ -86,7 +86,6 @@ class statistics:
         
         #loop over all grid points
         for i in zip(*[xx for xx in nodes]):
-
             #squared Euclidean distance from obs points
             distSq=0
             for j in range(n):
@@ -131,7 +130,7 @@ class statistics:
                     ind_inf.append(np.arange(i1,i2+1).astype(int))                
                 for i_inf in itertools.product(*[ii for ii in ind_inf]):
                     edge[i_inf]=True
-        Dd[edge]=10**9
+        Dd[edge]=10**99
         
         #undersampled region
         excl=Dd>self.config.max_Dd
