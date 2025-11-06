@@ -1,6 +1,6 @@
 # -*- coding: utf-8 -*-
 """
-Lidar Statistical Barnes Objective Analysis
+Scan optimizer using Pareto front based on LiSBOA results
 """
 import os
 cd=os.path.dirname(__file__)
@@ -62,12 +62,13 @@ class scan_optimizer:
         with open(path_config_lidar, 'r') as fid:
             config_lidar = yaml.safe_load(fid)    
         
+        #scan testing
         r=np.arange(rmin,rmax+dr/2,dr)
         i_ang=0
-        for a1,a2,e1,e2 in zip(azi1,azi2,ele1,ele2):
+        for a1,a2,e1,e2 in zip(azi1,azi2,ele1,ele2):#loop through angular sectors
             i_dang=0
-            for da,de in zip(dazi,dele):
-                print(f"Evaluating azi={a1}:{da}:{a2},ele={e1}:{de}:{e2}")
+            for da,de in zip(dazi,dele):#loop through angular resolutions
+                print(f"Evaluating azi={a1}:{da}:{a2}, ele={e1}:{de}:{e2}")
                 da+=10**-10
                 de+=10**-10
                 azi=np.arange(a1,a2+da/2,da)
@@ -83,7 +84,7 @@ class scan_optimizer:
                                                  identifier=scan_name,
                                                  volumetric=volumetric,reset=True)
                     
-                    halo_sim=hls.halo_simulator(config={'processing_time':config_lidar['Dt_p_SSM'],
+                    halo_sim=hls.halo_simulator(config={'processing_time':  config_lidar['Dt_p_SSM'],
                                                          'acquisition_time':config_lidar['Dt_a_SSM'],
                                                          'dwell_time': 0})
                     
@@ -95,14 +96,14 @@ class scan_optimizer:
                                                                                   source=scan_file)
                 elif mode=='CSM':
                     scan_file=scan_file_compiler(mode=mode,azi=azi,ele=ele,repeats=1,ppr=ppr,
-                                       identifier=scan_name,
-                                       config=config_lidar,optimize=True,volumetric=volumetric,reset=True)
+                                       identifier=scan_name,config=config_lidar,
+                                       optimize=True,volumetric=volumetric,reset=True)
        
-                    halo_sim=hls.halo_simulator(config={'processing_time':config_lidar['Dt_p_CSM'],
+                    halo_sim=hls.halo_simulator(config={'processing_time': config_lidar['Dt_p_CSM'],
                                                         'acquisition_time':config_lidar['Dt_a_CSM'],
-                                                        'dwell_time':config_lidar['Dt_d_CSM'][ppr],
-                                                        'ppd_azi':config_lidar['ppd_azi'],
-                                                        'ppd_ele':config_lidar['ppd_ele']})
+                                                        'dwell_time':      config_lidar['Dt_d_CSM'][ppr],
+                                                        'ppd_azi':         config_lidar['ppd_azi'],
+                                                        'ppd_ele':         config_lidar['ppd_ele']})
                 
                     t,azi_sim,ele_sim,t_all,azi_all,ele_all=halo_sim.scanning_head_sim(mode=mode,ppr=ppr,source=scan_file)
                     
@@ -120,9 +121,12 @@ class scan_optimizer:
                 epsilon1[i_ang,i_dang]=np.sum(excl)/np.size(excl)
                 
                 #epsilon2
-                L=np.floor(T/t[-1])
-                p=np.arange(1,L)
-                epsilon2[i_ang,i_dang]=(1/L+2/L**2*np.sum((L-p)*np.exp(-T/tau*p)))**0.5
+                if T>t[-1]:
+                    L=np.floor(T/t[-1])
+                    p=np.arange(1,L)
+                    epsilon2[i_ang,i_dang]=(1/L+2/L**2*np.sum((L-p)*np.exp(-t[-1]/tau*p)))**0.5
+                else:
+                    epsilon2[i_ang,i_dang]=np.nan
                 duration[i_ang,i_dang]=t[-1]
                 
                 #save data
@@ -161,12 +165,14 @@ class scan_optimizer:
                     Output.attrs['epsilon2']=epsilon2[i_ang,i_dang]
                     Output.attrs['duration']=duration[i_ang,i_dang]
                     Output.attrs['volumetric']=str(volumetric)
+                    Output.attrs['mode']=mode
                     Output.to_netcdf(os.path.join(self.save_name,scan_name+'.nc'))
                     
                 if self.make_figures:
                     fig=utl.visualize_scan(Output)
                 if self.save_figures:
                     fig.savefig(os.path.join(self.save_name,scan_name+'.png'))
+                    plt.close(fig)
                     
                 i_dang+=1
             i_ang+=1
@@ -192,12 +198,14 @@ class scan_optimizer:
         Output['dele']=xr.DataArray(dele,coords={'index_dang':np.arange(len(dazi))},
                             attrs={'description':'end elevation','units':'degrees'})
         
-        Output.to_netcdf(os.path.join(self.save_name+'.Pareto.nc'))
+        Output.to_netcdf(os.path.join(self.save_name,os.path.basename(self.save_name)+'.Pareto.nc'))
         
         if self.make_figures:
             fig=utl.visualize_Pareto(Output)
         if self.save_figures:
-            fig.savefig(os.path.join(scan_name+'Pareto.png'))
+            fig.savefig(os.path.join(self.save_name,os.path.basename(self.save_name)+'.Pareto.png'))
+        
+        print(f'Pareto results saved as {os.path.basename(self.save_name)+".Pareto.nc"}')
             
         return Output
                      

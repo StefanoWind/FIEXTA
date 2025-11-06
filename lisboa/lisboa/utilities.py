@@ -8,6 +8,7 @@ import numpy as np
 from functools import wraps
 from lisboa.config import LisboaConfig
 from matplotlib import pyplot as plt
+from matplotlib.colors import LinearSegmentedColormap
 import warnings
 warnings.filterwarnings("ignore", category=SyntaxWarning)
 
@@ -112,7 +113,8 @@ def visualize_scan(Data):
          r'$\Delta n_0='+str(Data.attrs['config_Dn0'])+r'$ m'                                         + '\n'+\
          r'$\epsilon_I='+str(np.round(Data.attrs['epsilon1'],2))+r'$'                      + '\n'+\
          r'$\epsilon_{II}='+str(np.round(Data.attrs['epsilon2'],2))+r'$'                   + '\n'+\
-         r'$\tau_s='+str(np.round(Data.attrs['duration'],1))+r'$ s'
+         r'$\tau_s='+str(np.round(Data.attrs['duration'],1))+r'$ s'+ '\n'+\
+         'Scan mode = '+Data.attrs['mode']
      
     coords=''
     for c in Data.excl.coords:
@@ -125,7 +127,8 @@ def visualize_scan(Data):
         ax=plt.subplot(111)
         fill=np.zeros(np.shape(Data.excl))
         fill[Data.excl==False]=10
-        plt.pcolor(Data[coords[0]],Data[coords[1]],fill.T,cmap='Greys',vmin=0,vmax=1,alpha=0.5)
+        cmap_g = LinearSegmentedColormap.from_list("white_to_g", ["white", (0, 0.5, 0,0.1)])
+        plt.pcolor(Data[coords[0]],Data[coords[1]],fill.T,cmap=cmap_g,alpha=0.5)
         plt.plot(Data[coords[0]+'_points'],Data[coords[1]+'_points'],'.k',markersize=2)
         ax.set_aspect('equal')
         ax.set_xlim([Data.attrs['config_mins'][0],Data.attrs['config_maxs'][0]])
@@ -136,7 +139,8 @@ def visualize_scan(Data):
                       np.diff(ax.get_yticks())[0]])
         ax.set_xticks(np.arange(Data.attrs['config_mins'][0],Data.attrs['config_maxs'][0]+dtick,dtick))
         ax.set_yticks(np.arange(Data.attrs['config_mins'][1],Data.attrs['config_maxs'][1]+dtick,dtick))
-        ax.text(0,Data.attrs['config_maxs'][1]/2,s=info,bbox={'edgecolor':'k','facecolor':(1,1,1,0.25)})
+        ax.grid(True)
+        ax.text(0,Data.attrs['config_maxs'][1]/2,s=info,color='b',bbox={'edgecolor':'k','facecolor':(1,1,1,0.75)})
 
     #plot 3D scan
     elif coords=='xyz':
@@ -174,7 +178,7 @@ def visualize_scan(Data):
         ax.set_xticks(np.arange(Data.attrs['config_mins'][0],Data.attrs['config_maxs'][0]+dtick,dtick))
         ax.set_yticks(np.arange(Data.attrs['config_mins'][1],Data.attrs['config_maxs'][1]+dtick,dtick))
         ax.set_zticks(np.arange(Data.attrs['config_mins'][2],Data.attrs['config_maxs'][2]+dtick,dtick))
-        ax.text(0,0,Data.attrs['config_maxs'][2]/2,s=info,bbox={'edgecolor':'k','facecolor':(1,1,1,0.25)})
+        ax.text(0,0,Data.attrs['config_maxs'][2]/2,s=info,bbox={'edgecolor':'k','facecolor':(1,1,1,0.5)})
         
     return fig
 
