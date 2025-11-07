@@ -127,8 +127,8 @@ def scan_file_compiler(mode: str,
             
             #extract configs
             ang_tol=config['ang_tol']
-            Dt_p=config['Dt_p_CSM']
-            Dt_a=config['Dt_a_CSM']
+            Dt_p=   config['Dt_p_CSM']
+            Dt_a=   config['Dt_a_CSM']
             try:
                 Dt_d=config['Dt_d_CSM'][ppr]
             except:
@@ -140,7 +140,6 @@ def scan_file_compiler(mode: str,
             A_max_azi=config['A_max_azi']*1000/ppd1
             S_max_ele=config['S_max_ele']*10/ppd2
             A_max_ele=config['A_max_ele']*1000/ppd2
-           
             
             #zeroing
             S_azi=[S_max_azi]
@@ -161,7 +160,6 @@ def scan_file_compiler(mode: str,
                     S_min_azi=ang_tol
                     A_min_azi=ang_tol
                 if np.abs(dele)>S_max_ele*Dt_s:
-                    dele=np.sign(dele)*(S_max_ele-1)*Dt_s
                     S_min_ele=S_max_ele-1
                     A_min_ele=A_max_ele-1
                 else:
@@ -289,7 +287,7 @@ def linearize_angle(ang,ang_dir):
     #optimize initial point
     if ang[0]>180: ang[0]-=360
     
-    #calculate smallest difference
+    #calculate difference
     dang=(ang[1:] - ang[:-1] + 180) % 360 - 180
     
     #assign default direction if missing

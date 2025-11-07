@@ -72,7 +72,7 @@ else:
     plt.figure()
     plt.plot(ppr_all,dDt_avg,'.k',markersize=10,label='Data')
     plt.errorbar(ppr_all,dDt_avg,[dDt_avg-dt_low,dt_top-dDt_avg],fmt='o',color='k',capsize=5)
-    plt.plot(ppr_all,Dt_p+Dt_a*ppr_all,'-r',label=r'$'+str(Dt_p)+'+'+str(Dt_a*1000)+r'\cdot 10^{-3}$ PPR',zorder=10)
+    plt.plot(ppr_all,Dt_p+Dt_a*ppr_all,'-r',label=r'$'+str(Dt_p)+'+'+str(Dt_a*10000)+r'\cdot 10^{-4}$ PPR',zorder=10)
     plt.xlabel('PPR')
     plt.ylabel(r'$\Delta t$ [s]')
     plt.title(f'{mode}')
@@ -81,7 +81,7 @@ else:
     
     #DYNAMIC ACQUISITION
     
-    #prepare scan sequence
+    #prepare motion scan sequence
     azi=[]
     ele=[]
     for dazi in config['dazi_test']:
@@ -99,7 +99,8 @@ else:
         new_ele=np.arange(0,max_ele+0.01,dele)
         azi=np.append(azi,new_ele*0)
         ele=np.append(ele,new_ele)
-    
+        
+    #write motion scan file
     if mode=='SSM':
         if not os.path.isfile(os.path.join(cd,f'scans/motion.{lidar_id}.{mode}.txt')):
             scan_file_compiler(mode=mode,azi=azi,ele=ele,repeats=1,identifier=f'motion.{lidar_id}')
@@ -181,8 +182,8 @@ else:
             halo_sim=hls.halo_simulator(config={'processing_time':Dt_p,
                                                 'acquisition_time':Dt_a,
                                                 'dwell_time':config['Dt_d_CSM'][ppr],
-                                                'ppd_azi':config['ppd_azi'],
-                                                'ppd_ele':config['ppd_ele']})
+                                                'ppd_azi':   config['ppd_azi'],
+                                                'ppd_ele':   config['ppd_ele']})
             
             t2,azi2,ele2,t_all,azi_all,ele_all=halo_sim.scanning_head_sim(mode='CSM',ppr=ppr,
                                                                        source=os.path.join(cd,'scans',f'motion.{lidar_id}.{ppr}.CSM.txt'))

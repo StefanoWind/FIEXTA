@@ -31,8 +31,8 @@ class halo_simulator:
                           ang_tol: float=0.1):
         '''
         This module takes as input either:
-            1) for SSM, a sequence of azimuths and elevations and maximum speeds and accelrations
-            2) for CSM, either a txt scan file or specific valies of azimuths, elevations, speeds and accelerations
+            1) for SSM either a txt scan file and a sequence of azimuths and elevations and a single value of speeds and accelrations
+            2) for CSM, either a txt scan file or a sequence of azimuths and elevations stops, and a sequence of speeds and accelerations
         '''
         #extract config
         Dt_p=self.config['processing_time']
@@ -183,7 +183,7 @@ class halo_simulator:
             t2=Dt_m-S/A
             ang[t<t1]=ang1+0.5*A*(t[t<t1])**2*sign
             ang[(t>=t1)*(t<t2)]=ang1+S**2/(2*A)*sign+S*(t[(t>=t1)*(t<t2)]-t1)*sign
-            ang[t>=t2]=ang2-S**2/A/2*sign+S*(t[t>=t2]-t2)*sign-0.5*A*(t[t>=t2]-t2)**2*sign
+            ang[t>=t2]=         ang2-S**2/(2*A)*sign+S*(t[t>=t2]-t2)*sign-0.5*A*(t[t>=t2]-t2)**2*sign
             
         return t,ang
         

@@ -23,16 +23,6 @@ if mode=='CSM':
     path_config=input('Config file: ')
     optimize=input('Optimize trajectory (y/n): ')=='y'
     
-# source= './scans/test_vol_csm_kin.xlsx'
-# mode='CSM'
-# reps=1
-# volumetric=True
-# reset=True
-# name='test1'
-# path_config= './configs/config.217.yaml'
-# optimize=True
-# ppr=1000
-    
 #%% Initialization
 config=[]
 

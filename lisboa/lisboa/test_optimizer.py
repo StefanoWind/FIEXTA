@@ -13,8 +13,8 @@ azi1=[0,30]
 azi2=[180,150]
 ele1=[0,0]
 ele2=[0,0]
-dazi=[1,2,4,6]
-dele=[1,2,4,6]
+dazi=[1,2,4,6,12]
+dele=[0,0,0,0,0]
 ppr=1000
 dr=12
 rmin=100
@@ -23,7 +23,7 @@ T=600
 tau=5
 path_config_lidar='C:/Users/sletizia/Software/FIEXTA/halo_suite/halo_suite/configs/config.217.yaml'
 volumetric=False
-mode='SSM'
+mode='CSM'
 
 config={'sigma':0.25,
         'mins':[100,-1000],
