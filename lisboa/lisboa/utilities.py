@@ -110,7 +110,7 @@ def visualize_scan(Data):
     info=r'$\alpha='+str(np.round(azi[0],2))+':'+str(np.round(np.diff(azi)[0],2))+':'+str(np.round(azi[-1],2))+r'^\circ$'+ '\n'+\
          r'$\beta=' +str(np.round(ele[0],2))+':'+str(np.round(np.diff(ele)[0],2))+':'+str(np.round(ele[-1],2))+r'^\circ$' + '\n'+\
          r'$r= '    +str(np.round(r[0],2))  +':'+str(np.round(np.diff(r)[0],2))  +':'+str(np.round(r[-1],2))+ '$ m' +'\n'+\
-         r'$\Delta n_0='+str(Data.attrs['config_Dn0'])+r'$ m'                                         + '\n'+\
+         r'$\Delta n_0=['+ ", ".join(f"{v:.2f}" for v in Data.attrs['config_Dn0']) + "]"+r'$ m'                                         + '\n'+\
          r'$\epsilon_I='+str(np.round(Data.attrs['epsilon1'],2))+r'$'                      + '\n'+\
          r'$\epsilon_{II}='+str(np.round(Data.attrs['epsilon2'],2))+r'$'                   + '\n'+\
          r'$\tau_s='+str(np.round(Data.attrs['duration'],1))+r'$ s'+ '\n'+\
@@ -182,7 +182,6 @@ def visualize_scan(Data):
         
     return fig
 
-
 def visualize_Pareto(Data):
     
     #extract information
@@ -216,6 +215,7 @@ def visualize_Pareto(Data):
         plt.ylabel(r'$\epsilon_{II}$')  
         plt.title(r'$\alpha \in ['+str(azi1[i_ang])+', '+str(azi2[i_ang])+r']^\circ$, $\beta \in ['+str(ele1[i_ang])+', '+str(ele2[i_ang])+r']^\circ$')
         plt.grid()
+        plt.tight_layout()
     plt.legend(draggable=True)
     
     return fig

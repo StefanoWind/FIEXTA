@@ -11,6 +11,7 @@ import numpy as np
 from datetime import datetime
 from halo_suite import halo_simulator as hls
 from scipy.optimize import minimize
+from scipy.optimize import brute
 def scan_file_compiler(mode: str, 
                        azi: np.ndarray = np.array([]),
                        ele: np.ndarray = np.array([]),
@@ -27,7 +28,8 @@ def scan_file_compiler(mode: str,
                        S_ele: float=72,
                        A_azi: float=36,
                        A_ele: float=72,
-                       config: dict={}):
+                       config: dict={},
+                       search_res: float=1):
     
     '''
     Writes scan text files for different scan mode:
@@ -151,38 +153,38 @@ def scan_file_compiler(mode: str,
             for i1,i2 in zip(stop[:-1],stop[1:]):
                 dazi=(azi[i1+1]-azi[i1]+ 180) % 360 - 180
                 dele=(ele[i1+1]-ele[i1]+ 180) % 360 - 180
-                
-                #cap maximum angular resolution
-                if np.abs(dazi)>S_max_azi*Dt_s:
-                    S_min_azi=S_max_azi-1
-                    A_min_azi=A_max_azi-1
-                else:
-                    S_min_azi=ang_tol
-                    A_min_azi=ang_tol
-                if np.abs(dele)>S_max_ele*Dt_s:
-                    S_min_ele=S_max_ele-1
-                    A_min_ele=A_max_ele-1
-                else:
-                    S_min_ele=ang_tol
-                    A_min_ele=ang_tol
                     
-                #optimization of motor paramters to match median angular resolution
-                res = minimize(angular_error,[np.min([np.abs(dazi)/Dt_s,S_max_azi-0.5]),A_max_azi-0.5,
-                                              np.min([np.abs(dele)/Dt_s,S_max_ele-0.5]),A_max_ele-0.5],
-                               args=(azi[i2]-azi[i1],ele[i2]-ele[i1],dazi,dele,ppr,Dt_p,Dt_a,Dt_d,ppd1,ppd2),
-                               bounds= [(S_min_azi, S_max_azi), (A_min_azi, A_max_azi), 
-                                        (S_min_ele, S_max_ele), (A_min_ele, A_max_ele)])
-                if res.success==False:
-                    raise BaseException(f'Optimization of motion failed for azimuth step={dazi} deg, elevation step={dele} deg, PPR={ppr}.')
-                opt=res.x
+                #azimuth step
+                if np.abs(dazi)>ang_tol:#if angular resution exceeds the maximum one, go full speed
+                    if np.abs(dazi)>S_max_azi*Dt_s:
+                        S_azi=np.append(S_azi,S_max_azi)
+                        A_azi=np.append(A_azi,A_max_azi)
+                    else:#optimization of motor parameters to match median angular resolution
+                        res = brute(angular_error,(slice(ang_tol,S_max_azi+0.1,search_res),slice(ang_tol,A_max_azi+0.1,search_res)),
+                                       args=(azi[i2]-azi[i1],dazi,ppr,Dt_p,Dt_a,Dt_d,ppd1),full_output=True, finish=True)
+                        opt=res[0]
+                        S_azi=np.append(S_azi,opt[0])
+                        A_azi=np.append(A_azi,opt[1])
+                else:
+                    S_azi=np.append(S_azi,10)
+                    A_azi=np.append(A_azi,10)
                 
-                #S.I. -> Halo units
-                S_azi=np.append(S_azi,opt[0])
-                A_azi=np.append(A_azi,opt[1])
-                S_ele=np.append(S_ele,opt[2])
-                A_ele=np.append(A_ele,opt[3])
-           
-        #convert to Halo's units
+                #elevation step
+                if np.abs(dele)>ang_tol:
+                    if np.abs(dele)>S_max_ele*Dt_s:
+                        S_ele=np.append(S_ele,S_max_ele)
+                        A_ele=np.append(A_ele,A_max_ele)
+                    else:
+                        res = brute(angular_error,(slice(ang_tol,S_max_ele+0.1,search_res),slice(ang_tol,A_max_ele+0.1,search_res)),
+                                       args=(ele[i2]-ele[i1],dele,ppr,Dt_p,Dt_a,Dt_d,ppd2),full_output=True, finish=True)
+                        opt=res[0]
+                        S_ele=np.append(S_ele,opt[0])
+                        A_ele=np.append(A_ele,opt[1])
+                else:
+                    S_ele=np.append(S_ele,10)
+                    A_ele=np.append(A_ele,10)
+                    
+        #S.I. -> Halo units
         S1=S_azi*ppd1/10+np.zeros(len(P1))
         A1=A_azi*ppd1/1000+np.zeros(len(P1))
         S2=S_ele*ppd2/10+np.zeros(len(P2))
@@ -238,43 +240,30 @@ def read_hpl(file,config):
             ele=np.append(ele,np.float64(d_split[config['hpl_index_ele']]))
                 
         return tnum, azi, ele, Nr, dr, ppr, mode
-            
-
-def angular_error(params,azi_range,ele_range,dazi,dele,ppr,Dt_p,Dt_a,Dt_d,ppd1,ppd2,ang_tol=10**-10):
+        
+def angular_error(params,ang_range,dang,ppr,Dt_p,Dt_a,Dt_d,ppd,ang_tol=10**-10):
     '''
     Squared error in median angular resolution for a given setup
     '''
-    S_azi=params[0]
-    A_azi=params[1]
-    S_ele=params[2]
-    A_ele=params[3]
+    S=params[0]
+    A=params[1]
     halo_sim=hls.halo_simulator(config={'processing_time': Dt_p,
                                         'acquisition_time':Dt_a,
                                         'dwell_time':      Dt_d,
-                                        'ppd_azi':ppd1,
-                                        'ppd_ele':ppd2})
+                                        'ppd_azi':ppd,
+                                        'ppd_ele':0})
 
-    _,azi,ele,_,_,_=halo_sim.scanning_head_sim(mode='CSM',ppr=ppr,azi=np.array([0,azi_range]),ele=np.array([0,ele_range]),
-                                                   S_azi=S_azi,A_azi=A_azi,S_ele=S_ele,A_ele=A_ele)
+    _,ang,_,_,_,_=halo_sim.scanning_head_sim(mode='CSM',ppr=ppr,azi=np.array([0,ang_range]),ele=np.array([0,0]),
+                                                   S_azi=S,A_azi=A,S_ele=0,A_ele=0)
     
     #exclude points where the angle is dwelling 
-    dazi2=(azi[1:]-azi[:-1]+ 180) % 360 - 180
-    if np.max(np.abs(dazi2))>ang_tol:
-        dazi2=np.append(dazi2[0],dazi2)
-        azi_error=(np.median(np.diff(azi[np.abs(dazi2)>ang_tol]))-dazi)**2
+    dang2=(ang[1:]-ang[:-1]+ 180) % 360 - 180
+    if np.max(np.abs(dang2))>ang_tol:
+        ang_error=(np.median(dang2[np.abs(dang2)>ang_tol])-dang)**2
     else:
-        azi_error=0
+        ang_error=0
         
-    dele2=(ele[1:]-ele[:-1]+ 180) % 360 - 180
-    
-    if np.max(np.abs(dele2))>ang_tol:
-        dele2=np.append(dele2[0],dele2)
-        ele_error=(np.median(np.diff(ele[np.abs(dele2)>ang_tol]))-dele)**2
-    else:
-        ele_error=0
-    
-    return azi_error+ele_error
-    
+    return ang_error
         
 def linearize_angle(ang,ang_dir):
     '''
