@@ -27,10 +27,10 @@ def scan_file_compiler(mode: str,
                        S_ele: float=72,
                        A_azi: float=36,
                        A_ele: float=72,
-                       S_min=0.1,
-                       A_min=1,
+                       A_min: float=1,
                        config: dict={},
-                       search_res: float=1):
+                       n_search: float=50,
+                       range_search: float=0.25):
     
     '''
     Writes scan text files for different scan mode:
@@ -162,8 +162,9 @@ def scan_file_compiler(mode: str,
                         S_azi=np.append(S_azi,S_max_azi)
                         A_azi=np.append(A_azi,A_max_azi)
                     else:#optimization of motor parameters to match median angular resolution
-                        res = brute(angular_error,(slice(S_min,S_max_azi+search_res/2,search_res),
-                                                   slice(A_min,A_max_azi+search_res/2,search_res)),
+                        S_min=np.abs(dazi)/Dt_s*(1-range_search)
+                        S_max=np.abs(dazi)/Dt_s*(1+range_search)
+                        res = brute(angular_error,ranges=((S_min,S_max),(A_min,A_max_azi)),Ns=n_search,
                                        args=(azi[i2]-azi[i1],dazi,ppr,Dt_p,Dt_a,Dt_d,ppd1),full_output=True, finish=True)
                         opt=res[0]
                         S_azi=np.append(S_azi,opt[0])
@@ -178,8 +179,9 @@ def scan_file_compiler(mode: str,
                         S_ele=np.append(S_ele,S_max_ele)
                         A_ele=np.append(A_ele,A_max_ele)
                     else:
-                        res = brute(angular_error,(slice(S_min,S_max_ele+search_res/2,search_res),
-                                                   slice(A_min,A_max_ele+search_res/2,search_res)),
+                        S_min=np.abs(dele)/Dt_s*(1-range_search)
+                        S_max=np.abs(dele)/Dt_s*(1+range_search)
+                        res = brute(angular_error,ranges=((S_min,S_max),(A_min,A_max_ele)),Ns=n_search,
                                        args=(ele[i2]-ele[i1],dele,ppr,Dt_p,Dt_a,Dt_d,ppd2),full_output=True, finish=True)
                         opt=res[0]
                         S_ele=np.append(S_ele,opt[0])

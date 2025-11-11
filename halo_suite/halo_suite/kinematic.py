@@ -49,7 +49,7 @@ if len(files)==0:
     elif mode=='CSM':
         scan_file_compiler(mode=mode,azi=[0,359],ele=[0,0],azi_dir=[1],repeats=1,
                            identifier=f'acquisition.{lidar_id}',config=config)
-    print(f'File for acquisition test saved as ./scans/acquisition.{lidar_id}.{mode}.txt. Run it on the lidar with different PPRs. Save data in ./data/{lidar_id}/kinematic/acquisition/{mode}')
+    print(f'File for acquisition test saved as ./scans/acquisition.{lidar_id}.{mode}.txt. Run it on the lidar with different PPR. Save data in ./data/{lidar_id}/kinematic/acquisition/{mode}')
     os.makedirs(os.path.join(cd,f'data/{lidar_id}/kinematic/acquisition/{mode}'),exist_ok=True)
 else:
     #read acquisition test data
