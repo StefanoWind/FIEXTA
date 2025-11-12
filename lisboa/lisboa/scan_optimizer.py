@@ -41,6 +41,8 @@ class scan_optimizer:
             ele2: np.array,
             dazi: np.array,
             dele: np.array,
+            num_azi: np.array,
+            num_ele: np.array,
             rmin: float,
             rmax: float,
             dr: float,
@@ -51,37 +53,56 @@ class scan_optimizer:
             T: float,
             tau: float):
         
-        #zeroing
-        epsilon1=np.zeros((len(azi1),len(dazi)))+np.nan
-        epsilon2=np.zeros((len(azi1),len(dazi)))+np.nan
-        duration=np.zeros((len(azi1),len(dazi)))+np.nan
-        
         #initialize LiSBOA
         lproc=stats.statistics(self.config)
         
         with open(path_config_lidar, 'r') as fid:
-            config_lidar = yaml.safe_load(fid)    
-        
+            config_lidar = yaml.safe_load(fid)  
+            
+        #select resolution mode
+        if isinstance(dazi, np.ndarray) and isinstance(dele, np.ndarray):
+            res_mode='degrees'
+            res_azi=dazi
+            res_ele=dele
+        elif isinstance(num_azi, np.ndarray) and isinstance(num_ele, np.ndarray):
+            res_mode='count'
+            res_azi=num_azi
+            res_ele=num_ele
+        else:
+            raise BaseException('Could not figure out angular resolution type (degrees or count).')
+            
+        #zeroing
+        epsilon1=np.zeros((len(azi1),len(res_azi)))+np.nan
+        epsilon2=np.zeros((len(azi1),len(res_azi)))+np.nan
+        duration=np.zeros((len(azi1),len(res_azi)))+np.nan
+    
         #scan testing
         r=np.arange(rmin,rmax+dr/2,dr)
         i_ang=0
         for a1,a2,e1,e2 in zip(azi1,azi2,ele1,ele2):#loop through angular sectors
             i_dang=0
-            for da,de in zip(dazi,dele):#loop through angular resolutions
-                print(f"Evaluating azi={a1}:{da}:{a2}, ele={e1}:{de}:{e2}")
-                da+=10**-10
-                de+=10**-10
-                azi=np.arange(a1,a2+da/2,da)
-                ele=np.arange(e1,e2+de/2,de)
+            for ra,re in zip(res_azi,res_ele):#loop through angular resolutions
+                print(f"Evaluating azi={a1}:{ra}:{a2}, ele={e1}:{re}:{e2}")
+                
+                #expand azimuth and elevation vectors
+                if res_mode=='degrees':
+                    ra+=10**-10
+                    re+=10**-10
+                    azi=np.arange(a1,a2+ra/2,ra)
+                    ele=np.arange(e1,e2+re/2,re)
+                elif res_mode=='count':
+                    azi=np.linspace(a1,a2,ra)
+                    ele=np.linspace(e1,e2,re)
+                    
                 if len(azi)==1:
                     azi=azi.squeeze()+np.zeros(len(ele))
                 if len(ele)==1:
                     ele=ele.squeeze()+np.zeros(len(azi))
                 
-                scan_name=f'{a1:.2f}.{da:.2f}.{a2:.2f}.{e1:.2f}.{de:.2f}.{e2:.2f}'
+                scan_name=f'{a1:.2f}.{ra:.2f}.{a2:.2f}.{e1:.2f}.{re:.2f}.{e2:.2f}'
                 if mode=='SSM':
                     scan_file=scan_file_compiler(mode=mode,azi=azi,ele=ele,repeats=1,
-                                                 identifier=scan_name,
+                                                 identifier=scan_name,save_path=self.save_name,
                                                  volumetric=volumetric,reset=True)
                     
                     halo_sim=hls.halo_simulator(config={'processing_time':  config_lidar['Dt_p_SSM'],
@@ -96,7 +117,7 @@ class scan_optimizer:
                                                                                   source=scan_file)
                 elif mode=='CSM':
                     scan_file=scan_file_compiler(mode=mode,azi=azi,ele=ele,repeats=1,ppr=ppr,
-                                       identifier=scan_name,config=config_lidar,
+                                       identifier=scan_name,config=config_lidar,save_path=self.save_name,
                                        optimize=True,volumetric=volumetric,reset=True)
        
                     halo_sim=hls.halo_simulator(config={'processing_time': config_lidar['Dt_p_CSM'],
@@ -193,10 +214,16 @@ class scan_optimizer:
                             attrs={'description':'start elevation','units':'degrees'})
         Output['ele2']=xr.DataArray(ele2,coords={'index_ang':np.arange(len(azi1))},
                             attrs={'description':'end elevation','units':'degrees'})
-        Output['dazi']=xr.DataArray(dazi,coords={'index_dang':np.arange(len(dazi))},
-                            attrs={'description':'azimuth step','units':'degrees'})
-        Output['dele']=xr.DataArray(dele,coords={'index_dang':np.arange(len(dazi))},
-                            attrs={'description':'end elevation','units':'degrees'})
+        if res_mode=='degrees':
+            Output['dazi']=xr.DataArray(dazi,coords={'index_dang':np.arange(len(dazi))},
+                                attrs={'description':'azimuth step','units':'degrees'})
+            Output['dele']=xr.DataArray(dele,coords={'index_dang':np.arange(len(dazi))},
+                                attrs={'description':'elevation step','units':'degrees'})
+        elif res_mode=='count':
+            Output['num_azi']=xr.DataArray(dazi,coords={'index_dang':np.arange(len(dazi))},
+                                attrs={'description':'azimuth count','units':''})
+            Output['num_ele']=xr.DataArray(dele,coords={'index_dang':np.arange(len(dazi))},
+                                attrs={'description':'elevation count','units':''})
         
         Output.to_netcdf(os.path.join(self.save_name,os.path.basename(self.save_name)+'.Pareto.nc'))
         

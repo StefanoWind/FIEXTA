@@ -169,9 +169,9 @@ def visualize_scan(Data):
         ax.set_xlim([Data.attrs['config_mins'][0],Data.attrs['config_maxs'][0]])
         ax.set_ylim([Data.attrs['config_mins'][1],Data.attrs['config_maxs'][1]])
         ax.set_zlim([Data.attrs['config_mins'][2],Data.attrs['config_maxs'][2]])
-        ax.set_xlabel(r'$x$ [m]')
-        ax.set_ylabel(r'$y$ [m]')
-        ax.set_zlabel(r'$z$ [m]')
+        ax.set_xlabel(r'$x$ [m]',labelpad=10)
+        ax.set_ylabel(r'$y$ [m]',labelpad=10)
+        ax.set_zlabel(r'$z$ [m]',labelpad=10)
         dtick=np.max([np.diff(ax.get_xticks())[0],
                       np.diff(ax.get_yticks())[0],
                       np.diff(ax.get_zticks())[0]])
@@ -193,8 +193,12 @@ def visualize_Pareto(Data):
     azi2=Data.azi2.values
     ele1=Data.ele1.values
     ele2=Data.ele2.values
-    dazi=Data.dazi.values
-    dele=Data.dele.values
+    if 'dazi' in Data:
+        dazi=Data.dazi.values
+        dele=Data.dele.values
+    elif 'num_azi' in Data:
+        dazi=(azi2-azi1)/(Data.num_azi.values-1)
+        dele=(ele2-ele1)/(Data.num_ele.values-1)
     
     #plot Pareto front
     fig=plt.figure(figsize=(18,8))
@@ -208,12 +212,12 @@ def visualize_Pareto(Data):
         for i_dang in range(N_dang):
             plt.plot(epsilon1[i_ang,i_dang],epsilon2[i_ang,i_dang],'.',
                      color=colors[i_dang],markeredgecolor='k',markersize=30,
-                     label=r'$\Delta \alpha='+str(dazi[i_dang])+r'^\circ$, $\Delta \beta='+str(dele[i_dang])+r'^\circ$')
+                     label=r'$\Delta \alpha='+str(np.round(dazi[i_dang],2))+r'^\circ$, $\Delta \beta='+str(np.round(dele[i_dang],2))+r'^\circ$')
         plt.xlim([0,1])
         plt.ylim([0,1])
         plt.xlabel(r'$\epsilon_I$')
         plt.ylabel(r'$\epsilon_{II}$')  
-        plt.title(r'$\alpha \in ['+str(azi1[i_ang])+', '+str(azi2[i_ang])+r']^\circ$, $\beta \in ['+str(ele1[i_ang])+', '+str(ele2[i_ang])+r']^\circ$')
+        plt.title(r'$\alpha \in ['+str(np.round(azi1[i_ang],2))+', '+str(np.round(azi2[i_ang],2))+r']^\circ$, $\beta \in ['+str(np.round(ele1[i_ang],2))+', '+str(np.round(ele2[i_ang],2))+r']^\circ$')
         plt.grid()
         plt.tight_layout()
     plt.legend(draggable=True)
