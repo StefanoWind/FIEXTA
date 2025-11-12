@@ -200,11 +200,11 @@ class scan_optimizer:
             
         #build output
         Output=xr.Dataset()
-        Output['epsilon1']=xr.DataArray(epsilon1,coords={'index_ang':np.arange(len(azi1)),'index_dang':np.arange(len(dazi))},
+        Output['epsilon1']=xr.DataArray(epsilon1,coords={'index_ang':np.arange(len(azi1)),'index_dang':np.arange(len(res_azi))},
                             attrs={'description':'fraction of undersampled volume'})
-        Output['epsilon2']=xr.DataArray(epsilon2,coords={'index_ang':np.arange(len(azi1)),'index_dang':np.arange(len(dazi))},
+        Output['epsilon2']=xr.DataArray(epsilon2,coords={'index_ang':np.arange(len(azi1)),'index_dang':np.arange(len(res_azi))},
                             attrs={'description':'normalized error on the mean'})
-        Output['duration']=xr.DataArray(duration,coords={'index_ang':np.arange(len(azi1)),'index_dang':np.arange(len(dazi))},
+        Output['duration']=xr.DataArray(duration,coords={'index_ang':np.arange(len(azi1)),'index_dang':np.arange(len(res_azi))},
                             attrs={'description':'Scan duration'})
         Output['azi1']=xr.DataArray(azi1,coords={'index_ang':np.arange(len(azi1))},
                             attrs={'description':'start azimuth','units':'degrees'})
@@ -215,14 +215,14 @@ class scan_optimizer:
         Output['ele2']=xr.DataArray(ele2,coords={'index_ang':np.arange(len(azi1))},
                             attrs={'description':'end elevation','units':'degrees'})
         if res_mode=='degrees':
-            Output['dazi']=xr.DataArray(dazi,coords={'index_dang':np.arange(len(dazi))},
+            Output['dazi']=xr.DataArray(res_azi,coords={'index_dang':np.arange(len(res_azi))},
                                 attrs={'description':'azimuth step','units':'degrees'})
-            Output['dele']=xr.DataArray(dele,coords={'index_dang':np.arange(len(dazi))},
+            Output['dele']=xr.DataArray(res_ele,coords={'index_dang':np.arange(len(res_azi))},
                                 attrs={'description':'elevation step','units':'degrees'})
         elif res_mode=='count':
-            Output['num_azi']=xr.DataArray(dazi,coords={'index_dang':np.arange(len(dazi))},
+            Output['num_azi']=xr.DataArray(res_azi,coords={'index_dang':np.arange(len(res_azi))},
                                 attrs={'description':'azimuth count','units':''})
-            Output['num_ele']=xr.DataArray(dele,coords={'index_dang':np.arange(len(dazi))},
+            Output['num_ele']=xr.DataArray(res_ele,coords={'index_dang':np.arange(len(res_azi))},
                                 attrs={'description':'elevation count','units':''})
         
         Output.to_netcdf(os.path.join(self.save_name,os.path.basename(self.save_name)+'.Pareto.nc'))

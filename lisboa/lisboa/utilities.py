@@ -197,22 +197,24 @@ def visualize_Pareto(Data):
         dazi=Data.dazi.values
         dele=Data.dele.values
     elif 'num_azi' in Data:
-        dazi=(azi2-azi1)/(Data.num_azi.values-1)
-        dele=(ele2-ele1)/(Data.num_ele.values-1)
+        num_azi=Data.num_azi.values
+        num_ele=Data.num_ele.values
     
     #plot Pareto front
     fig=plt.figure(figsize=(18,8))
     cmap = plt.cm.jet
-    colors = [cmap(v) for v in np.linspace(0,1,len(Data.dazi))]
+    colors = [cmap(v) for v in np.linspace(0,1,N_dang)]
     N_row=int(np.floor(N_ang**0.5))
     N_col=int(np.ceil(N_ang/N_row))
     for i_ang in range(N_ang):
         plt.subplot(N_row,N_col,i_ang+1)
         plt.plot(epsilon1[np.arange(N_ang)!=i_ang,:],epsilon2[np.arange(N_ang)!=i_ang,:],'.k',markersize=30,alpha=0.25)
         for i_dang in range(N_dang):
-            plt.plot(epsilon1[i_ang,i_dang],epsilon2[i_ang,i_dang],'.',
-                     color=colors[i_dang],markeredgecolor='k',markersize=30,
-                     label=r'$\Delta \alpha='+str(np.round(dazi[i_dang],2))+r'^\circ$, $\Delta \beta='+str(np.round(dele[i_dang],2))+r'^\circ$')
+            if 'dazi' in Data:
+                label=r'$\Delta \alpha='+str(np.round(dazi[i_dang],2))+r'^\circ$, $\Delta \beta='+str(np.round(dele[i_dang],2))+r'^\circ$'
+            elif 'num_azi' in Data:
+                label=r'$N_\alpha='+str(np.round(num_azi[i_dang],2))+r'$, $N_\beta='+str(np.round(num_ele[i_dang],2))+r'$'
+            plt.plot(epsilon1[i_ang,i_dang],epsilon2[i_ang,i_dang],'.',color=colors[i_dang],markeredgecolor='k',markersize=30,label=label)
         plt.xlim([0,1])
         plt.ylim([0,1])
         plt.xlabel(r'$\epsilon_I$')
