@@ -234,6 +234,7 @@ class Format:
         )
     
         # find times where it wraps from 24 -> 0, add 24 to all indices after
+        time=np.array(time)
         new_day_indices = np.where(np.diff(time) < -23)
         for new_day_index in new_day_indices[0]:
             time[new_day_index + 1 :] += 24.0

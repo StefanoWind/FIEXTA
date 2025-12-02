@@ -19,7 +19,7 @@ class statistics:
                  logfile: Optional[str] = None):
         
         self.logger = get_logger(verbose=verbose, logger=logger,filename=logfile)
-        self.logger.log("Initializing LiSBOA")
+        self.logger.log("Initializing LiSBOA statistics")
         self.verbose=verbose
     
         # Load configuration based on input type

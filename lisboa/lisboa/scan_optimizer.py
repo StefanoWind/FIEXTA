@@ -6,9 +6,10 @@ import os
 cd=os.path.dirname(__file__)
 import numpy as np
 from halo_suite import halo_simulator as hls 
+from typing import Optional
 from halo_suite.utilities import scan_file_compiler
 from lisboa import statistics as stats
-import lisboa.utilities as utl
+from lisboa.utilities import sphere2cart, visualize_Pareto, visualize_scan, get_logger, with_logging
 from matplotlib import pyplot as plt
 import xarray as xr
 from datetime import datetime
@@ -21,7 +22,13 @@ class scan_optimizer:
                  save_data: bool=True,
                  make_figures: bool=True,
                  save_figures: bool=True,
-                 identifier: str=''):
+                 identifier: str='',
+                 verbose: bool = True,
+                 logger: Optional[object] = None,
+                 logfile: Optional[str] = None):
+        
+        self.logger = get_logger(verbose=verbose, logger=logger,filename=logfile)
+        self.logger.log("Initializing LiSBOA scan optimizer")
         
         if identifier!='':
             identifier='.'+identifier
@@ -31,7 +38,8 @@ class scan_optimizer:
         if save_data:
             self.save_name=os.path.join(save_path,datetime.strftime(datetime.now(),'%Y%m%d.%H%M%S')+identifier)
             os.makedirs(self.save_name)
-      
+     
+    @with_logging    
     def pareto(
             self,
             coords,
@@ -54,7 +62,7 @@ class scan_optimizer:
             tau: float):
         
         #initialize LiSBOA
-        lproc=stats.statistics(self.config)
+        lproc=stats.statistics(self.config,logger=self.logger)
         
         with open(path_config_lidar, 'r') as fid:
             config_lidar = yaml.safe_load(fid)  
@@ -82,7 +90,7 @@ class scan_optimizer:
         for a1,a2,e1,e2 in zip(azi1,azi2,ele1,ele2):#loop through angular sectors
             i_dang=0
             for ra,re in zip(res_azi,res_ele):#loop through angular resolutions
-                print(f"Evaluating azi={a1}:{ra}:{a2}, ele={e1}:{re}:{e2}")
+                self.logger.log(f"Evaluating azi={a1}:{ra}:{a2}, ele={e1}:{re}:{e2}")
                 
                 #expand azimuth and elevation vectors
                 if res_mode=='degrees':
@@ -129,7 +137,7 @@ class scan_optimizer:
                     t,azi_sim,ele_sim,t_all,azi_all,ele_all=halo_sim.scanning_head_sim(mode=mode,ppr=ppr,source=scan_file)
                     
                 #epsilon1
-                x,y,z=utl.sphere2cart(r, azi_sim, ele_sim)
+                x,y,z=sphere2cart(r, azi_sim, ele_sim)
                 if coords=='xy':
                     x_exp=[x.ravel(),y.ravel()]
                 elif coords=='xz':
@@ -190,7 +198,7 @@ class scan_optimizer:
                     Output.to_netcdf(os.path.join(self.save_name,scan_name+'.nc'))
                     
                 if self.make_figures:
-                    fig=utl.visualize_scan(Output)
+                    fig=visualize_scan(Output)
                 if self.save_figures:
                     fig.savefig(os.path.join(self.save_name,scan_name+'.png'))
                     plt.close(fig)
@@ -228,11 +236,11 @@ class scan_optimizer:
         Output.to_netcdf(os.path.join(self.save_name,os.path.basename(self.save_name)+'.Pareto.nc'))
         
         if self.make_figures:
-            fig=utl.visualize_Pareto(Output)
+            fig=visualize_Pareto(Output)
         if self.save_figures:
             fig.savefig(os.path.join(self.save_name,os.path.basename(self.save_name)+'.Pareto.png'))
         
-        print(f'Pareto results saved as {os.path.basename(self.save_name)+".Pareto.nc"}')
+        self.logger.log(f'Pareto results saved as {os.path.basename(self.save_name)+".Pareto.nc"}')
             
         return Output
                      
