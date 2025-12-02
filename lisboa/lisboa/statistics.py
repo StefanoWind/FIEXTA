@@ -19,7 +19,7 @@ class statistics:
                  logfile: Optional[str] = None):
         
         self.logger = get_logger(verbose=verbose, logger=logger,filename=logfile)
-        self.logger.log("Initializing LiSBOA")
+        self.logger.log("Initializing LiSBOA statistics")
         self.verbose=verbose
     
         # Load configuration based on input type
@@ -42,12 +42,11 @@ class statistics:
             real=~np.isnan(np.sum(np.array(x_exp),axis=0))
         else:
             real=~np.isnan(np.sum(np.array(x_exp),axis=0)+f)
+            f=f[real]
             
         for j in range(n):
             x_exp[j]=x_exp[j][real]
 
-        f=f[real]
-        
         #initialize variables
         Dn0=np.array(self.config.Dn0)   
         N=len(x_exp[0])
@@ -87,7 +86,6 @@ class statistics:
         
         #loop over all grid points
         for i in zip(*[xx for xx in nodes]):
-
             #squared Euclidean distance from obs points
             distSq=0
             for j in range(n):
@@ -132,7 +130,7 @@ class statistics:
                     ind_inf.append(np.arange(i1,i2+1).astype(int))                
                 for i_inf in itertools.product(*[ii for ii in ind_inf]):
                     edge[i_inf]=True
-        Dd[edge]=10**9
+        Dd[edge]=10**99
         
         #undersampled region
         excl=Dd>self.config.max_Dd

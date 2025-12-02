@@ -6,6 +6,7 @@ __pycache__
 *.log
 *.yaml
 *.xlsx
+*.txt
 <<<<<<< HEAD
 trash/*
 *.egg-info/

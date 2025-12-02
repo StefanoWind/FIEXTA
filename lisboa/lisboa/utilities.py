@@ -7,6 +7,10 @@ from lisboa.logger import SingletonLogger
 import numpy as np
 from functools import wraps
 from lisboa.config import LisboaConfig
+from matplotlib import pyplot as plt
+from matplotlib.colors import LinearSegmentedColormap
+import warnings
+warnings.filterwarnings("ignore", category=SyntaxWarning)
 
 def get_logger(
         name: str = None, verbose: bool = True, logger: Optional[object] = None, filename=None
@@ -87,3 +91,137 @@ def sind(x):
     return np.sin(x/180*np.pi)
 
 
+def sphere2cart(r,azi,ele):
+    x=np.outer(r,np.cos(np.radians(ele))*np.cos(np.radians(90-azi)))
+    y=np.outer(r,np.cos(np.radians(ele))*np.sin(np.radians(90-azi)))
+    z=np.outer(r,np.sin(np.radians(ele)))
+    return x,y,z
+
+
+def visualize_scan(Data):
+    '''
+    Visualize scan with well-sampled regions.
+    '''
+
+    #scan information
+    azi=Data.azi.values
+    ele=Data.ele.values
+    r=Data.r.values
+    info=r'$\alpha='+str(np.round(azi[0],2))+':'+str(np.round(np.diff(azi)[0],2))+':'+str(np.round(azi[-1],2))+r'^\circ$'+ '\n'+\
+         r'$\beta=' +str(np.round(ele[0],2))+':'+str(np.round(np.diff(ele)[0],2))+':'+str(np.round(ele[-1],2))+r'^\circ$' + '\n'+\
+         r'$r= '    +str(np.round(r[0],2))  +':'+str(np.round(np.diff(r)[0],2))  +':'+str(np.round(r[-1],2))+ '$ m' +'\n'+\
+         r'$\Delta n_0=['+ ", ".join(f"{v:.2f}" for v in Data.attrs['config_Dn0']) + "]"+r'$ m'                                         + '\n'+\
+         r'$\epsilon_I='+str(np.round(Data.attrs['epsilon1'],2))+r'$'                      + '\n'+\
+         r'$\epsilon_{II}='+str(np.round(Data.attrs['epsilon2'],2))+r'$'                   + '\n'+\
+         r'$\tau_s='+str(np.round(Data.attrs['duration'],1))+r'$ s'+ '\n'+\
+         'Scan mode = '+Data.attrs['mode']
+     
+    coords=''
+    for c in Data.excl.coords:
+        coords+=c
+        
+    fig=plt.figure()
+    
+    #plot 2D scan
+    if coords!='xyz':
+        ax=plt.subplot(111)
+        fill=np.zeros(np.shape(Data.excl))
+        fill[Data.excl==False]=10
+        cmap_g = LinearSegmentedColormap.from_list("white_to_g", ["white", (0, 0.5, 0,0.1)])
+        plt.pcolor(Data[coords[0]],Data[coords[1]],fill.T,cmap=cmap_g,alpha=0.5)
+        plt.plot(Data[coords[0]+'_points'],Data[coords[1]+'_points'],'.k',markersize=2)
+        ax.set_aspect('equal')
+        ax.set_xlim([Data.attrs['config_mins'][0],Data.attrs['config_maxs'][0]])
+        ax.set_ylim([Data.attrs['config_mins'][1],Data.attrs['config_maxs'][1]])
+        ax.set_xlabel(r'$'+str(coords[0])+'$ [m]')
+        ax.set_ylabel(r'$'+str(coords[1])+'$ [m]')
+        dtick=np.max([np.diff(ax.get_xticks())[0],
+                      np.diff(ax.get_yticks())[0]])
+        ax.set_xticks(np.arange(Data.attrs['config_mins'][0],Data.attrs['config_maxs'][0]+dtick,dtick))
+        ax.set_yticks(np.arange(Data.attrs['config_mins'][1],Data.attrs['config_maxs'][1]+dtick,dtick))
+        ax.grid(True)
+        ax.text(0,Data.attrs['config_maxs'][1]/2,s=info,color='b',bbox={'edgecolor':'k','facecolor':(1,1,1,0.75)})
+
+    #plot 3D scan
+    elif coords=='xyz':
+        ax=plt.subplot(111,projection='3d')
+        x=Data[coords[0]].values
+        y=Data[coords[1]].values
+        z=Data[coords[2]].values
+        x_exp=Data.x_points.values
+        y_exp=Data.y_points.values
+        z_exp=Data.z_points.values
+        
+        dx=np.diff(x)[0]
+        dy=np.diff(y)[0]
+        dz=np.diff(x)[0]
+        
+        fill=Data.excl.values==False
+        X,Y,Z=np.meshgrid(np.append(x-dx/2,x[-1]+dx),np.append(y-dy/2,y[-1]+dy),np.append(z-dz/2,z[-1]+dz),indexing='ij')
+        ax.voxels(X,Y,Z,fill,facecolor='g',alpha=0.1)
+        
+        sel_x=(x_exp>Data.attrs['config_mins'][0])*(x_exp<Data.attrs['config_maxs'][0])
+        sel_y=(y_exp>Data.attrs['config_mins'][1])*(y_exp<Data.attrs['config_maxs'][1])
+        sel_z=(z_exp>Data.attrs['config_mins'][2])*(z_exp<Data.attrs['config_maxs'][2])
+        sel=sel_x*sel_y*sel_z
+        plt.plot(x_exp[sel],y_exp[sel],z_exp[sel],'.k',markersize=2)
+        ax.set_aspect('equal')
+        ax.set_xlim([Data.attrs['config_mins'][0],Data.attrs['config_maxs'][0]])
+        ax.set_ylim([Data.attrs['config_mins'][1],Data.attrs['config_maxs'][1]])
+        ax.set_zlim([Data.attrs['config_mins'][2],Data.attrs['config_maxs'][2]])
+        ax.set_xlabel(r'$x$ [m]',labelpad=10)
+        ax.set_ylabel(r'$y$ [m]',labelpad=10)
+        ax.set_zlabel(r'$z$ [m]',labelpad=10)
+        dtick=np.max([np.diff(ax.get_xticks())[0],
+                      np.diff(ax.get_yticks())[0],
+                      np.diff(ax.get_zticks())[0]])
+        ax.set_xticks(np.arange(Data.attrs['config_mins'][0],Data.attrs['config_maxs'][0]+dtick,dtick))
+        ax.set_yticks(np.arange(Data.attrs['config_mins'][1],Data.attrs['config_maxs'][1]+dtick,dtick))
+        ax.set_zticks(np.arange(Data.attrs['config_mins'][2],Data.attrs['config_maxs'][2]+dtick,dtick))
+        ax.text(0,0,Data.attrs['config_maxs'][2]/2,s=info,bbox={'edgecolor':'k','facecolor':(1,1,1,0.5)})
+        
+    return fig
+
+def visualize_Pareto(Data):
+    
+    #extract information
+    N_ang=len(Data.index_ang)
+    N_dang=len(Data.index_dang)
+    epsilon1=Data.epsilon1.values
+    epsilon2=Data.epsilon2.values
+    azi1=Data.azi1.values
+    azi2=Data.azi2.values
+    ele1=Data.ele1.values
+    ele2=Data.ele2.values
+    if 'dazi' in Data:
+        dazi=Data.dazi.values
+        dele=Data.dele.values
+    elif 'num_azi' in Data:
+        num_azi=Data.num_azi.values
+        num_ele=Data.num_ele.values
+    
+    #plot Pareto front
+    fig=plt.figure(figsize=(18,8))
+    cmap = plt.cm.jet
+    colors = [cmap(v) for v in np.linspace(0,1,N_dang)]
+    N_row=int(np.floor(N_ang**0.5))
+    N_col=int(np.ceil(N_ang/N_row))
+    for i_ang in range(N_ang):
+        plt.subplot(N_row,N_col,i_ang+1)
+        plt.plot(epsilon1[np.arange(N_ang)!=i_ang,:],epsilon2[np.arange(N_ang)!=i_ang,:],'.k',markersize=30,alpha=0.25)
+        for i_dang in range(N_dang):
+            if 'dazi' in Data:
+                label=r'$\Delta \alpha='+str(np.round(dazi[i_dang],2))+r'^\circ$, $\Delta \beta='+str(np.round(dele[i_dang],2))+r'^\circ$'
+            elif 'num_azi' in Data:
+                label=r'$N_\alpha='+str(np.round(num_azi[i_dang],2))+r'$, $N_\beta='+str(np.round(num_ele[i_dang],2))+r'$'
+            plt.plot(epsilon1[i_ang,i_dang],epsilon2[i_ang,i_dang],'.',color=colors[i_dang],markeredgecolor='k',markersize=30,label=label)
+        plt.xlim([0,1])
+        plt.ylim([0,1])
+        plt.xlabel(r'$\epsilon_I$')
+        plt.ylabel(r'$\epsilon_{II}$')  
+        plt.title(r'$\alpha \in ['+str(np.round(azi1[i_ang],2))+', '+str(np.round(azi2[i_ang],2))+r']^\circ$, $\beta \in ['+str(np.round(ele1[i_ang],2))+', '+str(np.round(ele2[i_ang],2))+r']^\circ$')
+        plt.grid()
+        plt.tight_layout()
+    plt.legend(draggable=True)
+    
+    return fig
