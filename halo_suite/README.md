@@ -3,7 +3,7 @@
 
 
 <p align="center">
-  <img src="halo_suite/halo_suite.jpg" alt="Project Logo" width="200">
+  <img src="halo_suite/halo_suite_logo.jpg" alt="Project Logo" width="200">
 </p>
 
 Suite of codes to characterize the kinematics of Halo Streamline lidars and compile scan files.
