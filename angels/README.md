@@ -3,7 +3,7 @@
 
 
 <p align="center">
-  <img src="angels/angels_logo.jpg" alt="Project Logo" width="200">
+  <img src="angels/angels_logo_v2.jpg" alt="Project Logo" width="200">
 </p>
 
 Generator of realistic lidar noise based on Coleman, Letizia, and Iungo 2025 ([link](https://www.mdpi.com/2072-4292/17/17/2965)).
