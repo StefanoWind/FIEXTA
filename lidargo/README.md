@@ -1,9 +1,13 @@
 # LiDARGO (LiDAR General Operation)
 *This package is registered as an NREL Software Record with identification number SWR-24-129.*
 
-Suite of codes to format, standardize, and QC raw lidar data.
+<p align="center">
+  <img src="lidargo/lidargo_logo.jpg" alt="Project Logo" width="200">
+</p>
 
-Clone to your local machine, nagivate to the location where the setup.py lives and then:
+Suite of codes to format, standardize, and quality-control raw lidar data.
+
+Clone to your local machine, navigate to the location where the setup.py lives, and then:
 `pip install -e .`
 
-This will install LiDARGO tools as an editable python package in the current enviroment.
+This will install LiDARGO tools as an editable Python package in the current environment.
