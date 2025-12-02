@@ -2,7 +2,7 @@
 *This package is registered as an NREL Software Record with identification number SWR-24-129.*
 
 <p align="center">
-  <img src="lidargo/lidargo_logo.png" alt="Project Logo" width="200">
+  <img src="lidargo/lidargo_logo.jpg" alt="Project Logo" width="200">
 </p>
 
 Suite of codes to format, standardize, and quality-control raw lidar data.
