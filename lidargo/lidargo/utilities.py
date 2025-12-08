@@ -204,7 +204,7 @@ def add_attributes(ds):
     """Add standardized attributes to output data variables and dataset."""
 
     # Remove existing ancillary variables
-    for v in ds.var():
+    for v in ds.variables:
         if "ancillary_variables" in ds[v].attrs:
             del ds[v].attrs["ancillary_variables"]
         # Set standard_name for all variables

@@ -135,7 +135,7 @@ def visualize_scan(Data):
         ax.set_ylim([Data.attrs['config_mins'][1],Data.attrs['config_maxs'][1]])
         ax.set_xlabel(r'$'+str(coords[0])+'$ [m]')
         ax.set_ylabel(r'$'+str(coords[1])+'$ [m]')
-        dtick=np.max([np.diff(ax.get_xticks())[0],
+        dtick=np.min([np.diff(ax.get_xticks())[0],
                       np.diff(ax.get_yticks())[0]])
         ax.set_xticks(np.arange(Data.attrs['config_mins'][0],Data.attrs['config_maxs'][0]+dtick,dtick))
         ax.set_yticks(np.arange(Data.attrs['config_mins'][1],Data.attrs['config_maxs'][1]+dtick,dtick))
@@ -172,7 +172,7 @@ def visualize_scan(Data):
         ax.set_xlabel(r'$x$ [m]',labelpad=10)
         ax.set_ylabel(r'$y$ [m]',labelpad=10)
         ax.set_zlabel(r'$z$ [m]',labelpad=10)
-        dtick=np.max([np.diff(ax.get_xticks())[0],
+        dtick=np.min([np.diff(ax.get_xticks())[0],
                       np.diff(ax.get_yticks())[0],
                       np.diff(ax.get_zticks())[0]])
         ax.set_xticks(np.arange(Data.attrs['config_mins'][0],Data.attrs['config_maxs'][0]+dtick,dtick))
