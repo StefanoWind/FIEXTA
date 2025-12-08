@@ -208,7 +208,10 @@ def scan_file_compiler(mode: str,
     os.makedirs(save_path,exist_ok=True)
     save_name=f'{identifier}.{mode.lower()}.{vol_flag}txt'
     with open(os.path.join(save_path,save_name),'w') as fid:
-        fid.write(L*repeats)
+        if mode=='SSM':
+            fid.write(L*repeats)
+        elif mode=='CSM':
+            fid.write('\n'.join(L.split('\n')[:2])+'\n'+'\n'.join(L.split('\n')[2:])*repeats)
         fid.close()
     return os.path.join(save_path,save_name)
         

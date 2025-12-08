@@ -151,9 +151,19 @@ class scan_optimizer:
                 
                 #epsilon2
                 if T>t[-1]:
-                    L=np.floor(T/t[-1])
+                    L=int(np.floor(T/t[-1]))
                     p=np.arange(1,L)
                     epsilon2[i_ang,i_dang]=(1/L+2/L**2*np.sum((L-p)*np.exp(-t[-1]/tau*p)))**0.5
+                    
+                    if mode=='SSM':
+                       scan_file=scan_file_compiler(mode=mode,azi=azi,ele=ele,repeats=L,
+                                                    identifier=f'{scan_name}x{L}',save_path=self.save_name,
+                                                    volumetric=volumetric,reset=True)
+                    elif mode=='CSM':
+                        scan_file=scan_file_compiler(mode=mode,azi=azi,ele=ele,repeats=L,ppr=ppr,
+                                           identifier=f'{scan_name}x{L}',config=config_lidar,save_path=self.save_name,
+                                           optimize=True,volumetric=volumetric,reset=True)
+                      
                 else:
                     epsilon2[i_ang,i_dang]=np.nan
                 duration[i_ang,i_dang]=t[-1]
