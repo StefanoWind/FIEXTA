@@ -72,7 +72,7 @@ else:
     plt.figure()
     plt.plot(ppr_all,dDt_avg,'.k',markersize=10,label='Data')
     plt.errorbar(ppr_all,dDt_avg,[dDt_avg-dt_low,dt_top-dDt_avg],fmt='o',color='k',capsize=5)
-    plt.plot(ppr_all,Dt_p+Dt_a*ppr_all,'-r',label=r'$'+str(Dt_p)+'+'+str(Dt_a*10000)+r'\cdot 10^{-4}$ PPR',zorder=10)
+    plt.plot(ppr_all,Dt_p+Dt_a*ppr_all,'-r',label=r'$'+str(Dt_p)[:6]+'+'+str(Dt_a*10000)[:6]+r'\cdot 10^{-4}$ PPR',zorder=10)
     plt.xlabel('PPR')
     plt.ylabel(r'$\Delta t$ [s]')
     plt.title(f'{mode}')
@@ -105,6 +105,7 @@ else:
         if not os.path.isfile(os.path.join(cd,f'scans/motion.{lidar_id}.{mode}.txt')):
             scan_file_compiler(mode=mode,azi=azi,ele=ele,repeats=1,identifier=f'motion.{lidar_id}')
             print(f'File for motion test saved as ./scans/motion.{lidar_id}.{mode}.txt. Run it on the lidar with different PPR. Save data in ./data/{lidar_id}/kinematic/motion/{mode}')
+           
     elif mode=='CSM':
         ppr_test=int(input('PPR for motion test: '))
         
@@ -119,7 +120,8 @@ else:
             scan_file_compiler(mode=mode,azi=azi,ele=ele,repeats=1,identifier=f'motion.{lidar_id}.{ppr_test}',ppr=ppr_test,
                                config=config_CSM,optimize=True)
             print(f'File for motion test saved as ./scans/motion.{lidar_id}.{ppr_test}.txt. Run it on the lidar with the selected PPR. Save data in ./data/{lidar_id}/kinematic/motion/{mode}')
-
+    os.makedirs(os.path.join(cd,f'/data/{lidar_id}/kinematic/motion/{mode}'),exist_ok=True)
+    
     #read motion test data
     files=glob.glob(os.path.join(config['path_data'],f'{lidar_id}','kinematic','motion',f'{mode}','*hpl'))
     for f in files:
