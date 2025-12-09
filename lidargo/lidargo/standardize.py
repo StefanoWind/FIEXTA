@@ -278,8 +278,6 @@ class Standardize:
         forward_swipe_condition[(first_forward == True) * (first == False)] = False
 
         self.outputData = self.inputData.where(forward_swipe_condition)
-        # self.azimuth_selected = self.outputData["azimuth"].copy()
-        # self.elevation_selected = self.outputData["elevation"].copy()
 
         self.logger.log(
             f"Back-swipe removal: {np.round(np.sum(forward_swipe_condition).values/len(self.inputData.azimuth)*100,2)}% retained"

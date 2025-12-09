@@ -157,11 +157,11 @@ class scan_optimizer:
                     
                     if mode=='SSM':
                        scan_file=scan_file_compiler(mode=mode,azi=azi,ele=ele,repeats=L,
-                                                    identifier=f'{scan_name}x{L}',save_path=self.save_name,
+                                                    identifier=f'{scan_name}',save_path=self.save_name,
                                                     volumetric=volumetric,reset=True)
                     elif mode=='CSM':
                         scan_file=scan_file_compiler(mode=mode,azi=azi,ele=ele,repeats=L,ppr=ppr,
-                                           identifier=f'{scan_name}x{L}',config=config_lidar,save_path=self.save_name,
+                                           identifier=f'{scan_name}',config=config_lidar,save_path=self.save_name,
                                            optimize=True,volumetric=volumetric,reset=True)
                       
                 else:
