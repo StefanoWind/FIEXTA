@@ -84,9 +84,16 @@ def scan_file_compiler(mode: str,
         [azi_dir,ele_dir]=np.meshgrid(azi_dir,ele_dir)
         azi_dir=azi_dir.ravel()[:-1]
         ele_dir=ele_dir.ravel()[:-1]
-        vol_flag='vol.'
+        vol_flag='.vol'
     else:
         vol_flag=''
+        
+    #repeat
+    azi=np.tile(azi,repeats)
+    ele=np.tile(ele,repeats)
+    if len(azi_dir)>0:
+        azi_dir=np.tile(np.append(azi_dir,np.sign((azi[0] - azi[-1] + 180) % 360 - 180)),repeats)[:-1]
+        ele_dir=np.tile(np.append(ele_dir,np.sign((ele[0] - ele[-1] + 180) % 360 - 180)),repeats)[:-1]
     
     #add backswipe to home position
     if reset:
@@ -206,12 +213,9 @@ def scan_file_compiler(mode: str,
             
     #save file
     os.makedirs(save_path,exist_ok=True)
-    save_name=f'{identifier}.{mode.lower()}.{vol_flag}txt'
+    save_name=f'{identifier}.{mode.lower()}{vol_flag}x{repeats}.txt'
     with open(os.path.join(save_path,save_name),'w') as fid:
-        if mode=='SSM':
-            fid.write(L*repeats)
-        elif mode=='CSM':
-            fid.write('\n'.join(L.split('\n')[:2])+'\n'+'\n'.join(L.split('\n')[2:])*repeats)
+        fid.write(L)
         fid.close()
     return os.path.join(save_path,save_name)
         
