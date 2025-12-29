@@ -455,8 +455,8 @@ class Standardize:
         # Inherit attributes
         ds.attrs = self.outputData.attrs
 
-        for v in self.outputData.var():
-            if v in ds.var():
+        for v in self.outputData.data_vars:
+            if v in ds.data_vars:
                 ds[v].attrs = self.outputData[v].attrs
 
         # Save filtered data
@@ -897,16 +897,16 @@ class Standardize:
 
         if save_figures:
             if wsqc_fig is not None: 
-                wsqc_fig.savefig(self.save_filename.replace(self.save_filename.split('.')[-1], "probability." + filetype))
+                wsqc_fig.savefig(self.save_filename[:-2]+ "probability." + filetype)
                 plt.close(wsqc_fig)
             if scanqc_fig is not None: 
-                scanqc_fig.savefig(self.save_filename.replace(self.save_filename.split('.')[-1], "qcscan." + filetype))
+                scanqc_fig.savefig(self.save_filename[:-2]+ "qcscan." + filetype)
                 plt.close(scanqc_fig)
             if angscat_fig is not None:
-                angscat_fig.savefig(self.save_filename.replace(self.save_filename.split('.')[-1], "angScatter." + filetype))
+                angscat_fig.savefig(self.save_filename[:-2]+ "angScatter." + filetype)
                 plt.close(angscat_fig)
             if anghist_fig is not None:
-                anghist_fig.savefig(self.save_filename.replace(self.save_filename.split('.')[-1], "angHist." + filetype))
+                anghist_fig.savefig(self.save_filename[:-2]+"angHist." + filetype)
                 plt.close(anghist_fig)
                 
 if __name__ == "__main__":
