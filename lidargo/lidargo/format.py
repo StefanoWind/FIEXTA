@@ -313,7 +313,8 @@ class Format:
         outputData.attrs["scan_type"] = scan_type
         outputData.attrs["z_id"] = z_id
             
-    
+        #sort data
+        outputData=outputData.sortby('time')
         return outputData
     
     @with_logging
