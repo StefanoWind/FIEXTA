@@ -114,8 +114,9 @@ def scan_file_compiler(mode: str,
         L=''
         for a,e in zip(azi%360,ele%360):
             L=L+('%07.3f' % a+ '%07.3f' % e +'\n')
+        ppr=''
     
-    if mode =='CSM':
+    elif mode =='CSM':
         
         #extract step motors resolution
         ppd1=config['ppd_azi']
@@ -210,10 +211,11 @@ def scan_file_compiler(mode: str,
             
             l='A.1=%.0f'%a1+',S.1=%.0f'%s1+',P.1=%.0f'%p1+'*A.2=%.0f'%a2+',S.2=%.0f'%s2+',P.2=%.0f'%p2+'\nW=0\n'
             L+=l
-            
+    else:
+        raise ValueError(f'Invalid scan mode {mode}. It must be either "SSM" or "CSM".')        
     #save file
     os.makedirs(save_path,exist_ok=True)
-    save_name=f'{identifier}.{mode.lower()}{vol_flag}x{repeats}.txt'
+    save_name=f'{identifier}.{mode.lower()}{ppr}{vol_flag}x{repeats}.txt'
     with open(os.path.join(save_path,save_name),'w') as fid:
         fid.write(L)
         fid.close()
