@@ -10,17 +10,37 @@ import yaml
 from halo_suite.utilities import scan_file_compiler
 import pandas as pd
 import numpy as np
+from tkinter import Tk
+from tkinter.filedialog import askopenfilename
+
+root = Tk()
+root.withdraw()
+root.attributes('-topmost', True)
+root.update()
+
 plt.close('all')
 
 #%% Inputs
-source=input('Scan file: ')
+source=askopenfilename(
+    title="Scan geometry file",
+    filetypes=[("All files", "*.xlsx")],
+    initialdir=cd,
+)
+assert os.path.isfile(source),  f'Invalid file "{source}"' 
+
 mode=input('Scan mode (SSM or CSM): ')
 reps=int(input('Repetitions: '))
 volumetric=input('Volumetric (y/n): ')=='y'
 reset=input('Reset (y/n): ')=='y'
 name=input('Name: ')
+
 if mode=='CSM':
-    path_config=input('Config file: ')
+    path_config=askopenfilename(
+        title="Lidar configuration file",
+        filetypes=[("All files", "*.yaml")],
+        initialdir=cd,
+    )
+    assert os.path.isfile(path_config),  f'Invalid file "{path_config}"' 
     optimize=input('Optimize trajectory (y/n): ')=='y'
     
 #%% Initialization

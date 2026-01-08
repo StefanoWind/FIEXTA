@@ -59,7 +59,8 @@ class scan_optimizer:
             mode: str,
             path_config_lidar: str,
             T: float,
-            tau: float):
+            tau: float,
+            full_scan_file: bool = False):
         
         #initialize LiSBOA
         lproc=stats.statistics(self.config,logger=self.logger)
@@ -98,16 +99,19 @@ class scan_optimizer:
                     re+=10**-10
                     azi=np.arange(a1,a2+ra/2,ra)
                     ele=np.arange(e1,e2+re/2,re)
+                    scan_name=f'{a1:.2f}_{ra:.2f}_{a2:.2f}_{e1:.2f}_{re:.2f}_{e2:.2f}'
                 elif res_mode=='count':
                     azi=np.linspace(a1,a2,ra)
                     ele=np.linspace(e1,e2,re)
+                    scan_name=f'{a1:.2f}_{ra}_{a2:.2f}_{e1:.2f}_{re}_{e2:.2f}'
                     
                 if len(azi)==1:
                     azi=azi.squeeze()+np.zeros(len(ele))
                 if len(ele)==1:
                     ele=ele.squeeze()+np.zeros(len(azi))
                 
-                scan_name=f'{a1:.2f}.{ra:.2f}.{a2:.2f}.{e1:.2f}.{re:.2f}.{e2:.2f}'
+                
+                
                 if mode=='SSM':
                     scan_file=scan_file_compiler(mode=mode,azi=azi,ele=ele,repeats=1,
                                                  identifier=scan_name,save_path=self.save_name,
@@ -155,15 +159,15 @@ class scan_optimizer:
                     p=np.arange(1,L)
                     epsilon2[i_ang,i_dang]=(1/L+2/L**2*np.sum((L-p)*np.exp(-t[-1]/tau*p)))**0.5
                     
-                    if mode=='SSM':
-                       scan_file=scan_file_compiler(mode=mode,azi=azi,ele=ele,repeats=L,
-                                                    identifier=f'{scan_name}',save_path=self.save_name,
-                                                    volumetric=volumetric,reset=True)
-                    elif mode=='CSM':
-                        scan_file=scan_file_compiler(mode=mode,azi=azi,ele=ele,repeats=L,ppr=ppr,
-                                           identifier=f'{scan_name}',config=config_lidar,save_path=self.save_name,
-                                           optimize=True,volumetric=volumetric,reset=True)
-                      
+                    if full_scan_file:
+                        if mode=='SSM':
+                           scan_file=scan_file_compiler(mode=mode,azi=azi,ele=ele,repeats=L,
+                                                        identifier=f'{scan_name}',save_path=self.save_name,
+                                                        volumetric=volumetric,reset=True)
+                        elif mode=='CSM':
+                            scan_file=scan_file_compiler(mode=mode,azi=azi,ele=ele,repeats=L,ppr=ppr,
+                                               identifier=f'{scan_name}',config=config_lidar,save_path=self.save_name,
+                                               optimize=True,volumetric=volumetric,reset=True)
                 else:
                     epsilon2[i_ang,i_dang]=np.nan
                 duration[i_ang,i_dang]=t[-1]
