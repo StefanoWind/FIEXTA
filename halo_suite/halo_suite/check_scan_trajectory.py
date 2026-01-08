@@ -9,12 +9,37 @@ from matplotlib import pyplot as plt
 import yaml
 from halo_suite.utilities import read_hpl
 from halo_suite import halo_simulator as hls
+from tkinter import Tk
+from tkinter.filedialog import askopenfilename
+
+root = Tk()
+root.withdraw()
+root.attributes('-topmost', True)
+root.update()
+
 plt.close('all')
 
 #%% Inputs
-source=input('Data file: ')
-scan_file=input('Scan file: ')
-path_config=input('Config file: ')
+source=askopenfilename(
+    title="Data file",
+    filetypes=[("All files", "*.hpl")],
+    initialdir=cd,
+    )
+assert os.path.isfile(source),  f'Invalid file "{source}"' 
+
+scan_file=askopenfilename(
+    title="Scan file",
+    filetypes=[("All files", "*.txt")],
+    initialdir=cd,
+)
+assert os.path.isfile(scan_file),  f'Invalid file "{scan_file}"' 
+
+path_config=askopenfilename(
+    title="Lidar configuration file",
+    filetypes=[("All files", "*.yaml")],
+    initialdir=cd,
+)
+assert os.path.isfile(path_config),  f'Invalid file "{path_config}"' 
 
 #%% Initialization
 

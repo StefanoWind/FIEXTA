@@ -18,14 +18,14 @@ root.attributes('-topmost', True)
 root.update()
 
 #%% Inputs
-source=filename = askopenfilename(
+source=askopenfilename(
     title="Scan schedule file",
     filetypes=[("All files", "*.xlsx")],
     initialdir=cd,
 )
 assert os.path.isfile(source), f'Invalid file "{source}"' 
 
-path_config_lidar=filename = askopenfilename(
+path_config_lidar=askopenfilename(
     title="Lidar configuration file",
     filetypes=[("All files", "*.yaml")],
     initialdir=cd,
@@ -63,6 +63,8 @@ scan_files=[]
 
 #%% Main
 for f,n in zip(filenames,N):
+    
+    #parse gemoetry from filename
     a1=np.float64(f.split('_')[0])
     ra=f.split('_')[1]
     a2=np.float64(f.split('_')[2])
@@ -73,6 +75,7 @@ for f,n in zip(filenames,N):
     volumetric='vol' in f.split('_')[7]
     reps=int(f.split('x')[1].split('.')[0])
     
+    #parse scan mode
     if mode_ppr=='ssm':
         mode='ssm'
     elif mode_ppr[:3] =='csm':
@@ -82,8 +85,9 @@ for f,n in zip(filenames,N):
         except:
             raise ValueError(f'Could not parse PPR from filename "{f}"')
             
-        avg_loops=np.zeros(len(avg_loops))+ppr/1000
-        
+        avg_loops=np.zeros(len(avg_loops))+ppr/1000#in CSM, avg loops are derived from PPR in scan file
+    
+    #assert scan resolution
     if '.' in ra and '.' in re:
         ra=np.float64(ra)
         re=np.float64(re)
@@ -94,7 +98,8 @@ for f,n in zip(filenames,N):
         res_mode='count'
     else:
         raise ValueError(f'Could not parse angular resolution from filename "{f}"')
-        
+    
+    #build geometry
     if res_mode=='degrees':
         ra+=10**-10
         re+=10**-10
@@ -105,7 +110,8 @@ for f,n in zip(filenames,N):
         azi=np.linspace(a1,a2,ra)
         ele=np.linspace(e1,e2,re)
         identifier=f'{a1:.2f}_{ra}_{a2:.2f}_{e1:.2f}_{re}_{e2:.2f}'
-    
+        
+    #compile repeated scan
     if mode=='ssm':
         scan_file=scan_file_compiler(mode=mode.upper(),azi=azi,ele=ele,repeats=n*reps,
                                      identifier=identifier,save_path=os.path.dirname(save_path),
@@ -116,16 +122,15 @@ for f,n in zip(filenames,N):
                             config=config_lidar,
                             optimize=True,volumetric=volumetric,reset=False)
         scan_files.append(os.path.basename(scan_file))
-    
+
+#write dss file
 N_day=np.floor(24*3600/np.sum(T)).astype(int)
 s=''
 for i_seq in range(N_day):
     for i_scan in range(len(T)):
         t=np.float64(i_seq*np.sum(T)+np.sum(T[:i_scan]))
-        
         t_str=dt.datetime.strftime(dt.datetime(2000, 1, 1)+dt.timedelta(seconds=t),'%H%M%S')
-        f=os.path.basename(filenames[i_scan][:-4])+'x'+str(N[i_scan])
-        s+=t_str+'\t'+scan_files[i_scan]+'\t'+str(int(avg_loops[i_scan]))+'\t'+mode[0]+'\t7\n'
+        s+=t_str+'\t'+scan_files[i_scan][:-4]+'\t'+str(int(avg_loops[i_scan]))+'\t'+mode[0].upper()+'\t7\n'
         
 with open(save_path,'w') as fid:
     fid.write(s[:-1])

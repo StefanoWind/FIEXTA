@@ -16,6 +16,7 @@ trash/
 *.hpl
 *.html
 *.log
+*.dss
 build/
 lidargo/docs/_build/
 >>>>>>> main
