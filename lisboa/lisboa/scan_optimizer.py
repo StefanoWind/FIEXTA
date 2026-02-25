@@ -297,14 +297,14 @@ def evaluate_scan(sites,coords,lproc,config,
             azi=np.arange(a1,a2+ra/2,ra)
             ele=np.arange(e1,e2+re/2,re)
             if len(sites)>1:
-                scan_name=f'{a1:.2f}_{ra:.2f}_{a2:.2f}_{e1:.2f}_{re:.2f}_{e2:.2f}_{s}'
+                scan_name=f'{s}_{a1:.2f}_{ra:.2f}_{a2:.2f}_{e1:.2f}_{re:.2f}_{e2:.2f}'
             else:
                 scan_name=setup_name=f'{a1:.2f}_{ra:.2f}_{a2:.2f}_{e1:.2f}_{re:.2f}_{e2:.2f}'
         elif res_mode=='count':
             azi=np.linspace(a1,a2,ra)
             ele=np.linspace(e1,e2,re)
             if len(sites)>1:
-                scan_name=f'{a1:.2f}_{ra}_{a2:.2f}_{e1:.2f}_{re}_{e2:.2f}_{s}'
+                scan_name=f'{s}_{a1:.2f}_{ra}_{a2:.2f}_{e1:.2f}_{re}_{e2:.2f}'
             else:
                 scan_name=setup_name=f'{a1:.2f}_{ra}_{a2:.2f}_{e1:.2f}_{re}_{e2:.2f}'
                 

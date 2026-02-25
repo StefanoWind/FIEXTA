@@ -198,7 +198,8 @@ def scan_file_compiler(mode: str,
                     S_ele=np.append(S_ele,10)
                     A_ele=np.append(A_ele,10)
                 ctr+=1
-                    
+        else:
+            ppr=''            
         #S.I. -> Halo units
         S1=S_azi*ppd1/10+np.zeros(len(P1))
         A1=A_azi*ppd1/1000+np.zeros(len(P1))
