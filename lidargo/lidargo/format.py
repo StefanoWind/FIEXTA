@@ -109,7 +109,6 @@ class Format:
         
     @with_logging
     def rename_halo_xr(self,source,site,z_id,save_path=None,replace=False):
-                
         if save_path is None:
             save_path=os.path.dirname(source)
         os.makedirs(save_path,exist_ok=True)
@@ -121,8 +120,14 @@ class Format:
             pattern = r"User\d{1}_\d+_(\d{8})_(\d{6})\.hpl"
             scan_type='user'+os.path.basename(source)[os.path.basename(source).find('User')+4]
         else:
-            self.logger.log(f"Scan type of {source} not supported.")
-            return
+            pattern=site+'.lidar.'+z_id+'.'+'00'+'.'+'\d{8}.\d{6}.(stare|user)\d{1}'+os.path.splitext(source)[1]
+            match = re.search(pattern, os.path.basename(source))
+            if match is not None:
+                self.logger.log(f"{source} will not be renamed.")
+                return source
+            else:
+                self.logger.log(f"Renaming of {source} not supported.")
+                return
             
         match = re.search(pattern, os.path.basename(source))
         date_part = match.group(1)  
@@ -200,7 +205,7 @@ class Format:
             doppler = []
             intensity = []
             beta = []
-    
+            
             while True:
                 a = f.readline().split()
                 if not len(a):  # is empty
@@ -215,7 +220,7 @@ class Format:
                 doppler.append([0] * num_gates)
                 intensity.append([0] * num_gates)
                 beta.append([0] * num_gates)
-    
+                
                 for _ in range(num_gates):
                     b = f.readline().split()
                     range_gate = int(b[0])
