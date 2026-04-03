@@ -163,12 +163,12 @@ for f in filenames:
     if mode=='SSM':
         scan_file=scan_file_compiler(mode=mode.upper(),azi=azi,ele=ele,repeats=reps,
                                      identifier=os.path.splitext(f)[0],save_path=os.path.dirname(save_path),
-                                     volumetric=volumetric,reset=True)
+                                     volumetric=volumetric,reset=False)
     elif mode=='CSM':
         scan_file=scan_file_compiler(mode=mode.upper(),azi=azi,ele=ele,repeats=reps,ppr=ppr,
                             identifier=os.path.splitext(f)[0],save_path=os.path.dirname(save_path),
                             config=config,
-                            optimize=True,volumetric=volumetric,reset=True)
+                            optimize=True,volumetric=volumetric,reset=False)
 
     scan_files.append(os.path.basename(scan_file))
     ctr+=1

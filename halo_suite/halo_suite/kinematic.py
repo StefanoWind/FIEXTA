@@ -23,8 +23,12 @@ mode=input('Mode (SSM or CSM): ')
 #%% Initialization
 #configs
 with open(path_config.format(lidar_id=lidar_id), 'r') as fid:
-    config = yaml.safe_load(fid)      
+    config = yaml.safe_load(fid) 
+    
+#filesystem
+os.makedirs(os.path.abspath(f'figures/{lidar_id}'),exist_ok=True)
 
+#%% Functions     
 def motion_time(dang,S,A):
     '''
     Motion time as a function of the angular step, speed, and acceleration
@@ -77,6 +81,7 @@ else:
     plt.title(f'{mode}')
     plt.grid()
     plt.legend()
+    plt.savefig(os.path.abspath(f'figures/{lidar_id}/{lidar_id}_acquisition_{mode.lower()}.png'))
     
     #DYNAMIC ACQUISITION
     
@@ -167,7 +172,8 @@ else:
             plt.ylabel(r'$\Delta t_m$ [s]')
             plt.legend()
             plt.grid()
-
+            plt.savefig(os.path.abspath(f'figures/{lidar_id}/{lidar_id}_motion_ssm.png'))
+            
             #simulate scanning head
             halo_sim=hls.halo_simulator(config={'processing_time':Dt_p,
                                                  'acquisition_time':Dt_a,
@@ -214,6 +220,7 @@ else:
             plt.title(f'PPR={ppr}, mode={mode}, file: {os.path.basename(f)}')
             plt.xlabel('Time [s]')
             plt.grid()
+            plt.savefig(os.path.abspath(f'figures/{lidar_id}/{lidar_id}_motion_csm.png'))
             
         plt.figure(figsize=(18,8))
         ax=plt.subplot(2,1,1)
@@ -232,6 +239,7 @@ else:
         plt.xlabel('Time [s]')
         plt.ylabel(r'$\beta$ [$^\circ$]')
         plt.grid()
+        plt.savefig(os.path.abspath(f'figures/{lidar_id}/{lidar_id}_valid_{mode.lower()}.png'))
 
 if mode=='SSM' and S_azi is not None:        
     add=input('Add parameters to configuration? (y/n): ')
