@@ -4,7 +4,6 @@ Characterize kinematic of scanning head
 """
 
 import os
-cd=os.path.dirname(__file__)
 from matplotlib import pyplot as plt
 import numpy as np
 import yaml
@@ -17,15 +16,19 @@ Dt_p=None
 plt.close('all')
 
 #%% Inputs
-path_config=os.path.join(cd,'configs/config.{lidar_id}.yaml')
+path_config=os.path.abspath(os.path.join('configs/config.{lidar_id}.yaml'))
 lidar_id=input('Lidar ID: ')
 mode=input('Mode (SSM or CSM): ')
 
 #%% Initialization
 #configs
 with open(path_config.format(lidar_id=lidar_id), 'r') as fid:
-    config = yaml.safe_load(fid)      
+    config = yaml.safe_load(fid) 
+    
+#filesystem
+os.makedirs(os.path.abspath(f'figures/{lidar_id}'),exist_ok=True)
 
+#%% Functions     
 def motion_time(dang,S,A):
     '''
     Motion time as a function of the angular step, speed, and acceleration
@@ -50,7 +53,7 @@ if len(files)==0:
         scan_file_compiler(mode=mode,azi=[0,359],ele=[0,0],azi_dir=[1],repeats=1,
                            identifier=f'acquisition.{lidar_id}',config=config)
     print(f'File for acquisition test saved as ./scans/acquisition.{lidar_id}.{mode}.txt. Run it on the lidar with different PPR. Save data in ./data/{lidar_id}/kinematic/acquisition/{mode}')
-    os.makedirs(os.path.join(cd,f'data/{lidar_id}/kinematic/acquisition/{mode}'),exist_ok=True)
+    os.makedirs(os.path.abspath(os.path.join(f'data/{lidar_id}/kinematic/acquisition/{mode}')),exist_ok=True)
 else:
     #read acquisition test data
     dDt_avg=[]
@@ -78,6 +81,7 @@ else:
     plt.title(f'{mode}')
     plt.grid()
     plt.legend()
+    plt.savefig(os.path.abspath(f'figures/{lidar_id}/{lidar_id}_acquisition_{mode.lower()}.png'))
     
     #DYNAMIC ACQUISITION
     
@@ -102,14 +106,14 @@ else:
         
     #write motion scan file
     if mode=='SSM':
-        if not os.path.isfile(os.path.join(cd,f'scans/motion.{lidar_id}.{mode}.txt')):
+        if not os.path.isfile(os.path.abspath(os.path.join('scans/motion.{lidar_id}.{mode}.txt'))):
             scan_file_compiler(mode=mode,azi=azi,ele=ele,repeats=1,identifier=f'motion.{lidar_id}')
             print(f'File for motion test saved as ./scans/motion.{lidar_id}.{mode}.txt. Run it on the lidar with different PPR. Save data in ./data/{lidar_id}/kinematic/motion/{mode}')
            
     elif mode=='CSM':
         ppr_test=int(input('PPR for motion test: '))
         
-        if not os.path.isfile(os.path.join(cd,f'scans/motion.{lidar_id}.{ppr_test}.{mode.lower()}.txt')):
+        if not os.path.isfile(os.path.abspath(os.path.join(f'scans/motion.{lidar_id}.{mode.lower()}{ppr_test}x1.txt'))):
             #prepare configuration
             config_CSM={}
             for c in ['ppd_azi','ppd_ele','S_max_azi','S_max_ele','A_max_azi','A_max_ele','ang_tol']:
@@ -117,10 +121,10 @@ else:
             config_CSM['Dt_p_CSM']=Dt_p
             config_CSM['Dt_a_CSM']=Dt_a
             config_CSM['Dt_d_CSM']={ppr:0}
-            scan_file_compiler(mode=mode,azi=azi,ele=ele,repeats=1,identifier=f'motion.{lidar_id}.{ppr_test}',ppr=ppr_test,
+            scan_file_compiler(mode=mode,azi=azi,ele=ele,repeats=1,identifier=f'motion.{lidar_id}',ppr=ppr_test,
                                config=config_CSM,optimize=True)
             print(f'File for motion test saved as ./scans/motion.{lidar_id}.{ppr_test}.txt. Run it on the lidar with the selected PPR. Save data in ./data/{lidar_id}/kinematic/motion/{mode}')
-    os.makedirs(os.path.join(cd,f'/data/{lidar_id}/kinematic/motion/{mode}'),exist_ok=True)
+    os.makedirs(os.path.abspath(os.path.join(f'data/{lidar_id}/kinematic/motion/{mode}')),exist_ok=True)
     
     #read motion test data
     files=glob.glob(os.path.join(config['path_data'],f'{lidar_id}','kinematic','motion',f'{mode}','*hpl'))
@@ -168,7 +172,8 @@ else:
             plt.ylabel(r'$\Delta t_m$ [s]')
             plt.legend()
             plt.grid()
-
+            plt.savefig(os.path.abspath(f'figures/{lidar_id}/{lidar_id}_motion_ssm.png'))
+            
             #simulate scanning head
             halo_sim=hls.halo_simulator(config={'processing_time':Dt_p,
                                                  'acquisition_time':Dt_a,
@@ -176,7 +181,7 @@ else:
             
             t2,azi2,ele2,t_all,azi_all,ele_all=halo_sim.scanning_head_sim(mode='SSM',ppr=ppr,
                                                                           S_azi=S_azi,A_azi=A_azi,S_ele=S_ele,A_ele=A_ele,
-                                                                          source=os.path.join(cd,'scans',f'motion.{lidar_id}.SSM.txt'))
+                                                                          source=os.path.abspath(os.path.join('scans',f'motion.{lidar_id}.ssmx1.txt')))
             
         elif mode=='CSM':
             
@@ -188,7 +193,7 @@ else:
                                                 'ppd_ele':   config['ppd_ele']})
             
             t2,azi2,ele2,t_all,azi_all,ele_all=halo_sim.scanning_head_sim(mode='CSM',ppr=ppr,
-                                                                       source=os.path.join(cd,'scans',f'motion.{lidar_id}.{ppr}.CSM.txt'))
+                                                                       source=os.path.abspath(os.path.join('scans',f'motion.{lidar_id}.csm{ppr_test}x1.txt')))
             
             plt.figure(figsize=(18,8))            
             ax=plt.subplot(2,1,1)
@@ -215,6 +220,7 @@ else:
             plt.title(f'PPR={ppr}, mode={mode}, file: {os.path.basename(f)}')
             plt.xlabel('Time [s]')
             plt.grid()
+            plt.savefig(os.path.abspath(f'figures/{lidar_id}/{lidar_id}_motion_csm.png'))
             
         plt.figure(figsize=(18,8))
         ax=plt.subplot(2,1,1)
@@ -233,6 +239,7 @@ else:
         plt.xlabel('Time [s]')
         plt.ylabel(r'$\beta$ [$^\circ$]')
         plt.grid()
+        plt.savefig(os.path.abspath(f'figures/{lidar_id}/{lidar_id}_valid_{mode.lower()}.png'))
 
 if mode=='SSM' and S_azi is not None:        
     add=input('Add parameters to configuration? (y/n): ')

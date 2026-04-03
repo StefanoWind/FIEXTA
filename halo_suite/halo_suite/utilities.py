@@ -97,13 +97,12 @@ def scan_file_compiler(mode: str,
     
     #add backswipe to home position
     if reset:
-        if azi[0]!=azi[-1] or ele[0]!=ele[-1]:
-            if len(azi_dir)!=0:
-                azi_dir=np.append(azi_dir,np.sign((azi[0] - azi[-1] + 180) % 360 - 180))
-                ele_dir=np.append(ele_dir,np.sign((ele[0] - ele[-1] + 180) % 360 - 180))
-            
-            azi=np.append(azi,azi[0])
-            ele=np.append(ele,ele[0])
+        if len(azi_dir)!=0:
+            azi_dir=np.append(azi_dir,np.sign((azi[0] - azi[-1] + 180) % 360 - 180))
+            ele_dir=np.append(ele_dir,np.sign((ele[0] - ele[-1] + 180) % 360 - 180))
+        
+        azi=np.append(azi,azi[0])
+        ele=np.append(ele,ele[0])
             
     #linearize angles
     azi=linearize_angle(azi, azi_dir)
@@ -198,7 +197,8 @@ def scan_file_compiler(mode: str,
                     S_ele=np.append(S_ele,10)
                     A_ele=np.append(A_ele,10)
                 ctr+=1
-                    
+        else:
+            ppr=''            
         #S.I. -> Halo units
         S1=S_azi*ppd1/10+np.zeros(len(P1))
         A1=A_azi*ppd1/1000+np.zeros(len(P1))
