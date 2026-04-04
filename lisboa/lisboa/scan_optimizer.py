@@ -42,6 +42,7 @@ class scan_optimizer:
             x0: Union[float,dict],
             y0: Union[float,dict],
             z0: Union[float,dict],
+            azi0: Union[float,dict],
             azi1: Union[np.array,dict],
             azi2: Union[np.array,dict],
             ele1: Union[np.array,dict],
@@ -155,7 +156,7 @@ class scan_optimizer:
                     res_ele_sel=res_ele[i_dang]
                     
                 args.append((sites,coords,lproc,self.config,
-                            x0,y0,z0,
+                            x0,y0,z0,azi0,
                             azi1_sel,azi2_sel,ele1_sel,ele2_sel,res_azi_sel,res_ele_sel,
                             config_lidar,mode,ppr,volumetric,T,tau,
                             res_mode,save_name,full_scan_file,r))
@@ -236,7 +237,7 @@ class scan_optimizer:
         return Output
     
 def evaluate_scan(sites,coords,lproc,config,
-                  x0,y0,z0,
+                  x0,y0,z0,azi0,
                   azi1,azi2,ele1,ele2,res_azi,res_ele,
                   config_lidar,mode,ppr,volumetric,T,tau,
                   res_mode,save_name,full_scan_file,r):
@@ -278,6 +279,7 @@ def evaluate_scan(sites,coords,lproc,config,
             re=res_ele[s]
             config_lidar_sel=config_lidar[s]
             origin=[x0[s],y0[s],z0[s]]
+            azi0_sel=azi0[s]
         else:
             a1=azi1
             a2=azi2
@@ -287,7 +289,8 @@ def evaluate_scan(sites,coords,lproc,config,
             re=res_ele
             config_lidar_sel=config_lidar
             origin=[x0,y0,z0]
-    
+            azi0_sel=azi0
+            
         print(f"Evaluating azi={a1}:{ra}:{a2}, ele={e1}:{re}:{e2}")
         
         #expand azimuth and elevation vectors
@@ -315,7 +318,7 @@ def evaluate_scan(sites,coords,lproc,config,
         
         #simulate scanning head
         if mode=='SSM':
-            scan_file=scan_file_compiler(mode=mode,azi=azi,ele=ele,repeats=1,
+            scan_file=scan_file_compiler(mode=mode,azi=azi-azi0_sel,ele=ele,repeats=1,
                                          identifier=scan_name,save_path=save_name,
                                          volumetric=volumetric,reset=True)
             
@@ -330,7 +333,7 @@ def evaluate_scan(sites,coords,lproc,config,
                                                                           A_ele=config_lidar_sel['A_ele_SSM'],
                                                                           source=scan_file)
         elif mode=='CSM':
-            scan_file=scan_file_compiler(mode=mode,azi=azi,ele=ele,repeats=1,ppr=ppr,
+            scan_file=scan_file_compiler(mode=mode,azi=azi-azi0_sel,ele=ele,repeats=1,ppr=ppr,
                                identifier=scan_name,config=config_lidar_sel,save_path=save_name,
                                optimize=True,volumetric=volumetric,reset=True)
 
@@ -346,11 +349,11 @@ def evaluate_scan(sites,coords,lproc,config,
         if full_scan_file:
             L=int(np.floor(T/t[-1]))
             if mode=='SSM':
-               scan_file=scan_file_compiler(mode=mode,azi=azi,ele=ele,repeats=L,
+               scan_file=scan_file_compiler(mode=mode,azi=azi-azi0_sel,ele=ele,repeats=L,
                                             identifier=f'{scan_name}',save_path=save_name,
                                             volumetric=volumetric,reset=True)
             elif mode=='CSM':
-                scan_file=scan_file_compiler(mode=mode,azi=azi,ele=ele,repeats=L,ppr=ppr,
+                scan_file=scan_file_compiler(mode=mode,azi=azi-azi0_sel,ele=ele,repeats=L,ppr=ppr,
                                    identifier=f'{scan_name}',config=config_lidar,save_path=save_name,
                                    optimize=True,volumetric=volumetric,reset=True)
                 
