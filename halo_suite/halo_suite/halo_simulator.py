@@ -9,7 +9,7 @@ import os
 import re
 class halo_simulator:
     '''
-    Simulator of the movement of the lidar scanninf head
+    Simulator of the movement of the lidar scanning head
     '''
     def __init__(self,
                  config: dict,
@@ -101,13 +101,13 @@ class halo_simulator:
         for azi1,azi2,ele1,ele2,S1,S2,A1,A2 in zip(azi[:-1],azi[1:],ele[:-1],ele[1:],S_azi,S_ele,A_azi,A_ele):
             dazi=azi2-azi1
             dele=ele2-ele1
-            if np.abs(dazi)>ang_tol and np.abs(dele)<ang_tol:#PPI simulation
+            if np.abs(dazi)>=ang_tol and np.abs(dele)<ang_tol:#PPI simulation
                 _t,_azi=self.step_scanning_head(azi1,azi2,S1,A1,mode=mode)
                 _ele=ele1+_azi*0
-            elif np.abs(dazi)<ang_tol and np.abs(dele)>ang_tol:#RHI simulations
+            elif np.abs(dazi)<ang_tol and np.abs(dele)>=ang_tol:#RHI simulations
                 _t,_ele=self.step_scanning_head(ele1,ele2,S2,A2,mode=mode)
                 _azi=azi1+_ele*0
-            elif np.abs(dazi)>ang_tol and np.abs(dele)>ang_tol: #two-axis motion simulations
+            elif np.abs(dazi)>=ang_tol and np.abs(dele)>=ang_tol: #two-axis motion simulations
                 _t_azi,_azi=self.step_scanning_head(azi1,azi2,S1,A1,mode=mode)
                 _t_ele,_ele=self.step_scanning_head(ele1,ele2,S2,A2,mode=mode)
                 if _t_azi[-1]>_t_ele[-1]:
@@ -120,8 +120,6 @@ class halo_simulator:
                     _t=[0,0]
                     _azi=[azi1,azi2]
                     _ele=[ele1,ele2]
-            else:
-                raise ValueError('The movement of azimuth and elevation within the same angular step is not supported.')
                 
             azi_all=np.append(azi_all,_azi[1:])
             ele_all=np.append(ele_all,_ele[1:])

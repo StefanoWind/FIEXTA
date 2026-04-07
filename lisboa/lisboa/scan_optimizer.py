@@ -60,6 +60,7 @@ class scan_optimizer:
             path_config_lidar: str,
             T: float,
             tau: float,
+            ws: np.array,
             full_scan_file: bool = False,
             parallel=bool==False):
         
@@ -126,6 +127,7 @@ class scan_optimizer:
         #zeroing
         epsilon1=np.zeros((num_ang,num_dang))+np.nan
         epsilon2=np.zeros((num_ang,num_dang))+np.nan
+        epsilon3=np.zeros((num_ang,num_dang))+np.nan
         duration=np.zeros((num_ang,num_dang))+np.nan
         
         #define range gates
@@ -158,7 +160,7 @@ class scan_optimizer:
                 args.append((sites,coords,lproc,self.config,
                             x0,y0,z0,azi0,
                             azi1_sel,azi2_sel,ele1_sel,ele2_sel,res_azi_sel,res_ele_sel,
-                            config_lidar,mode,ppr,volumetric,T,tau,
+                            config_lidar,mode,ppr,volumetric,T,tau,ws,
                             res_mode,save_name,full_scan_file,r))
                 i_dang+=1
             i_ang+=1
@@ -177,7 +179,8 @@ class scan_optimizer:
             for i_dang in range(num_dang):
                 epsilon1[i_ang,i_dang]=results[i_ang*num_dang+i_dang][0]
                 epsilon2[i_ang,i_dang]=results[i_ang*num_dang+i_dang][1]
-                duration[i_ang,i_dang]=results[i_ang*num_dang+i_dang][2]
+                epsilon3[i_ang,i_dang]=results[i_ang*num_dang+i_dang][2]
+                duration[i_ang,i_dang]=results[i_ang*num_dang+i_dang][3]
                 
         #build output
         Output=xr.Dataset()
@@ -185,6 +188,8 @@ class scan_optimizer:
                             attrs={'description':'fraction of undersampled volume'})
         Output['epsilon2']=xr.DataArray(epsilon2,coords={'index_ang':np.arange(num_ang),'index_dang':np.arange(num_dang)},
                             attrs={'description':'normalized error on the mean'})
+        Output['epsilon3']=xr.DataArray(epsilon3,coords={'index_ang':np.arange(num_ang),'index_dang':np.arange(num_dang)},
+                            attrs={'description':'fraction of time the flow is underamples in time'})
         Output['duration']=xr.DataArray(duration,coords={'index_ang':np.arange(num_ang),'index_dang':np.arange(num_dang)},
                             attrs={'description':'Scan duration'})
         
@@ -239,7 +244,7 @@ class scan_optimizer:
 def evaluate_scan(sites,coords,lproc,config,
                   x0,y0,z0,azi0,
                   azi1,azi2,ele1,ele2,res_azi,res_ele,
-                  config_lidar,mode,ppr,volumetric,T,tau,
+                  config_lidar,mode,ppr,volumetric,T,tau,ws,
                   res_mode,save_name,full_scan_file,r):
     
     '''
@@ -354,13 +359,13 @@ def evaluate_scan(sites,coords,lproc,config,
                                             volumetric=volumetric,reset=True)
             elif mode=='CSM':
                 scan_file=scan_file_compiler(mode=mode,azi=azi-azi0_sel,ele=ele,repeats=L,ppr=ppr,
-                                   identifier=f'{scan_name}',config=config_lidar,save_path=save_name,
+                                   identifier=f'{scan_name}',config=config_lidar_sel,save_path=save_name,
                                    optimize=True,volumetric=volumetric,reset=True)
                 
         duration_all=np.append(duration_all,t[-1])
     
         #sampling points
-        x,y,z=sphere2cart(r, azi_sim, ele_sim)
+        x,y,z=sphere2cart(r, azi_sim+azi0_sel, ele_sim)
        
         if coords=='xy':
             x_exp=[x.ravel()+origin[0],y.ravel()+origin[1]]
@@ -426,6 +431,12 @@ def evaluate_scan(sites,coords,lproc,config,
         epsilon2=(1/L+2/L**2*np.sum((L-p)*np.exp(-duration/tau*p)))**0.5 
     else:
         epsilon2=np.nan
+        
+    #synthesis epsilon 3 (based on longest duration)
+    if ws is not None:
+        epsilon3=np.sum(ws*duration/np.min(config['Dn0'][:2])>config['max_Dd'])/np.sum(~np.isnan(ws))
+    else:
+        epsilon3=np.nan
     
     #save synthesis file (multiple Doppler) or single dataset (single Doppler)
     if len(sites)>1:
@@ -436,6 +447,7 @@ def evaluate_scan(sites,coords,lproc,config,
                             attrs={'description':'Grid points failing the Peterson-Middleton test'})
         Output.attrs['epsilon1']=epsilon1
         Output.attrs['epsilon2']=epsilon2
+        Output.attrs['epsilon3']=epsilon3
         
         for c in config:
             Output.attrs[f'config_{c}']=config[c]
@@ -447,11 +459,12 @@ def evaluate_scan(sites,coords,lproc,config,
     else:
         Output.attrs['epsilon1']=epsilon1
         Output.attrs['epsilon2']=epsilon2
+        Output.attrs['epsilon3']=epsilon3
         Output.to_netcdf(os.path.join(save_name,f'{setup_name}.nc'))
         
     fig=visualize_scan(os.path.join(save_name,f'{setup_name}.nc'),sites)
     fig.savefig(os.path.join(save_name,f'{setup_name}.png'))
     plt.close(fig)
     
-    return epsilon1,epsilon2,duration
+    return epsilon1,epsilon2,epsilon3,duration
 
