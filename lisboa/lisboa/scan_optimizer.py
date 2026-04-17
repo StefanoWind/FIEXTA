@@ -64,6 +64,38 @@ class scan_optimizer:
             full_scan_file: bool = False,
             parallel=bool==False):
         
+        '''
+        Run Pareto front otpimization using the LiSBOA method.
+        
+        INPUTS:
+            x0: x lidar location(s) [m]
+            y0: y lidar location(s) [m]
+            z0: z lidar location(s) [m]
+            azi0: lidar azimuth offset(s) [degrees]
+            azi1: initial azimuth of the scans [degrees]
+            azi2: final azimuth of the scans [degrees]
+            ele1: initial elevation of the scans [degrees]
+            ele2: final elevation of the scans [degrees]
+            dazi: azimuth resolutions [degrees]
+            dele: elevation resolutions [degrees]
+            num_azi: number of azimuths [degrees]
+            num_ele: number of elevations [degrees]
+            rmin: minimum range [m]
+            rmax: maximum range [m]
+            dr: gate length [m]
+            ppr: pulses-per-ray
+            volumetric: volumetric scan?
+            mode: scanning mode (SSM or CSM)
+            path_config_lidar: path to the lidar config file
+            T: overall scans duration [s]
+            tau: integral timescale [s]
+            ws: wind speeds [s]
+            parallel: parallel processing?
+            
+        OUTPUTS:
+            Output: dataframe containg Pareto results
+        '''
+        
         # check if we are in the main, otherwhise skip because we are in the pool
         if current_process().name != "MainProcess":
             return
@@ -94,7 +126,7 @@ class scan_optimizer:
         if isinstance(num_ele, list): num_ele=np.array(num_ele)
         
         #select resolution mode
-        if isinstance(dazi, np.ndarray) or isinstance(dazi, dict) \
+        if  isinstance(dazi, np.ndarray) or isinstance(dazi, dict) \
         and isinstance(dele, np.ndarray) or isinstance(dele, dict):
             res_mode='degrees'
             res_azi=dazi
@@ -102,7 +134,7 @@ class scan_optimizer:
             geom_info=[azi1,azi2,ele1,ele2,dazi,dele]
                 
         elif isinstance(num_azi, np.ndarray) or isinstance(num_azi, dict) \
-        and isinstance(num_ele, np.ndarray) or isinstance(num_ele, dict):
+        and  isinstance(num_ele, np.ndarray) or isinstance(num_ele, dict):
             res_mode='count'
             res_azi=num_azi
             res_ele=num_ele
@@ -189,7 +221,7 @@ class scan_optimizer:
         Output['epsilon2']=xr.DataArray(epsilon2,coords={'index_ang':np.arange(num_ang),'index_dang':np.arange(num_dang)},
                             attrs={'description':'normalized error on the mean'})
         Output['epsilon3']=xr.DataArray(epsilon3,coords={'index_ang':np.arange(num_ang),'index_dang':np.arange(num_dang)},
-                            attrs={'description':'fraction of time the flow is underamples in time'})
+                            attrs={'description':'fraction of time the flow is underampled in time'})
         Output['duration']=xr.DataArray(duration,coords={'index_ang':np.arange(num_ang),'index_dang':np.arange(num_dang)},
                             attrs={'description':'Scan duration'})
         
