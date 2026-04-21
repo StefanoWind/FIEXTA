@@ -9,8 +9,11 @@ class LidarConfigFormat:
     model: str = 'halo'
     site: str = 'sc1'
     instrument_id: int = 1
-    data_level_out: str='a0'
-
+    data_level_out: str ='a0'
+    latitude: float = 0.0
+    longitude: float = 0.0
+    site_description: str = 'AWAKEN site C1a'
+    
     def _validate_model(self, model: str, field_name: str) -> None:
         """Validate lidal model."""
         if model != 'halo' and model !='windcube':
