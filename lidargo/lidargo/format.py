@@ -279,6 +279,7 @@ class Format:
         outputData.attrs["location_id"]=os.path.basename(source).split('.')[0]
         outputData.attrs["latitude"]=self.config.latitude
         outputData.attrs["longitude"]=self.config.longitude
+        outputData.attrs["altitude"]=self.config.altitude
         outputData.attrs["site"]=self.config.site_description
         
         outputData["distance"] = (
