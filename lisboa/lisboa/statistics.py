@@ -80,7 +80,7 @@ class statistics:
         sel=np.zeros(np.shape(X[0]),dtype=object)
         Dd=np.zeros(np.shape(X[0]))
         edge=Dd==1
-        nodes=np.where(X[0])
+        nodes=np.where(X[0]>=X[0].min())
         ctr=0
         
         #loop over all grid points
@@ -118,6 +118,7 @@ class statistics:
             if self.verbose:
                 if int(ctr/1000)==ctr/1000:
                     self.logger.log(f"{ctr}/{len(X[0].ravel())} grid points done")
+                   
                     
         #find edge points and set spacing to infinity
         for i in zip(*[xx for xx in nodes]):

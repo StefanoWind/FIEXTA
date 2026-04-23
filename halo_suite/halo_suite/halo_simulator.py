@@ -9,7 +9,7 @@ import os
 import re
 class halo_simulator:
     '''
-    Simulator of the movement of the lidar scanninf head
+    Simulator of the movement of the lidar scanning head
     '''
     def __init__(self,
                  config: dict,
@@ -87,10 +87,14 @@ class halo_simulator:
                 A_ele=A2[1:]*1000/ppd2
         
         #zeroing
-        azi_all=np.array([0])
-        ele_all=np.array([0])
-        t_all=np.array([0])
-        t=np.array([0])
+        t_start=0
+        t_all=[]
+        azi_all=[]
+        ele_all=[]
+       
+        t_sim=[]
+        azi_sim=[]
+        ele_sim=[]
         
         S_azi+=np.zeros((len(azi))-1)
         S_ele+=np.zeros((len(azi))-1)
@@ -101,13 +105,13 @@ class halo_simulator:
         for azi1,azi2,ele1,ele2,S1,S2,A1,A2 in zip(azi[:-1],azi[1:],ele[:-1],ele[1:],S_azi,S_ele,A_azi,A_ele):
             dazi=azi2-azi1
             dele=ele2-ele1
-            if np.abs(dazi)>ang_tol and np.abs(dele)<ang_tol:#PPI simulation
+            if np.abs(dazi)>=ang_tol and np.abs(dele)<ang_tol:#PPI simulation
                 _t,_azi=self.step_scanning_head(azi1,azi2,S1,A1,mode=mode)
                 _ele=ele1+_azi*0
-            elif np.abs(dazi)<ang_tol and np.abs(dele)>ang_tol:#RHI simulations
+            elif np.abs(dazi)<ang_tol and np.abs(dele)>=ang_tol:#RHI simulations
                 _t,_ele=self.step_scanning_head(ele1,ele2,S2,A2,mode=mode)
                 _azi=azi1+_ele*0
-            elif np.abs(dazi)>ang_tol and np.abs(dele)>ang_tol: #two-axis motion simulations
+            elif np.abs(dazi)>=ang_tol and np.abs(dele)>=ang_tol: #two-axis motion simulations
                 _t_azi,_azi=self.step_scanning_head(azi1,azi2,S1,A1,mode=mode)
                 _t_ele,_ele=self.step_scanning_head(ele1,ele2,S2,A2,mode=mode)
                 if _t_azi[-1]>_t_ele[-1]:
@@ -120,36 +124,51 @@ class halo_simulator:
                     _t=[0,0]
                     _azi=[azi1,azi2]
                     _ele=[ele1,ele2]
-            else:
-                raise ValueError('The movement of azimuth and elevation within the same angular step is not supported.')
                 
-            azi_all=np.append(azi_all,_azi[1:])
-            ele_all=np.append(ele_all,_ele[1:])
+            
+            
             if mode=='SSM':
                 #in SSM, add acquisition delay
-                t_all=np.append(t_all,t_all[-1]+_t[1:]+Dt_s)
-                t=np.append(t,t[-1]+_t[-1]+Dt_s)
+                t_all=np.append(t_all,t_start+_t+Dt_s)
+                t_sim=np.append(t_sim,t_start+_t[-1]+Dt_s)
+                azi_all=np.append(azi_all,_azi)
+                ele_all=np.append(ele_all,_ele)
+                
             elif mode=='CSM':
-                #in CSM mode, add the dwelling time
-                t_all=np.append(t_all,t_all[-1]+_t[1:]+Dt_d)
+                
+                #dead time
+                _t=np.append(_t,_t[-1]+Dt_d)
+                _azi=np.append(_azi,_azi[-1])
+                _ele=np.append(_ele,_ele[-1])
+                
+                #stacking
+                t_int=np.arange(t_start,t_start+_t[-1]+Dt_s,Dt_s)
+                t_sim=np.append(t_sim,t_int)
+                t_all=np.append(t_all,t_start+_t)
+                azi_all=np.append(azi_all,_azi)
+                ele_all=np.append(ele_all,_ele)
+                
+                #interpolation at sampling location
+                c=np.interp(t_int,t_all,np.cos(np.radians(azi_all)))
+                s=np.interp(t_int,t_all,np.sin(np.radians(azi_all)))
+                azi_sim=np.append(azi_sim,np.degrees(np.arctan2(s,c)))
+                c=np.interp(t_int,t_all,np.cos(np.radians(ele_all)))
+                s=np.interp(t_int,t_all,np.sin(np.radians(ele_all)))
+                ele_sim=np.append(ele_sim,np.degrees(np.arctan2(s,c)))
+            
+            t_start=t_all[-1]
                 
         azi_all=azi_all[1:]%360
         ele_all=ele_all[1:]
         t_all=t_all[1:]-t_all[1]
         
-        if mode=='CSM':
-            #in CSM mode, iterpolate at sampling point
-            t=np.arange(0,t_all[-1]+Dt_s,Dt_s)
-            c=np.interp(t,t_all,np.cos(np.radians(azi_all)))
-            s=np.interp(t,t_all,np.sin(np.radians(azi_all)))
-            azi=np.degrees(np.arctan2(s,c))
-            c=np.interp(t,t_all,np.cos(np.radians(ele_all)))
-            s=np.interp(t,t_all,np.sin(np.radians(ele_all)))
-            ele=np.degrees(np.arctan2(s,c))
+        azi_sim=azi_sim%360
+        
+        if mode=='SSM':
+            azi_sim=azi.copy()
+            ele_sim=ele.copy()
             
-        azi=azi%360
-            
-        return t,azi,ele,t_all,azi_all,ele_all
+        return t_sim,azi_sim,ele_sim,t_all,azi_all,ele_all
     
     def step_scanning_head(self,ang1,ang2,S,A,mode='SSM',dt=0.01):
         

@@ -42,6 +42,7 @@ class scan_optimizer:
             x0: Union[float,dict],
             y0: Union[float,dict],
             z0: Union[float,dict],
+            azi0: Union[float,dict],
             azi1: Union[np.array,dict],
             azi2: Union[np.array,dict],
             ele1: Union[np.array,dict],
@@ -59,8 +60,41 @@ class scan_optimizer:
             path_config_lidar: str,
             T: float,
             tau: float,
+            ws: np.array,
             full_scan_file: bool = False,
             parallel=bool==False):
+        
+        '''
+        Run Pareto front otpimization using the LiSBOA method.
+        
+        INPUTS:
+            x0: x lidar location(s) [m]
+            y0: y lidar location(s) [m]
+            z0: z lidar location(s) [m]
+            azi0: lidar azimuth offset(s) [degrees]
+            azi1: initial azimuth of the scans [degrees]
+            azi2: final azimuth of the scans [degrees]
+            ele1: initial elevation of the scans [degrees]
+            ele2: final elevation of the scans [degrees]
+            dazi: azimuth resolutions [degrees]
+            dele: elevation resolutions [degrees]
+            num_azi: number of azimuths [degrees]
+            num_ele: number of elevations [degrees]
+            rmin: minimum range [m]
+            rmax: maximum range [m]
+            dr: gate length [m]
+            ppr: pulses-per-ray
+            volumetric: volumetric scan?
+            mode: scanning mode (SSM or CSM)
+            path_config_lidar: path to the lidar config file
+            T: overall scans duration [s]
+            tau: integral timescale [s]
+            ws: wind speeds [s]
+            parallel: parallel processing?
+            
+        OUTPUTS:
+            Output: dataframe containg Pareto results
+        '''
         
         # check if we are in the main, otherwhise skip because we are in the pool
         if current_process().name != "MainProcess":
@@ -92,7 +126,7 @@ class scan_optimizer:
         if isinstance(num_ele, list): num_ele=np.array(num_ele)
         
         #select resolution mode
-        if isinstance(dazi, np.ndarray) or isinstance(dazi, dict) \
+        if  isinstance(dazi, np.ndarray) or isinstance(dazi, dict) \
         and isinstance(dele, np.ndarray) or isinstance(dele, dict):
             res_mode='degrees'
             res_azi=dazi
@@ -100,7 +134,7 @@ class scan_optimizer:
             geom_info=[azi1,azi2,ele1,ele2,dazi,dele]
                 
         elif isinstance(num_azi, np.ndarray) or isinstance(num_azi, dict) \
-        and isinstance(num_ele, np.ndarray) or isinstance(num_ele, dict):
+        and  isinstance(num_ele, np.ndarray) or isinstance(num_ele, dict):
             res_mode='count'
             res_azi=num_azi
             res_ele=num_ele
@@ -125,6 +159,7 @@ class scan_optimizer:
         #zeroing
         epsilon1=np.zeros((num_ang,num_dang))+np.nan
         epsilon2=np.zeros((num_ang,num_dang))+np.nan
+        epsilon3=np.zeros((num_ang,num_dang))+np.nan
         duration=np.zeros((num_ang,num_dang))+np.nan
         
         #define range gates
@@ -155,9 +190,9 @@ class scan_optimizer:
                     res_ele_sel=res_ele[i_dang]
                     
                 args.append((sites,coords,lproc,self.config,
-                            x0,y0,z0,
+                            x0,y0,z0,azi0,
                             azi1_sel,azi2_sel,ele1_sel,ele2_sel,res_azi_sel,res_ele_sel,
-                            config_lidar,mode,ppr,volumetric,T,tau,
+                            config_lidar,mode,ppr,volumetric,T,tau,ws,
                             res_mode,save_name,full_scan_file,r))
                 i_dang+=1
             i_ang+=1
@@ -176,7 +211,8 @@ class scan_optimizer:
             for i_dang in range(num_dang):
                 epsilon1[i_ang,i_dang]=results[i_ang*num_dang+i_dang][0]
                 epsilon2[i_ang,i_dang]=results[i_ang*num_dang+i_dang][1]
-                duration[i_ang,i_dang]=results[i_ang*num_dang+i_dang][2]
+                epsilon3[i_ang,i_dang]=results[i_ang*num_dang+i_dang][2]
+                duration[i_ang,i_dang]=results[i_ang*num_dang+i_dang][3]
                 
         #build output
         Output=xr.Dataset()
@@ -184,6 +220,8 @@ class scan_optimizer:
                             attrs={'description':'fraction of undersampled volume'})
         Output['epsilon2']=xr.DataArray(epsilon2,coords={'index_ang':np.arange(num_ang),'index_dang':np.arange(num_dang)},
                             attrs={'description':'normalized error on the mean'})
+        Output['epsilon3']=xr.DataArray(epsilon3,coords={'index_ang':np.arange(num_ang),'index_dang':np.arange(num_dang)},
+                            attrs={'description':'fraction of time the flow is underampled in time'})
         Output['duration']=xr.DataArray(duration,coords={'index_ang':np.arange(num_ang),'index_dang':np.arange(num_dang)},
                             attrs={'description':'Scan duration'})
         
@@ -236,9 +274,9 @@ class scan_optimizer:
         return Output
     
 def evaluate_scan(sites,coords,lproc,config,
-                  x0,y0,z0,
+                  x0,y0,z0,azi0,
                   azi1,azi2,ele1,ele2,res_azi,res_ele,
-                  config_lidar,mode,ppr,volumetric,T,tau,
+                  config_lidar,mode,ppr,volumetric,T,tau,ws,
                   res_mode,save_name,full_scan_file,r):
     
     '''
@@ -278,6 +316,7 @@ def evaluate_scan(sites,coords,lproc,config,
             re=res_ele[s]
             config_lidar_sel=config_lidar[s]
             origin=[x0[s],y0[s],z0[s]]
+            azi0_sel=azi0[s]
         else:
             a1=azi1
             a2=azi2
@@ -287,7 +326,8 @@ def evaluate_scan(sites,coords,lproc,config,
             re=res_ele
             config_lidar_sel=config_lidar
             origin=[x0,y0,z0]
-    
+            azi0_sel=azi0
+            
         print(f"Evaluating azi={a1}:{ra}:{a2}, ele={e1}:{re}:{e2}")
         
         #expand azimuth and elevation vectors
@@ -315,7 +355,7 @@ def evaluate_scan(sites,coords,lproc,config,
         
         #simulate scanning head
         if mode=='SSM':
-            scan_file=scan_file_compiler(mode=mode,azi=azi,ele=ele,repeats=1,
+            scan_file=scan_file_compiler(mode=mode,azi=azi-azi0_sel,ele=ele,repeats=1,
                                          identifier=scan_name,save_path=save_name,
                                          volumetric=volumetric,reset=True)
             
@@ -330,7 +370,7 @@ def evaluate_scan(sites,coords,lproc,config,
                                                                           A_ele=config_lidar_sel['A_ele_SSM'],
                                                                           source=scan_file)
         elif mode=='CSM':
-            scan_file=scan_file_compiler(mode=mode,azi=azi,ele=ele,repeats=1,ppr=ppr,
+            scan_file=scan_file_compiler(mode=mode,azi=azi-azi0_sel,ele=ele,repeats=1,ppr=ppr,
                                identifier=scan_name,config=config_lidar_sel,save_path=save_name,
                                optimize=True,volumetric=volumetric,reset=True)
 
@@ -346,18 +386,18 @@ def evaluate_scan(sites,coords,lproc,config,
         if full_scan_file:
             L=int(np.floor(T/t[-1]))
             if mode=='SSM':
-               scan_file=scan_file_compiler(mode=mode,azi=azi,ele=ele,repeats=L,
+               scan_file=scan_file_compiler(mode=mode,azi=azi-azi0_sel,ele=ele,repeats=L,
                                             identifier=f'{scan_name}',save_path=save_name,
                                             volumetric=volumetric,reset=True)
             elif mode=='CSM':
-                scan_file=scan_file_compiler(mode=mode,azi=azi,ele=ele,repeats=L,ppr=ppr,
-                                   identifier=f'{scan_name}',config=config_lidar,save_path=save_name,
+                scan_file=scan_file_compiler(mode=mode,azi=azi-azi0_sel,ele=ele,repeats=L,ppr=ppr,
+                                   identifier=f'{scan_name}',config=config_lidar_sel,save_path=save_name,
                                    optimize=True,volumetric=volumetric,reset=True)
                 
         duration_all=np.append(duration_all,t[-1])
     
         #sampling points
-        x,y,z=sphere2cart(r, azi_sim, ele_sim)
+        x,y,z=sphere2cart(r, azi_sim+azi0_sel, ele_sim)
        
         if coords=='xy':
             x_exp=[x.ravel()+origin[0],y.ravel()+origin[1]]
@@ -423,6 +463,12 @@ def evaluate_scan(sites,coords,lproc,config,
         epsilon2=(1/L+2/L**2*np.sum((L-p)*np.exp(-duration/tau*p)))**0.5 
     else:
         epsilon2=np.nan
+        
+    #synthesis epsilon 3 (based on longest duration)
+    if ws is not None:
+        epsilon3=np.sum(ws*duration/np.min(config['Dn0'][:2])>config['max_Dd'])/np.sum(~np.isnan(ws))
+    else:
+        epsilon3=np.nan
     
     #save synthesis file (multiple Doppler) or single dataset (single Doppler)
     if len(sites)>1:
@@ -433,6 +479,7 @@ def evaluate_scan(sites,coords,lproc,config,
                             attrs={'description':'Grid points failing the Peterson-Middleton test'})
         Output.attrs['epsilon1']=epsilon1
         Output.attrs['epsilon2']=epsilon2
+        Output.attrs['epsilon3']=epsilon3
         
         for c in config:
             Output.attrs[f'config_{c}']=config[c]
@@ -444,11 +491,12 @@ def evaluate_scan(sites,coords,lproc,config,
     else:
         Output.attrs['epsilon1']=epsilon1
         Output.attrs['epsilon2']=epsilon2
+        Output.attrs['epsilon3']=epsilon3
         Output.to_netcdf(os.path.join(save_name,f'{setup_name}.nc'))
         
     fig=visualize_scan(os.path.join(save_name,f'{setup_name}.nc'),sites)
     fig.savefig(os.path.join(save_name,f'{setup_name}.png'))
     plt.close(fig)
     
-    return epsilon1,epsilon2,duration
+    return epsilon1,epsilon2,epsilon3,duration
 

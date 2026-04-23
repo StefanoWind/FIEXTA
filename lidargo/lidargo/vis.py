@@ -335,18 +335,20 @@ def volumetric(ds, n_subplots: int = 5, cbar_label="Radial wind \n"+r"speed [m s
     
     utilities.same_axis(ax)
     
-    if cax is None:
-        fig.tight_layout()
-        cbar = add_colorbar(fig, ax[-1], sc,label=cbar_label)
+    if sc is not None:
+        if cax is None:
+            fig.tight_layout()
+            cbar = add_colorbar(fig, ax[-1], sc,label=cbar_label)
+        else:
+            cbar = plt.colorbar(sc, cax=cax,label=cbar_label)
+            new_pos=[cax.get_position().x0+0.03,
+                              ax[-1].get_position().y0,
+                              cax.get_position().width,
+                              ax[-1].get_position().height]
+            
+            cax.set_position(new_pos) 
     else:
-        
-        cbar = plt.colorbar(sc, cax=cax,label=cbar_label)
-        new_pos=[cax.get_position().x0+0.03,
-                          ax[-1].get_position().y0,
-                          cax.get_position().width,
-                          ax[-1].get_position().height]
-        
-        cax.set_position(new_pos) 
+        cbar=None
 
     return fig, ax, cbar
 

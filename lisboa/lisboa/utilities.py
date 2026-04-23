@@ -140,11 +140,31 @@ def visualize_scan(file,sites):
      
         #common data
         Data=xr.open_dataset(file,group='synthesis',engine='netcdf4')
-        info['synthesis']= r'$\epsilon_I='+str(np.round(Data.attrs['epsilon1'],2))+r'$'                      + '\n'+\
-                           r'$\epsilon_{II}='+str(np.round(Data.attrs['epsilon2'],2))+r'$'                   + '\n'+\
+        
+        #extract objective functions
+        epsilonx=Data.attrs['epsilon1']
+        if ~np.isnan(Data.attrs['epsilon3']):
+            epsilony=Data.attrs['epsilon3']
+            labely=r'$\epsilon_{III}'
+        else:
+            epsilony=Data.attrs['epsilon2']
+            labely=r'$\epsilon_{II}'
+            
+        info['synthesis']= r'$\epsilon_I='+str(np.round(epsilonx,2))+r'$'                      + '\n'+\
+                                labely+'='+str(np.round(epsilony,2))+r'$'                   + '\n'+\
                            r'$\Delta n_0=['+ ", ".join(f"{v:.2f}" for v in Data.attrs['config_Dn0']) + "]"+r'$ m'                                        
     else:
         Data=xr.open_dataset(file,engine='netcdf4')
+        
+        #extract objective functions
+        epsilonx=Data.attrs.epsilon1
+        if ~np.isnan(Data.attrs.epsilon3):
+            epsilony=Data.attrs.epsilon3
+            labely=r'$\epsilon_{III}'
+        else:
+            epsilony=Data.attrs.epsilon2
+            labely=r'$\epsilon_{II}'
+            
         p={}
         for c in Data.excl.coords:
             p[c]=Data[c+'_points']
@@ -157,8 +177,8 @@ def visualize_scan(file,sites):
              r'$\beta=' +str(np.round(ele[0],2))+':'+str(np.round(np.diff(ele)[0],2))+':'+str(np.round(ele[-1],2))+r'^\circ$' + '\n'+\
              r'$r= '    +str(np.round(r[0],2))  +':'+str(np.round(np.diff(r)[0],2))  +':'+str(np.round(r[-1],2))+ '$ m' +'\n'+\
              r'$\Delta n_0=['+ ", ".join(f"{v:.2f}" for v in Data.attrs['config_Dn0']) + "]"+r'$ m'                                         + '\n'+\
-             r'$\epsilon_I='+str(np.round(Data.attrs['epsilon1'],2))+r'$'                      + '\n'+\
-             r'$\epsilon_{II}='+str(np.round(Data.attrs['epsilon2'],2))+r'$'                   + '\n'+\
+             r'$\epsilon_I='+str(np.round(epsilonx,2))+r'$'                      + '\n'+\
+                  labely+'='+str(np.round(epsilony,2))+r'$'                   + '\n'+\
              r'$\tau_s='+str(np.round(Data.attrs['duration'],1))+r'$ s'+ '\n'+\
              'Scan mode = '+Data.attrs['mode']
              
@@ -258,8 +278,13 @@ def visualize_Pareto(Data):
     #extract information
     num_ang=len(Data.index_ang)
     num_dang=len(Data.index_dang)
-    epsilon1=Data.epsilon1.values
-    epsilon2=Data.epsilon2.values
+    epsilonx=Data.epsilon1.values
+    if ~np.isnan(Data.epsilon3).any():
+        epsilony=Data.epsilon3.values
+        labely=r'$\epsilon_{III}$'
+    else:
+        epsilony=Data.epsilon2.values
+        labely=r'$\epsilon_{II}$'
     
     #graphics
     cmap = plt.cm.jet
@@ -272,7 +297,7 @@ def visualize_Pareto(Data):
     if 'site' in Data.coords:
         for i_ang in range(num_ang):
             plt.subplot(num_row,num_col,i_ang+1)
-            plt.plot(epsilon1[np.arange(num_ang)!=i_ang,:],epsilon2[np.arange(num_ang)!=i_ang,:],'.k',markersize=30,alpha=0.25)
+            plt.plot(epsilonx[np.arange(num_ang)!=i_ang,:],epsilony[np.arange(num_ang)!=i_ang,:],'.k',markersize=30,alpha=0.25)
             for i_dang in range(num_dang):
                 label=''
                 for s in Data.site:
@@ -284,7 +309,7 @@ def visualize_Pareto(Data):
                         num_azi=Data.num_azi.sel(site=s).values
                         num_ele=Data.num_ele.sel(site=s).values
                         label+=s.values+': '+r'$num\alpha='+str(np.round(num_azi[i_dang],2))+r'$, $num\beta='+str(np.round(num_ele[i_dang],2))+r'$'+'\n'
-                plt.plot(epsilon1[i_ang,i_dang],epsilon2[i_ang,i_dang],'.',color=colors[i_dang],markeredgecolor='k',markersize=30,label=label[:-1])
+                plt.plot(epsilonx[i_ang,i_dang],epsilony[i_ang,i_dang],'.',color=colors[i_dang],markeredgecolor='k',markersize=30,label=label[:-1])
             plt.xlim([0,1])
             plt.ylim([0,1])
             plt.xlabel(r'$\epsilon_I$')
@@ -315,17 +340,17 @@ def visualize_Pareto(Data):
             
         for i_ang in range(num_ang):
             plt.subplot(num_row,num_col,i_ang+1)
-            plt.plot(epsilon1[np.arange(num_ang)!=i_ang,:],epsilon2[np.arange(num_ang)!=i_ang,:],'.k',markersize=30,alpha=0.25)
+            plt.plot(epsilonx[np.arange(num_ang)!=i_ang,:],epsilony[np.arange(num_ang)!=i_ang,:],'.k',markersize=30,alpha=0.25)
             for i_dang in range(num_dang):
                 if 'dazi' in Data:
                     label=r'$\Delta \alpha='+str(np.round(dazi[i_dang],2))+r'^\circ$, $\Delta \beta='+str(np.round(dele[i_dang],2))+r'^\circ$'
                 elif 'num_azi' in Data:
                     label=r'$num_\alpha='+str(np.round(num_azi[i_dang],2))+r'$, $num_\beta='+str(np.round(num_ele[i_dang],2))+r'$'
-                plt.plot(epsilon1[i_ang,i_dang],epsilon2[i_ang,i_dang],'.',color=colors[i_dang],markeredgecolor='k',markersize=30,label=label)
+                plt.plot(epsilonx[i_ang,i_dang],epsilony[i_ang,i_dang],'.',color=colors[i_dang],markeredgecolor='k',markersize=30,label=label)
             plt.xlim([0,1])
             plt.ylim([0,1])
             plt.xlabel(r'$\epsilon_I$')
-            plt.ylabel(r'$\epsilon_{II}$')  
+            plt.ylabel(labely)  
             plt.title(r'$\alpha \in ['+str(np.round(azi1[i_ang],2))+', '+str(np.round(azi2[i_ang],2))+r']^\circ$, $\beta \in ['+str(np.round(ele1[i_ang],2))+', '+str(np.round(ele2[i_ang],2))+r']^\circ$')
             plt.grid()
     

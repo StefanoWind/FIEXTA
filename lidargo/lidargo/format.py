@@ -277,6 +277,10 @@ class Format:
         outputData.attrs["title"]='Lidar Halo XR'
         outputData.attrs["description"]='AWAKEN XR Halo Lidar data'
         outputData.attrs["location_id"]=os.path.basename(source).split('.')[0]
+        outputData.attrs["latitude"]=self.config.latitude
+        outputData.attrs["longitude"]=self.config.longitude
+        outputData.attrs["altitude"]=self.config.altitude
+        outputData.attrs["site"]=self.config.site_description
         
         outputData["distance"] = (
             "range_gate",
