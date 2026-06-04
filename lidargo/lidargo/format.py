@@ -388,19 +388,19 @@ class Format:
             cmap="coolwarm",
             vmin=-15,
             vmax=15,
-            cbar_kwargs={'label': r"Wind Speed [m s$^{-1}$]"}
+            cbar_kwargs={'label': r"Wind speed [m s$^{-1}$]"}
         )
         
-        date=str(data.time.values[0])[:10].replace('-','')
+        date=str(data.time.values[0])[:10]
 
         fig1.suptitle(
-            f"Wind Speed at {self.config.site} on {date} \n File: "
+            f"Radial wind speed at {self.config.site} on {date} \n File: "
             + os.path.basename(self.source)
         )
 
         format_time_xticks(ax1)
         ax1.set_xlabel("Time (UTC)")
-        ax1.set_ylabel("Range Gate")
+        ax1.set_ylabel("Range gate")
 
         if save_figures:
             fig1.savefig(self.save_filename.replace('nc','wind_speed_v_dist_time.png'))
@@ -419,13 +419,13 @@ class Format:
         )
 
         fig2.suptitle(
-            f"Signal to Noise Ratio at {self.config.site} on {date} \n File: "
+            f"Signal-to-noise ratio at {self.config.site} on {date} \n File: "
             + os.path.basename(self.source)
         )
 
         format_time_xticks(ax2)
         ax2.set_xlabel("Time (UTC)")
-        ax2.set_ylabel("Range Gate")
+        ax2.set_ylabel("Range gate")
 
         if save_figures:
             fig2.savefig(self.save_filename.replace('nc','snr_v_dist_time.png'))
