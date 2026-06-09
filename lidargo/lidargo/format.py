@@ -388,7 +388,7 @@ class Format:
             cmap="coolwarm",
             vmin=-15,
             vmax=15,
-            cbar_kwargs={'label': r"Wind speed [m s$^{-1}$]"}
+            cbar_kwargs={'label': r"Radial wind speed [m s$^{-1}$]"}
         )
         
         date=str(data.time.values[0])[:10]
