@@ -61,6 +61,8 @@ class scan_optimizer:
             T: float,
             tau: float,
             ws: np.array,
+            epsilonx: str = 'epsilon1',
+            epsilony: str = 'epsilon2',
             full_scan_file: bool = False,
             parallel=bool==False):
         
@@ -193,7 +195,8 @@ class scan_optimizer:
                             x0,y0,z0,azi0,
                             azi1_sel,azi2_sel,ele1_sel,ele2_sel,res_azi_sel,res_ele_sel,
                             config_lidar,mode,ppr,volumetric,T,tau,ws,
-                            res_mode,save_name,full_scan_file,r))
+                            res_mode,save_name,full_scan_file,r,
+                            epsilonx,epsilony))
                 i_dang+=1
             i_ang+=1
         
@@ -266,7 +269,7 @@ class scan_optimizer:
         
         Output.to_netcdf(os.path.join(save_name,os.path.basename(save_name)+'.Pareto.nc'))
         
-        fig=visualize_Pareto(Output)
+        fig=visualize_Pareto(Output,epsilonx,epsilony)
         fig.savefig(os.path.join(save_name,os.path.basename(save_name)+'.Pareto.png'))
         
         self.logger.log(f'Pareto results saved as {os.path.basename(save_name)+".Pareto.nc"}')
@@ -277,7 +280,7 @@ def evaluate_scan(sites,coords,lproc,config,
                   x0,y0,z0,azi0,
                   azi1,azi2,ele1,ele2,res_azi,res_ele,
                   config_lidar,mode,ppr,volumetric,T,tau,ws,
-                  res_mode,save_name,full_scan_file,r):
+                  res_mode,save_name,full_scan_file,r,epsilonx,epsilony):
     
     '''
     Given a set of scan geometries, lidar setups for a single or multiple Doppler system, run LiSBOA for scan design
@@ -494,7 +497,7 @@ def evaluate_scan(sites,coords,lproc,config,
         Output.attrs['epsilon3']=epsilon3
         Output.to_netcdf(os.path.join(save_name,f'{setup_name}.nc'))
         
-    fig=visualize_scan(os.path.join(save_name,f'{setup_name}.nc'),sites)
+    fig=visualize_scan(os.path.join(save_name,f'{setup_name}.nc'),sites,epsilonx,epsilony)
     fig.savefig(os.path.join(save_name,f'{setup_name}.png'))
     plt.close(fig)
     
