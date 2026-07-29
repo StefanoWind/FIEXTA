@@ -149,10 +149,7 @@ class halo_simulator:
                 ele_all=np.append(ele_all,_ele)
                 
                 #interpolation at sampling location
-                try:
-                    c=np.interp(t_int,t_all,np.cos(np.radians(azi_all)))
-                except:
-                    k=0
+                c=np.interp(t_int,t_all,np.cos(np.radians(azi_all)))
                 s=np.interp(t_int,t_all,np.sin(np.radians(azi_all)))
                 azi_sim=np.append(azi_sim,np.degrees(np.arctan2(s,c)))
                 c=np.interp(t_int,t_all,np.cos(np.radians(ele_all)))
