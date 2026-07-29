@@ -114,7 +114,7 @@ class halo_simulator:
             elif np.abs(dazi)>=ang_tol and np.abs(dele)>=ang_tol: #two-axis motion simulations
                 _t_azi,_azi=self.step_scanning_head(azi1,azi2,S1,A1,mode=mode)
                 _t_ele,_ele=self.step_scanning_head(ele1,ele2,S2,A2,mode=mode)
-                if _t_azi[-1]>_t_ele[-1]:
+                if _t_azi[-1]>=_t_ele[-1]:
                     _t=_t_azi
                     _ele=np.append(_ele,np.zeros(np.sum(_t_azi>_t_ele[-1]))+_ele[-1])
                 elif _t_azi[-1]<_t_ele[-1]:
@@ -149,7 +149,10 @@ class halo_simulator:
                 ele_all=np.append(ele_all,_ele)
                 
                 #interpolation at sampling location
-                c=np.interp(t_int,t_all,np.cos(np.radians(azi_all)))
+                try:
+                    c=np.interp(t_int,t_all,np.cos(np.radians(azi_all)))
+                except:
+                    k=0
                 s=np.interp(t_int,t_all,np.sin(np.radians(azi_all)))
                 azi_sim=np.append(azi_sim,np.degrees(np.arctan2(s,c)))
                 c=np.interp(t_int,t_all,np.cos(np.radians(ele_all)))

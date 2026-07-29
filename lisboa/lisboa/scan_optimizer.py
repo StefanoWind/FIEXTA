@@ -338,6 +338,9 @@ def evaluate_scan(sites,coords,lproc,config,
             ra+=10**-10
             re+=10**-10
             azi=np.arange(a1,a2+ra/2,ra)
+            if np.abs((azi[-1] - azi[0] + 180) % 360 - 180) < ra/2:
+                azi=azi[:-1]
+                
             ele=np.arange(e1,e2+re/2,re)
             if len(sites)>1:
                 scan_name=f'{s}_{a1:.2f}_{ra:.2f}_{a2:.2f}_{e1:.2f}_{re:.2f}_{e2:.2f}'
