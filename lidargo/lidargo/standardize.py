@@ -158,7 +158,7 @@ class Standardize:
             ("." + self.config.data_level_out)
             .join(self.source.split("." + self.config.data_level_in))
             .replace(self.source.split(".")[-1], self.config.name + ".nc")
-        )
+        ).replace('..','.')
         if save_path is not None:
             save_filename = os.path.join(save_path, os.path.basename(save_filename))
 
