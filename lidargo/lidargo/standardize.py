@@ -501,6 +501,7 @@ class Standardize:
                     "z",
                     "wind_speed",
                     "SNR",
+                    "beta",
                     "deltaTime",
                     "azimuth",
                     "elevation",
